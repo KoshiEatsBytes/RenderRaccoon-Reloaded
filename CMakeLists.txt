@@ -1,31 +1,45 @@
-cmake_minimum_required(VERSION 3.10)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+cmake_minimum_required(VERSION 3.14)
+project(RenderRaccoon-Reloaded)
 
-project (RenderRaccoon-Reloaded)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCE_FILES
-  source/main.cpp
+        Source/main.cpp
+        Source/Helpers/shaderIO.hpp
 )
 
-# Add the application
-include_directories(source)
+# Compose application structure
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
 
-# Add GLFW library
-add_subdirectory(thirdparty/glfw-3.4 "${CMAKE_CURRENT_BINARY_DIR}/glfw_build")
-include_directories(thirdparty/glfw-3.4/include)
+target_include_directories(${PROJECT_NAME} PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source"
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glfw-3.4/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glew/include"
+)
 
-# Add Glew library
-add_compile_definitions(GLEW_NO_GLU)
+# Add GLFW library
+add_subdirectory(OpenGL/glfw-3.4 "${CMAKE_CURRENT_BINARY_DIR}/glfw_build")
+
+# Add GLEW library
 set(BUILD_UTILS OFF CACHE BOOL "utilities" FORCE)
-add_subdirectory(thirdparty/glew/build/cmake "${CMAKE_CURRENT_BINARY_DIR}/glew_build")
-include_directories(thirdparty/glew/include)
+add_subdirectory(OpenGL/glew/build/cmake "${CMAKE_CURRENT_BINARY_DIR}/glew_build")
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE GLEW_NO_GLU)
+
 set_property(TARGET glew_s PROPERTY FOLDER GLEW)
 set_property(TARGET glew PROPERTY FOLDER GLEW)
 
-# Link all thirdparty libraries
-target_link_libraries(${PROJECT_NAME} 
-    glfw 
-    glew_s
+# Link all OpenGL libraries
+target_link_libraries(${PROJECT_NAME} PRIVATE
+        glfw
+        glew_s
+)
+
+# Add shader support
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/Source/Shaders"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders"
+        COMMENT "Copying shaders to output directory"
 )
