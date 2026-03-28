@@ -1,6 +1,6 @@
-prefix=C:/Program Files (x86)/GameDevelopmentProject
+prefix=C:/Program Files (x86)/RenderRaccoon-Reloaded
 exec_prefix=${prefix}
-libdir=C:/Program Files (x86)/GameDevelopmentProject/lib
+libdir=C:/Program Files (x86)/RenderRaccoon-Reloaded/lib
 includedir=${prefix}/include
 
 Name: glew
