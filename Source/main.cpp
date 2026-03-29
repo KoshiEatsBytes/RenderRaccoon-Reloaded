@@ -1,7 +1,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include <ostream>
+#include <vector>
+
+#include "Helpers/ShaderIO.hpp"
 
 int main()
 {
@@ -34,11 +36,86 @@ int main()
         return -1;
     }
 
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    std::string vertexSource = Helper::ShaderIO::LoadFromFile("Shaders/basic.vert");
+    const char* vertexShaderCStr = vertexSource.c_str();
+    glShaderSource(vertexShader, 1, &vertexShaderCStr, nullptr);
+    glCompileShader(vertexShader);
+
+    GLint success;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        //get error and show to user
+        char infoLog[512];
+        glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
+        std::cerr << "Vertex Shader Compilation failed: " << infoLog << std::endl;
+    }
+
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    std::string fragmentSource = Helper::ShaderIO::LoadFromFile("Shaders/basic.frag");
+    const char* fragmentShaderCStr = fragmentSource.c_str();
+    glShaderSource(fragmentShader, 1, &fragmentShaderCStr, nullptr);
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        char infoLog[512];
+        glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
+        std::cerr << "Fragment Shader Compilation failed: " << infoLog << std::endl;
+    }
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+    glLinkProgram(shaderProgram);
+
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Shader Program Linking failed: " << infoLog << std::endl;
+    }
+
+    // no longer need individual shader objs
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    // triangle
+    std::vector<float> vertices = {
+        0.0f, 0.5f, 0.0f,
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f
+    };
+
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+
     // Runs until window is closed
     while (!glfwWindowShouldClose(window))
     {
         glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        glUseProgram(shaderProgram);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
 
         // Swap the two buffers
         glfwSwapBuffers(window);
