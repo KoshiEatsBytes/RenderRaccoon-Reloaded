@@ -5,6 +5,46 @@
 
 #include "Helpers/ShaderIO.hpp"
 
+struct Vec2
+{
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+Vec2 offset;
+
+void keyCallBack(GLFWwindow* window, int key, int scanCode, int action, int mods)
+{
+    if (action == GLFW_PRESS)
+    {
+        switch (key)
+        {
+            case GLFW_KEY_UP:
+                std::cout << "up" <<std::endl;
+                offset.y += 0.25f;
+                break;
+
+            case GLFW_KEY_DOWN:
+                std::cout << "down" <<std::endl;
+                offset.y -= 0.25f;
+                break;
+
+            case GLFW_KEY_RIGHT:
+                std::cout << "right" <<std::endl;
+                offset.x += 0.25f;
+                break;
+
+            case GLFW_KEY_LEFT:
+                std::cout << "left" <<std::endl;
+                offset.x -= 0.25f;
+                break;
+
+            default:
+                break;
+        }
+    }
+}
+
 int main()
 {
     if (!glfwInit())
@@ -25,6 +65,8 @@ int main()
         glfwTerminate();
         return -1;
     }
+
+    glfwSetKeyCallback(window, keyCallBack);
 
     glfwMakeContextCurrent(window);
 
@@ -126,6 +168,7 @@ int main()
     glBindVertexArray(0);
 
     GLint uColorLoc = glGetUniformLocation(shaderProgram, "uColor");
+    GLint uOffsetLoc = glGetUniformLocation(shaderProgram, "uOffset");
 
     // Runs until window is closed
     while (!glfwWindowShouldClose(window))
@@ -135,6 +178,7 @@ int main()
 
         glUseProgram(shaderProgram);
         glUniform4f(uColorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
+        glUniform2f(uOffsetLoc, offset.x, offset.y);
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
