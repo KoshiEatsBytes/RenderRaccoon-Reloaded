@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace Helper
+namespace RR
 {
     class ShaderIO
     {

@@ -9,6 +9,7 @@ include(FetchContent)
 set(PROJECT_SOURCE_FILES
         Source/main.cpp
         Source/Helpers/ShaderIO.hpp
+        Source/Helpers/Printer.hpp
 )
 
 # Compose application structure
