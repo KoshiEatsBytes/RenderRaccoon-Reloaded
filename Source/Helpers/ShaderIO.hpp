@@ -1,7 +1,4 @@
 
-#ifndef RENDERRACCOON_RELOADED_SHADERIO_H
-#define RENDERRACCOON_RELOADED_SHADERIO_H
-
 #pragma once
 
 #include <filesystem>
@@ -35,5 +32,3 @@ namespace RR
         }
     };
 }
-
-#endif //RENDERRACCOON_RELOADED_SHADERIO_H

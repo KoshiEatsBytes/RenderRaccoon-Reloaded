@@ -39,7 +39,7 @@ namespace RR
 
         void print() const requires (Streamable<Payload> && ...)
         {
-            emitTo(std::cout, nullptr, "[LOG]");
+            emitTo(std::cout, detail::cCyan, "[LOG]");
         }
 
         void warn() const requires (Streamable<Payload> && ...)
@@ -121,5 +121,22 @@ namespace RR
                     << ", size: " << sizeof(Args) << " bytes"
                     << detail::cReset << '\n'), ...);
         std::cout << std::flush;
+    }
+
+    // BECAUSE WE LIKE COOLNESS!
+    inline void printLogo()
+    {
+        constexpr const char* kCyan  = "\033[36m";
+        constexpr const char* kReset = "\033[0m";
+
+        std::cout << kCyan << R"(
+    __________                   .___          __________
+    \______   \ ____   ____    __| _/__________\______   \_____    ____  ____  ____   ____   ____
+     |       _// __ \ /    \  / __ |/ __ \_  __ \       _/\__  \ _/ ___\/ ___\/  _ \ /  _ \ /    \
+     |    |   \  ___/|   |  \/ /_/ \  ___/|  | \/    |   \ / __ \\  \__\  \__(  <_> |  <_> )   |  \
+     |____|_  /\___  >___|  /\____ |\___  >__|  |____|_  /(____  /\___  >___  >____/ \____/|___|  /
+            \/     \/     \/      \/    \/             \/      \/     \/    \/                  \/
+
+    )" << kReset << std::endl;
     }
 }
