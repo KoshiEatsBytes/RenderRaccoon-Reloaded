@@ -7,7 +7,7 @@ namespace rr
     {
     public:
         Application();
-        ~Application();
+        virtual ~Application();
 
         virtual bool Init()                         = 0;
         virtual void Update(const float& deltaTime) = 0;
@@ -17,7 +17,7 @@ namespace rr
         bool ShouldClose() const;
 
     private:
-        bool _shouldClose = false;
+        bool m_shouldClose = false;
     };
 }
 

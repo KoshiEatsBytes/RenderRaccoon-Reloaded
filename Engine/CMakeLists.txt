@@ -9,6 +9,7 @@ set(PROJECT_SOURCE_FILES
         Source/Engine.cpp
         Source/Application.h
         Source/Application.cpp
+        Source/pch.h
 )
 
 # Compose application structure

@@ -1,4 +1,7 @@
 
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
+
 #include "Engine.h"
 #include "Application.h"
 
@@ -10,46 +13,86 @@ namespace rr
     Engine::~Engine()
     = default;
 
-    bool Engine::Init() const
+    bool Engine::Init(const int& _width, const int& _height, const std::string& _name)
     {
-        if (!_application)
+        if (!m_application)
         {
             // No valid application
             warn("Tried initializing invalid application");
             return false;
         }
 
-        return _application->Init();
+        // Initializes window
+        if (!glfwInit())
+        {
+            error("Failed to initialize GLFW library.");
+            return false;
+        }
+
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+        m_window = glfwCreateWindow(_width, _height, _name.c_str(), nullptr, nullptr);
+
+        if (m_window == nullptr)
+        {
+            error("Failed to create window.");
+            glfwTerminate();
+            return false;
+        }
+
+        glfwMakeContextCurrent(m_window);
+
+        if (glewInit() != GLEW_OK)
+        {
+            error("Failed to initialize GLEW library.");
+            glfwTerminate();
+            return false;
+        }
+
+        return m_application->Init();
     }
 
     void Engine::Launch()
     {
-        if (!_application)
+        if (!m_application)
         {
             warn("Tried launching invalid application");
             return;
         }
 
-        _lastTimePoint = std::chrono::steady_clock::now();
+        m_lastTimePoint = std::chrono::steady_clock::now();
 
         // Main application loop
-        while (!_application->ShouldClose())
+        while (!m_application->ShouldClose() &&
+               !glfwWindowShouldClose(m_window))
         {
+            glfwPollEvents();
+
             // compute delta time
             auto now = std::chrono::steady_clock::now();
-            float deltaTime = std::chrono::duration<float>(now - _lastTimePoint).count();
-            _lastTimePoint = now;
+            float deltaTime = std::chrono::duration<float>(now - m_lastTimePoint).count();
+            m_lastTimePoint = now;
 
-            _application->Update(deltaTime);
+            m_application->Update(deltaTime);
+
+            // place holder
+            glfwSwapBuffers(m_window);
         }
     }
 
     void Engine::Destroy()
     {
-        if (_application)
+        if (m_application)
         {
-            _application->Destroy();
-            _application.reset();
+            m_application->Destroy();
+            m_application.reset();
+
+            // Clean-up glfw
+            glfwTerminate();
+            m_window = nullptr;
+
             return;
         }
 
@@ -58,11 +101,11 @@ namespace rr
 
     void Engine::SetApp(Application* app)
     {
-        _application.reset(app);
+        m_application.reset(app);
     }
 
     Application* Engine::GetApp() const
     {
-        return _application.get();
+        return m_application.get();
     }
 }

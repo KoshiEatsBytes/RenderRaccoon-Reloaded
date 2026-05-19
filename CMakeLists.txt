@@ -8,6 +8,8 @@ include(FetchContent)
 
 set(PROJECT_SOURCE_FILES
         Source/main.cpp
+        Source/Game.cpp
+        Source/Game.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

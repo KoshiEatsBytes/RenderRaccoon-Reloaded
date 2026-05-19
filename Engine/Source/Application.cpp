@@ -11,11 +11,11 @@ namespace rr
 
     void Application::SetShouldClose(const bool &val)
     {
-        _shouldClose = val;
+        m_shouldClose = val;
     }
 
     bool Application::ShouldClose() const
     {
-        return _shouldClose;
+        return m_shouldClose;
     }
 }

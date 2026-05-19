@@ -5,6 +5,8 @@
 
 #include "Printer.hpp"
 
+struct GLFWwindow;
+
 namespace rr
 {
     // fw dec for application
@@ -16,7 +18,8 @@ namespace rr
         Engine();
         ~Engine();
 
-        bool Init() const;
+        bool Init(const int& _width, const int& _height,
+                  const std::string& _name);
         void Launch();
         void Destroy();
 
@@ -24,8 +27,10 @@ namespace rr
         Application* GetApp() const;
 
     private:
-        std::unique_ptr<Application> _application;
-        std::chrono::steady_clock::time_point _lastTimePoint;
+        std::unique_ptr<Application> m_application;
+        std::chrono::steady_clock::time_point m_lastTimePoint;
+
+        GLFWwindow* m_window = nullptr;
     };
 }
 
