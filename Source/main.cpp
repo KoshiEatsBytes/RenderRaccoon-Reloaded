@@ -140,16 +140,28 @@ int main()
     std::vector<float> vertices
     {
         0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, 0.0f, 1.0f, 1.0f, 0.0f
+        -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.4f, 0.4f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.4f, 0.4f, 0.0f, 0.0f, 1.0f, 0.0f,
+        -0.4f, -0.4f, 0.0f, 0.0f, 1.0f, 0.0f,
+        0.4f, -0.4f, 0.0f, 0.0f, 1.0f, 0.0f
     };
 
     // Instead of re-rendering vertices, use them from the existent array
-    std::vector<unsigned int> indeces =
+    std::vector<unsigned int> indices =
     {
-        0, 1, 2,
-        0, 2, 3
+        0, 1, 4,   // top border
+        1, 5, 4,
+        1, 2, 5,   // left border
+        6, 5, 2,
+        2, 3, 6,   // bottom border
+        3, 7, 6,
+        3, 0, 7,   // right border
+        0, 4, 7,   // ← fixed
+        4, 5, 6,   // fill
+        4, 6, 7
     };
 
     // Upload triangle data to the gpu, via buffer
@@ -164,7 +176,7 @@ int main()
     GLuint ebo;
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indeces.size() * sizeof(unsigned int), indeces.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // tell shader program how to interpret this shader, using a vao
@@ -201,10 +213,10 @@ int main()
 
         // activate shader perogram
         glUseProgram(shaderProgram);
-        glUniform4f(uColorLoc, 0.0f, 1.0f, 0.0f, 1.0f);
+        glUniform4f(uColorLoc, 1.0f, 1.0f, 1.0f, 1.0f);
         glUniform2f(uOffsetLoc, offset.x, offset.y);
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
