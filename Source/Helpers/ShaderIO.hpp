@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace RR
+namespace rr
 {
     class ShaderIO
     {

@@ -6,7 +6,7 @@
 #include <utility>
 #include <typeinfo>
 
-namespace RR
+namespace rr
 {
 
     // Matches any type that can be added to std::ostream via << operator
@@ -126,10 +126,7 @@ namespace RR
     // BECAUSE WE LIKE COOLNESS!
     inline void printLogo()
     {
-        constexpr const char* kCyan  = "\033[36m";
-        constexpr const char* kReset = "\033[0m";
-
-        std::cout << kCyan << R"(
+        std::cout << detail::cCyan << R"(
     __________                   .___          __________
     \______   \ ____   ____    __| _/__________\______   \_____    ____  ____  ____   ____   ____
      |       _// __ \ /    \  / __ |/ __ \_  __ \       _/\__  \ _/ ___\/ ___\/  _ \ /  _ \ /    \
@@ -137,6 +134,6 @@ namespace RR
      |____|_  /\___  >___|  /\____ |\___  >__|  |____|_  /(____  /\___  >___  >____/ \____/|___|  /
             \/     \/     \/      \/    \/             \/      \/     \/    \/                  \/
 
-    )" << kReset << std::endl;
+    )" << detail::cReset << std::endl;
     }
 }
