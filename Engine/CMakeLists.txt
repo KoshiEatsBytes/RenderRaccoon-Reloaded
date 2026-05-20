@@ -5,11 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCE_FILES
+        Source/pch.h
         Source/Engine.h
         Source/Engine.cpp
         Source/Application.h
         Source/Application.cpp
-        Source/pch.h
+        Source/Input/InputManager.cpp
+        Source/Input/InputManager.h
 )
 
 # Compose application structure
@@ -17,7 +19,6 @@ add_library(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/Source"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Helpers"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glew/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glfw-3.4/include"
 )

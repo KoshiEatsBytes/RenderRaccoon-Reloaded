@@ -5,13 +5,38 @@
 #include "Engine.h"
 #include "Application.h"
 
-namespace rr
+namespace RR
 {
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
+
     Engine::Engine()
     = default;
 
     Engine::~Engine()
     = default;
+
+    void Engine::KeyCallBack(GLFWwindow* window, int key, int scanCode, int action, int mods)
+    {
+        auto& inputManager = Engine::GetInstance().GetInputManager();
+
+        // Automatically updates input manager from keyboard input
+        if (action == GLFW_PRESS)
+        {
+            inputManager.SetKeyPressed(key, true);
+        }
+        else if (action == GLFW_RELEASE)
+        {
+            inputManager.SetKeyPressed(key, false);
+        }
+    }
+
+    // PUBLIC ----------------------------------------------------------------------------------------------------------
+
+    Engine& Engine::GetInstance()
+    {
+        static Engine instance;
+        return instance;
+    }
 
     bool Engine::Init(const int& _width, const int& _height, const std::string& _name)
     {
@@ -41,6 +66,9 @@ namespace rr
             glfwTerminate();
             return false;
         }
+
+        // Pass keycallback func to window
+        glfwSetKeyCallback(m_window, KeyCallBack);
 
         glfwMakeContextCurrent(m_window);
 
@@ -107,5 +135,10 @@ namespace rr
     Application* Engine::GetApp() const
     {
         return m_application.get();
+    }
+
+    InputManager& Engine::GetInputManager()
+    {
+        return m_inputManager;
     }
 }

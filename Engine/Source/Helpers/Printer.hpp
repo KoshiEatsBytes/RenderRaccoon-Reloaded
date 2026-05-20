@@ -6,7 +6,7 @@
 #include <utility>
 #include <typeinfo>
 
-namespace rr
+namespace RR
 {
 
     // Matches any type that can be added to std::ostream via << operator

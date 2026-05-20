@@ -1,7 +1,7 @@
 
 #include "Application.h"
 
-namespace rr
+namespace RR
 {
     Application::Application()
     = default;

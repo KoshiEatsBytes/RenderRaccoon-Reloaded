@@ -2,8 +2,9 @@
 #pragma once
 
 // Helpers
-#include "Printer.hpp"
+#include "Helpers/Printer.hpp"
 
 // Engine
 #include "Application.h"
 #include "Engine.h"
+#include "Input/InputManager.h"

@@ -2,7 +2,7 @@
 
 #include <pch.h>
 
-class Game : public rr::Application
+class Game : public RR::Application
 {
 public:
     Game();

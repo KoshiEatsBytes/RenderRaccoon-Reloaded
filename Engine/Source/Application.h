@@ -1,7 +1,7 @@
 
 #pragma once
 
-namespace rr
+namespace RR
 {
     class Application
     {

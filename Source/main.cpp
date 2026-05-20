@@ -3,16 +3,16 @@
 
 int main()
 {
-    rr::printLogo();
+    RR::printLogo();
 
     Game* game = new Game{};
 
-    rr::Engine engine;
+    RR::Engine& engine = RR::Engine::GetInstance();
     engine.SetApp(game);
 
     if (engine.Init(1920, 1080, "First App"))
     {
-        rr::print("Application initialization successful! Launching...");
+        RR::print("Application initialization successful! Launching...");
 
         engine.Launch();
     }
