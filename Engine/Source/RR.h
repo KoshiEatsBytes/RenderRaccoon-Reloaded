@@ -3,6 +3,7 @@
 
 // Helpers
 #include "Helpers/Printer.hpp"
+#include "Graphics/ShaderProgram.h"
 
 // Engine
 #include "Application.h"

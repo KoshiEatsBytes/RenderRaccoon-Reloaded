@@ -19,7 +19,7 @@ namespace RR
         InputManager(InputManager&&) = delete;
         InputManager& operator=(InputManager&&) = delete;
 
-        // Allow access only to engine
+        // enforces only engine to instantiate this class
         friend class Engine;
 
         void SetKeyPressed(const int& key, const bool& pressed);
