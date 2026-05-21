@@ -10,6 +10,7 @@ namespace RR
         InputManager();
         ~InputManager();
 
+    public:
         // Delete copy & copy assignment
         InputManager(const InputManager&) = delete;
         InputManager& operator=(const InputManager&) = delete;
@@ -21,13 +22,12 @@ namespace RR
         // Allow access only to engine
         friend class Engine;
 
-    public:
         void SetKeyPressed(const int& key, const bool& pressed);
         bool IsKeyPressed(const int &key) const;
 
     private:
         // Stores key states (if pressed or released)
-        std::array<bool, 256> m_keys = {false};
+        std::array<bool, 384> m_keys = {false};
     };
 }
 

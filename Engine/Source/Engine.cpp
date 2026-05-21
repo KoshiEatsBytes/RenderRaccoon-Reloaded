@@ -15,18 +15,18 @@ namespace RR
     Engine::~Engine()
     = default;
 
-    void Engine::KeyCallBack(GLFWwindow* window, int key, int scanCode, int action, int mods)
+    void Engine::KeyCallBack(GLFWwindow* _window, int _key, int _scanCode, int _action, int _mods)
     {
-        auto& inputManager = Engine::GetInstance().GetInputManager();
+        auto& inputManager = GetInstance().GetInputManager();
 
         // Automatically updates input manager from keyboard input
-        if (action == GLFW_PRESS)
+        if (_action == GLFW_PRESS)
         {
-            inputManager.SetKeyPressed(key, true);
+            inputManager.SetKeyPressed(_key, true);
         }
-        else if (action == GLFW_RELEASE)
+        else if (_action == GLFW_RELEASE)
         {
-            inputManager.SetKeyPressed(key, false);
+            inputManager.SetKeyPressed(_key, false);
         }
     }
 
@@ -54,10 +54,12 @@ namespace RR
             return false;
         }
 
+        // Set openGL version to current 3.3.0 CORE
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+        // create and return window as *
         m_window = glfwCreateWindow(_width, _height, _name.c_str(), nullptr, nullptr);
 
         if (m_window == nullptr)
@@ -67,7 +69,7 @@ namespace RR
             return false;
         }
 
-        // Pass keycallback func to window
+        // Input polling
         glfwSetKeyCallback(m_window, KeyCallBack);
 
         glfwMakeContextCurrent(m_window);
@@ -79,7 +81,18 @@ namespace RR
             return false;
         }
 
-        return m_application->Init();
+        if (m_application->Init())
+        {
+            success("Application Initialized Correctly.");
+            return true;
+        }
+
+        // If init fails terminate engine and log to console
+        error("Failed to initialize application, terminating.");
+        warn("This is not a fault with the engine module but with application: "
+            , typeid(*m_application).name());
+        glfwTerminate();
+        return false;
     }
 
     void Engine::Launch()
@@ -105,7 +118,7 @@ namespace RR
 
             m_application->Update(deltaTime);
 
-            // place holder
+            // placeholder
             glfwSwapBuffers(m_window);
         }
     }
@@ -120,6 +133,8 @@ namespace RR
             // Clean-up glfw
             glfwTerminate();
             m_window = nullptr;
+
+            log("Closing down, bye bye!");
 
             return;
         }

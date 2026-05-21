@@ -6,6 +6,8 @@
 #include "Helpers/Printer.hpp"
 #include "Input/InputManager.h"
 
+// fw dc to allow window to be available
+// as part of the singleton
 struct GLFWwindow;
 
 namespace RR
@@ -18,6 +20,11 @@ namespace RR
         Engine();
         ~Engine();
 
+        // handles keyCallBack
+        static void KeyCallBack(GLFWwindow* _window, int _key,
+                                int _scanCode, int _action, int _mods);
+
+    public:
         // Delete copy & copy assignment
         Engine(const Engine&) = delete;
         Engine& operator=(const Engine&) = delete;
@@ -26,11 +33,6 @@ namespace RR
         Engine(Engine&&) = delete;
         Engine& operator=(Engine&&) = delete;
 
-        // handles keyCallBack
-        static void KeyCallBack(GLFWwindow* window, int key,
-            int scanCode, int action, int mods);
-
-    public:
         // Singleton - return engine instance
         static Engine& GetInstance();
 

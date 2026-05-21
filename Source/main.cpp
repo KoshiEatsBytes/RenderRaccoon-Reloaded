@@ -10,9 +10,9 @@ int main()
     RR::Engine& engine = RR::Engine::GetInstance();
     engine.SetApp(game);
 
-    if (engine.Init(1920, 1080, "First App"))
+    if (engine.Init(1920, 1080, "First Test"))
     {
-        RR::print("Application initialization successful! Launching...");
+        RR::log("Launching application...");
 
         engine.Launch();
     }

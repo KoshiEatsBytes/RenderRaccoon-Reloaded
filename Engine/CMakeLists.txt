@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCE_FILES
-        Source/pch.h
+        Source/RR.h
         Source/Engine.h
         Source/Engine.cpp
         Source/Application.h

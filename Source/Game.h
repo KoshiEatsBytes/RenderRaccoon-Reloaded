@@ -1,6 +1,6 @@
 #pragma once
 
-#include <pch.h>
+#include <RR.h>
 
 class Game : public RR::Application
 {
@@ -8,10 +8,9 @@ public:
     Game();
     ~Game();
 
-    bool Init() override;
-
+    bool Init()                         override;
     void Update(const float &deltaTime) override;
-
-    void Destroy() override;
+    void Destroy()                      override;
 };
+
 

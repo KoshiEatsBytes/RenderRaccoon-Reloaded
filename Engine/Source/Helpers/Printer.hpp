@@ -10,7 +10,7 @@ namespace RR
 {
 
     // Matches any type that can be added to std::ostream via << operator
-    // Used to constrair the print function to prevent a wall of templated instantiation errors
+    // Used to constrain the log function to prevent a wall of templated instantiation errors
     template <typename T>
     concept Streamable = requires(std::ostream& os, const T& v) {
         { os << v } -> std::convertible_to<std::ostream&>;
@@ -23,10 +23,11 @@ namespace RR
         constexpr const char* cCyan   = "\033[36m";
         constexpr const char* cYellow = "\033[33m";
         constexpr const char* cRed    = "\033[31m";
+        constexpr const char* cGreen  = "\033[32m";
     }
 
     // ------------------------------------------------------------------------
-    // Variadic print/log helper
+    // Variadic log helper
     // ------------------------------------------------------------------------
     template <typename... Payload>
     class Info
@@ -37,7 +38,12 @@ namespace RR
         explicit Info(Args&&... args)
             : localArgs(std::forward<Args>(args)...) {}
 
-        void print() const requires (Streamable<Payload> && ...)
+        void success() const requires (Streamable<Payload> && ...)
+        {
+            emitTo(std::cout, detail::cGreen, "[SUCCESS]");
+        }
+
+        void log() const requires (Streamable<Payload> && ...)
         {
             emitTo(std::cout, detail::cCyan, "[LOG]");
         }
@@ -65,7 +71,7 @@ namespace RR
         }
 
     private:
-        // Shared emit path for print/warn/error
+        // Shared emit path for log/warn/error
         void emitTo(std::ostream& out, const char* color, const char* prefix) const
             requires (Streamable<Payload> && ...)
         {
@@ -89,10 +95,18 @@ namespace RR
     // ------------------------------------------------------------------------
 
     template <Streamable... Args>
-    inline auto print(Args&&... args)
+    inline auto success(Args&&... args)
     {
         Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
-        i.print();
+        i.success();
+        return i;
+    }
+
+    template <Streamable... Args>
+    inline auto log(Args&&... args)
+    {
+        Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
+        i.log();
         return i;
     }
 
