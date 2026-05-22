@@ -1,6 +1,7 @@
 
 #include "GraphicsApi.h"
 #include "ShaderProgram.h"
+#include "Render/Material.h"
 #include "Helpers/ShaderLoader.hpp"
 
 namespace RR
@@ -115,7 +116,24 @@ namespace RR
 
     void GraphicsAPI::BindShaderProgram(ShaderProgram* _shaderProgram)
     {
+        if (!_shaderProgram)
+        {
+            Warn("[SHADER PROGRAM] Tried to bind INVALID shader program");
+            return;
+        }
+        
         _shaderProgram->Bind();
+    }
+
+    void GraphicsAPI::BindMaterial(Material* _material)
+    {
+        if (!_material)
+        {
+            Warn("[MATERIAL] Tried to bind INVALID material");
+            return;
+        }
+
+        _material->Bind();
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

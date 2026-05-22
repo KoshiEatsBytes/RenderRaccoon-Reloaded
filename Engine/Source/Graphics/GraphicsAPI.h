@@ -7,6 +7,7 @@
 namespace RR
 {
     class ShaderProgram;
+    class Material;
 
     /**
      * @details Centralized interface for rendering operations
@@ -21,6 +22,8 @@ namespace RR
             const std::string& _fragmentPath);
 
         void BindShaderProgram(ShaderProgram* _shaderProgram);
+
+        void BindMaterial(Material* _material);
     };
 }
 

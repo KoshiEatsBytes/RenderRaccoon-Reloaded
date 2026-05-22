@@ -17,6 +17,8 @@ set(PROJECT_SOURCE_FILES
         Source/Graphics/GraphicsApi.cpp
         Source/Graphics/GraphicsApi.h
         Source/Helpers/ShaderLoader.hpp
+        Source/Render/Material.cpp
+        Source/Render/Material.h
 )
 
 # Compose application structure

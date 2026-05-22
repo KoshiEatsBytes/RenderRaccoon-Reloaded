@@ -15,8 +15,10 @@ bool Game::Init()
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
-    auto shaderProgram = graphicsAPI.CreateShaderProgram("Shaders/basic.vert", "Shaders/basic.frag");
-    
+    auto shaderProgram = graphicsAPI.CreateShaderProgram("Shaders/basic.vert",
+        "Shaders/basic.frag");
+
+    m_mat.SetShaderProgram(shaderProgram);
 
     return true;
 }

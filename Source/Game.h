@@ -11,6 +11,9 @@ public:
     bool Init()                         override;
     void Update(const float &deltaTime) override;
     void Destroy()                      override;
+
+private:
+    RR::Material m_mat;
 };
 
 
