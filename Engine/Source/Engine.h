@@ -5,6 +5,7 @@
 
 #include "Helpers/Printer.hpp"
 #include "Input/InputManager.h"
+#include "Graphics/GraphicsAPI.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -43,7 +44,9 @@ namespace RR
 
         void SetApp(Application* app);
         Application* GetApp() const;
+
         InputManager& GetInputManager();
+        GraphicsAPI& GetGraphicsAPI();
 
     private:
         std::unique_ptr<Application> m_application;
@@ -51,6 +54,7 @@ namespace RR
 
         GLFWwindow* m_window = nullptr;
         InputManager m_inputManager;
+        GraphicsAPI m_graphicsAPI;
     };
 }
 

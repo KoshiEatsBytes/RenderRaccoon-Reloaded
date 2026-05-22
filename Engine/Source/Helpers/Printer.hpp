@@ -24,6 +24,7 @@ namespace RR
         constexpr const char* cYellow = "\033[33m";
         constexpr const char* cRed    = "\033[31m";
         constexpr const char* cGreen  = "\033[32m";
+        constexpr const char* cOrange = "\033[38;2;255;165;0m";
     }
 
     // ------------------------------------------------------------------------
@@ -38,24 +39,29 @@ namespace RR
         explicit Info(Args&&... args)
             : localArgs(std::forward<Args>(args)...) {}
 
-        void success() const requires (Streamable<Payload> && ...)
+        void InfoLog() const requires (Streamable<Payload> && ...)
         {
-            emitTo(std::cout, detail::cGreen, "[SUCCESS]");
+            EmitTo(std::cout, detail::cOrange, "[INFOLOG]");
         }
 
-        void log() const requires (Streamable<Payload> && ...)
+        void Success() const requires (Streamable<Payload> && ...)
         {
-            emitTo(std::cout, detail::cCyan, "[LOG]");
+            EmitTo(std::cout, detail::cGreen, "[SUCCESS]");
         }
 
-        void warn() const requires (Streamable<Payload> && ...)
+        void Log() const requires (Streamable<Payload> && ...)
         {
-            emitTo(std::cerr, detail::cYellow, "[WARN]");
+            EmitTo(std::cout, detail::cCyan, "[LOG]");
         }
 
-        void error() const requires (Streamable<Payload> && ...)
+        void Warn() const requires (Streamable<Payload> && ...)
         {
-            emitTo(std::cerr, detail::cRed, "[ERROR]");
+            EmitTo(std::cerr, detail::cYellow, "[WARN]");
+        }
+
+        void Error() const requires (Streamable<Payload> && ...)
+        {
+            EmitTo(std::cerr, detail::cRed, "[ERROR]");
         }
 
         // Prints type name and size for each stored argument
@@ -72,7 +78,7 @@ namespace RR
 
     private:
         // Shared emit path for log/warn/error
-        void emitTo(std::ostream& out, const char* color, const char* prefix) const
+        void EmitTo(std::ostream& out, const char* color, const char* prefix) const
             requires (Streamable<Payload> && ...)
         {
             std::apply([&](const auto&... args) {
@@ -95,40 +101,48 @@ namespace RR
     // ------------------------------------------------------------------------
 
     template <Streamable... Args>
-    inline auto success(Args&&... args)
+    inline auto InfoLog(Args&&... args)
     {
         Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
-        i.success();
+        i.InfoLog();
         return i;
     }
 
     template <Streamable... Args>
-    inline auto log(Args&&... args)
+    inline auto Success(Args&&... args)
     {
         Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
-        i.log();
+        i.Success();
         return i;
     }
 
     template <Streamable... Args>
-    inline auto warn(Args&&... args)
+    inline auto Log(Args&&... args)
     {
         Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
-        i.warn();
+        i.Log();
         return i;
     }
 
     template <Streamable... Args>
-    inline auto error(Args&&... args)
+    inline auto Warn(Args&&... args)
     {
         Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
-        i.error();
+        i.Warn();
+        return i;
+    }
+
+    template <Streamable... Args>
+    inline auto Error(Args&&... args)
+    {
+        Info<std::decay_t<Args>...> i(std::forward<Args>(args)...);
+        i.Error();
         return i;
     }
 
     // Standalone type/size dump that works on any complete type
     template <typename... Args>
-    inline void getInfo(const Args&... /*deduced, not used*/)
+    inline void GetInfo(const Args&... /*deduced, not used*/)
     {
         ((std::cout << detail::cCyan
                     << "[INFO] Type: "  << typeid(Args).name()
@@ -138,7 +152,7 @@ namespace RR
     }
 
     // BECAUSE WE LIKE COOLNESS!
-    inline void printLogo()
+    inline void PrintLogo()
     {
         std::cout << detail::cCyan << R"(
     __________                   .___          __________

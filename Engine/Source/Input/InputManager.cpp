@@ -17,7 +17,7 @@ namespace RR
     {
         if (key < 0 || key >= static_cast<int>(m_keys.size()))
         {
-            warn("[INPUT] Key out of range is being set, discarding.");
+            Warn("[INPUT] Key out of range is being set, discarding.");
             return;
         }
 
@@ -28,7 +28,7 @@ namespace RR
     {
         if (key < 0 || key >= static_cast<int>(m_keys.size()))
         {
-            warn("[INPUT] Key out of range is being requested, discarding.");
+            Warn("[INPUT] Key out of range is being requested, discarding.");
             return false;
         }
 

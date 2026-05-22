@@ -3,7 +3,7 @@
 
 int main()
 {
-    RR::printLogo();
+    RR::PrintLogo();
 
     Game* game = new Game{};
 
@@ -12,7 +12,7 @@ int main()
 
     if (engine.Init(1920, 1080, "First Test"))
     {
-        RR::log("Launching application...");
+        RR::Log("Launching application...");
 
         engine.Launch();
     }

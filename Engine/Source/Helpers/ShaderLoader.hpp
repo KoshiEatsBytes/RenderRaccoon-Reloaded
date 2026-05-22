@@ -4,12 +4,13 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
-namespace rr
+#include "Printer.hpp"
+
+namespace RR
 {
-    class ShaderIO
+    class ShaderLoader
     {
     public:
         [[nodiscard]] static std::string LoadFromFile(const std::filesystem::path& path)
@@ -17,7 +18,8 @@ namespace rr
             std::ifstream file(path, std::ios::binary);
             if (!file.is_open())
             {
-                throw std::runtime_error("Failed to open shader file: " + path.string());
+                Warn("[SHADER] Failed to open shader at: ", path.string());
+                return "";
             }
 
             std::ostringstream buffer;
@@ -25,7 +27,8 @@ namespace rr
 
             if (file.bad())
             {
-                throw std::runtime_error("Failed to read shader file: " + path.string());
+                Warn("[SHADER] File is corrupted and/or contains error/s, discarding. File: ", path.string());
+                return "";
             }
 
             return buffer.str();

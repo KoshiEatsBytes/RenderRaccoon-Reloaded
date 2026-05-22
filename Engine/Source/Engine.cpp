@@ -43,14 +43,14 @@ namespace RR
         if (!m_application)
         {
             // No valid application
-            warn("Tried initializing invalid application");
+            Warn("Tried initializing invalid application");
             return false;
         }
 
         // Initializes window
         if (!glfwInit())
         {
-            error("Failed to initialize GLFW library.");
+            Error("Failed to initialize GLFW library.");
             return false;
         }
 
@@ -64,7 +64,7 @@ namespace RR
 
         if (m_window == nullptr)
         {
-            error("Failed to create window.");
+            Error("Failed to create window.");
             glfwTerminate();
             return false;
         }
@@ -76,20 +76,20 @@ namespace RR
 
         if (glewInit() != GLEW_OK)
         {
-            error("Failed to initialize GLEW library.");
+            Error("Failed to initialize GLEW library.");
             glfwTerminate();
             return false;
         }
 
         if (m_application->Init())
         {
-            success("Application Initialized Correctly.");
+            Success("Application Initialized Correctly.");
             return true;
         }
 
         // If init fails terminate engine and log to console
-        error("Failed to initialize application, terminating.");
-        warn("This is not a fault with the engine module but with application: "
+        Error("Failed to initialize application, terminating.");
+        Warn("This is not a fault with the engine module but with application: "
             , typeid(*m_application).name());
         glfwTerminate();
         return false;
@@ -99,7 +99,7 @@ namespace RR
     {
         if (!m_application)
         {
-            warn("Tried launching invalid application");
+            Warn("Tried launching invalid application");
             return;
         }
 
@@ -134,12 +134,12 @@ namespace RR
             glfwTerminate();
             m_window = nullptr;
 
-            log("Closing down, bye bye!");
+            Log("Closing down, bye bye!");
 
             return;
         }
 
-        warn("Tried destroying invalid application");
+        Warn("Tried destroying invalid application");
     }
 
     void Engine::SetApp(Application* app)
@@ -155,5 +155,10 @@ namespace RR
     InputManager& Engine::GetInputManager()
     {
         return m_inputManager;
+    }
+
+    GraphicsAPI& Engine::GetGraphicsAPI()
+    {
+        return m_graphicsAPI;
     }
 }

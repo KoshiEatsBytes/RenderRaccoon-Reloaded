@@ -14,6 +14,9 @@ set(PROJECT_SOURCE_FILES
         Source/Input/InputManager.h
         Source/Graphics/ShaderProgram.h
         Source/Graphics/ShaderProgram.cpp
+        Source/Graphics/GraphicsApi.cpp
+        Source/Graphics/GraphicsApi.h
+        Source/Helpers/ShaderLoader.hpp
 )
 
 # Compose application structure

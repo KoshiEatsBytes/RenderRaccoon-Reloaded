@@ -10,6 +10,14 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
+    // "Shaders/basic.vert"
+    // "Shaders/basic.frag"
+
+    auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
+
+    auto shaderProgram = graphicsAPI.CreateShaderProgram("Shaders/basic.vert", "Shaders/basic.frag");
+    
+
     return true;
 }
 
