@@ -10,4 +10,6 @@
 #include "Input/InputManager.h"
 #include "Graphics/ShaderProgram.h"
 #include "Graphics/GraphicsAPI.h"
+#include "Graphics/VertexLayout.h"
 #include "Render/Material.h"
+#include "Render/Mesh.h"

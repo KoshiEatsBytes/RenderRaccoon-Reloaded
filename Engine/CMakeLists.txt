@@ -19,6 +19,9 @@ set(PROJECT_SOURCE_FILES
         Source/Helpers/ShaderLoader.hpp
         Source/Render/Material.cpp
         Source/Render/Material.h
+        Source/Render/Mesh.cpp
+        Source/Render/Mesh.h
+        Source/Graphics/VertexLayout.h
 )
 
 # Compose application structure

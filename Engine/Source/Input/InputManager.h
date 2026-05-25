@@ -21,6 +21,8 @@ namespace RR
         InputManager(InputManager&&) = delete;
         InputManager& operator=(InputManager&&) = delete;
 
+        // METHODS -----------------------------------------------------------------------------------------------------
+
         void SetKeyPressed(const int& _key, const bool& _pressed);
         bool IsKeyPressed(const int& _key) const;
 

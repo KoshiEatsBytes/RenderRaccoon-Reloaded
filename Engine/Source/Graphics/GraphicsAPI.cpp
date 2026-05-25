@@ -6,11 +6,13 @@
 
 namespace RR
 {
-    // PUBLIC ----------------------------------------------------------------------------------------------------------
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     GraphicsAPI::GraphicsAPI() = default;
 
     GraphicsAPI::~GraphicsAPI() = default;
+
+    // PUBLIC -----------------------------------------------------------------------------------------------------------
 
     /**
      * @brief Compiles, links and creates a new shader program
@@ -120,6 +122,41 @@ namespace RR
 
         // after success wrap in shaderProgramID
         return std::make_shared<ShaderProgram>(shaderProgramID);
+    }
+
+    /**
+     * @brief Uploads vertex data to the GPU via buffer
+     * @param _vertices vertices to buffer
+     * @return GLuint vertex buffer object
+     */
+    GLuint GraphicsAPI::CreateVertexBufferObject(const std::vector<float>& _vertices)
+    {
+        GLuint VBO = 0;
+        glGenBuffers(1, &VBO);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO);
+
+        // transfer vertex data from sys memory to gpu memory
+        glBufferData(GL_ARRAY_BUFFER, _vertices.size() * sizeof(float), _vertices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        return VBO;
+    }
+
+    /**
+     * @brief Uploads element data to the GPU via buffer
+     * @param _indices indexes to buffer
+     * @return GLuint element buffer object
+     */
+    GLuint GraphicsAPI::CreateElementBufferObject(const std::vector<uint32_t>& _indices)
+    {
+        GLuint EBO = 0;
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO);
+
+        // transfer element data from sys memory to gpu memory
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, _indices.size() * sizeof(uint32_t), _indices.data(), GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        return EBO;
     }
 
     void GraphicsAPI::BindShaderProgram(ShaderProgram* _shaderProgram)
