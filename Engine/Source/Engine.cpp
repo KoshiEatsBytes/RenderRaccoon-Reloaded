@@ -4,6 +4,7 @@
 
 #include "Engine.h"
 #include "Application.h"
+#include "Helpers/Printer.hpp"
 
 namespace RR
 {
@@ -43,14 +44,14 @@ namespace RR
         if (!m_application)
         {
             // No valid application
-            Warn("Tried initializing invalid application");
+            Warn("[INITIALIZATION] Tried initializing invalid application");
             return false;
         }
 
         // Initializes window
         if (!glfwInit())
         {
-            Error("Failed to initialize GLFW library.");
+            Error("[INITIALIZATION] Failed to initialize GLFW library.");
             return false;
         }
 
@@ -64,7 +65,7 @@ namespace RR
 
         if (m_window == nullptr)
         {
-            Error("Failed to create window.");
+            Error("[INITIALIZATION] Failed to create window.");
             glfwTerminate();
             return false;
         }
@@ -73,24 +74,24 @@ namespace RR
         glfwSetKeyCallback(m_window, KeyCallBack);
 
         glfwMakeContextCurrent(m_window);
+        glfwSwapInterval(0); // Turn off vertical sync
 
         if (glewInit() != GLEW_OK)
         {
-            Error("Failed to initialize GLEW library.");
+            Error("[INITIALIZATION] Failed to initialize GLEW library.");
             glfwTerminate();
             return false;
         }
 
         if (m_application->Init())
         {
-            Success("Application Initialized Correctly.");
+            Success("[INITIALIZATION] Application Initialized Correctly.");
             return true;
         }
 
         // If init fails terminate engine and log to console
-        Error("Failed to initialize application, terminating.");
-        Warn("This is not a fault with the engine module but with application: "
-            , typeid(*m_application).name());
+        Error("[INITIALIZATION] Failed to initialize application, terminating.");
+        InfoLog("This is not a fault with the engine module but with application: ", typeid(*m_application).name());
         glfwTerminate();
         return false;
     }
@@ -103,10 +104,11 @@ namespace RR
             return;
         }
 
+        // Get last time point before application start to compute dt
         m_lastTimePoint = std::chrono::steady_clock::now();
 
         // Main application loop
-        while (!m_application->ShouldClose() &&
+        while (!m_application->GetShouldClose() &&
                !glfwWindowShouldClose(m_window))
         {
             glfwPollEvents();
@@ -141,6 +143,8 @@ namespace RR
 
         Warn("Tried destroying invalid application");
     }
+
+    // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
     void Engine::SetApp(Application* app)
     {

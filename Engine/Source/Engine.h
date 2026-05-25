@@ -3,7 +3,6 @@
 #include <memory>
 #include <chrono>
 
-#include "Helpers/Printer.hpp"
 #include "Input/InputManager.h"
 #include "Graphics/GraphicsAPI.h"
 
@@ -21,16 +20,16 @@ namespace RR
         Engine();
         ~Engine();
 
-        // handles keyCallBack
+        // handles input via callback
         static void KeyCallBack(GLFWwindow* _window, int _key,
                                 int _scanCode, int _action, int _mods);
 
     public:
-        // Delete copy & copy assignment
+        // Delete copy
         Engine(const Engine&) = delete;
         Engine& operator=(const Engine&) = delete;
 
-        // Delete move & move assignment
+        // Delete move
         Engine(Engine&&) = delete;
         Engine& operator=(Engine&&) = delete;
 

@@ -10,20 +10,20 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
-    // "Shaders/basic.vert"
-    // "Shaders/basic.frag"
+    const std::string vertPath = "Shaders/basic.vert";
+    const std::string fragPath = "Shaders/basic.frag";
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
-    auto shaderProgram = graphicsAPI.CreateShaderProgram("Shaders/basic.vert",
-        "Shaders/basic.frag");
+    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertPath, fragPath);
 
     m_mat.SetShaderProgram(shaderProgram);
+
 
     return true;
 }
 
-void Game::Update(const float &deltaTime)
+void Game::Update(float _deltaTime)
 {
     auto& input = RR::Engine::GetInstance().GetInputManager();
 

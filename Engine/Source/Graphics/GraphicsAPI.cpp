@@ -12,8 +12,14 @@ namespace RR
 
     GraphicsAPI::~GraphicsAPI() = default;
 
+    /**
+     * @brief Compiles, links and creates a new shader program
+     * @param _vertexPath .vert shader file location
+     * @param _fragmentPath .frag shader file location
+     * @return new compiled ShaderProgram if successfully, otherwise nullptr
+     */
     std::shared_ptr<ShaderProgram> GraphicsAPI::CreateShaderProgram(const std::string &_vertexPath,
-        const std::string &_fragmentPath)
+                                                                    const std::string &_fragmentPath)
     {
         // VERTEX SHADER -----------------------------------------------------------------------------------------------
 
@@ -58,6 +64,8 @@ namespace RR
         if (fragmentShaderSource.empty())
         {
             Error("[FRAGMENT SHADER] Could not load file at: ", _fragmentPath);
+
+            // clean-up
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
             return nullptr;
@@ -76,7 +84,7 @@ namespace RR
             Error("[FRAGMENT SHADER] Compilation Failed! File: ", _fragmentPath);
             InfoLog(infoLog);
 
-            // cleanup
+            // clean-up
             glDeleteShader(fragmentShader);
             glDeleteShader(vertexShader);
             return nullptr;
@@ -118,7 +126,7 @@ namespace RR
     {
         if (!_shaderProgram)
         {
-            Warn("[SHADER PROGRAM] Tried to bind INVALID shader program");
+            Warn("[BINDING - SHADER PROGRAM] Tried to bind INVALID shader program");
             return;
         }
         
@@ -129,7 +137,7 @@ namespace RR
     {
         if (!_material)
         {
-            Warn("[MATERIAL] Tried to bind INVALID material");
+            Warn("[BINDING - MATERIAL] Tried to bind INVALID material");
             return;
         }
 

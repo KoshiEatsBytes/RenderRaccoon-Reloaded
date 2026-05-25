@@ -6,10 +6,10 @@ class Game : public RR::Application
 {
 public:
     Game();
-    ~Game();
+    ~Game() override;
 
     bool Init()                         override;
-    void Update(const float &deltaTime) override;
+    void Update(float _deltaTime)       override;
     void Destroy()                      override;
 
 private:

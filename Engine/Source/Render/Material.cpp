@@ -18,17 +18,19 @@ namespace RR
         m_shaderProgram = _shaderProgram;
     }
 
-    void Material::SetParam(const std::string &_name, const float &_val)
+    void Material::SetParam(const std::string &_name, const float _val)
     {
         m_floatParams[_name] = _val;
     }
 
-    // binds the shader and sets all the uniforms
+    /**
+     * @brief Binds the shader and sets all the uniforms
+     */
     void Material::Bind()
     {
         if (!m_shaderProgram)
         {
-            Warn("[MATERIAL] Tried to bind INVALID shader to material");
+            Warn("[BINDING - MATERIAL] Tried to bind INVALID shader program to material");
             return;
         }
 
@@ -36,9 +38,9 @@ namespace RR
         m_shaderProgram->Bind();
 
         // Iterate over parameters and set them for the shader program
-        for (const auto& [key, val]: m_floatParams)
+        for (auto& [name, val]: m_floatParams)
         {
-            m_shaderProgram->SetUniform(key, val);
+            m_shaderProgram->SetUniform(name, val);
         }
     }
 

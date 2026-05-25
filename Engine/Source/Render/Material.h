@@ -14,7 +14,7 @@ namespace RR
         ~Material();
 
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
-        void SetParam(const std::string& _name, const float& _val);
+        void SetParam(const std::string& _name, float _val);
         void Bind();
 
     private:

@@ -10,6 +10,9 @@
 
 namespace RR
 {
+    /**
+     * @brief Simple wrapper to read shader files from disk
+     */
     class ShaderLoader
     {
     public:

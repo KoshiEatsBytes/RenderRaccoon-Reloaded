@@ -13,25 +13,25 @@ namespace RR
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    void InputManager::SetKeyPressed(const int& key, const bool& pressed)
+    void InputManager::SetKeyPressed(const int& _key, const bool& _pressed)
     {
-        if (key < 0 || key >= static_cast<int>(m_keys.size()))
+        if (_key < 0 || _key >= static_cast<int>(m_keys.size()))
         {
             Warn("[INPUT] Key out of range is being set, discarding.");
             return;
         }
 
-        m_keys[key] = pressed;
+        m_keys[_key] = _pressed;
     }
 
-    bool InputManager::IsKeyPressed(const int &key) const
+    bool InputManager::IsKeyPressed(const int& _key) const
     {
-        if (key < 0 || key >= static_cast<int>(m_keys.size()))
+        if (_key < 0 || _key >= static_cast<int>(m_keys.size()))
         {
             Warn("[INPUT] Key out of range is being requested, discarding.");
             return false;
         }
 
-        return m_keys[key];
+        return m_keys[_key];
     }
 }
