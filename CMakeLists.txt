@@ -24,6 +24,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         RenderRaccoonEngine
 )
 
+# Change asset path from debug to release
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ASSETS_PATH="${CMAKE_SOURCE_DIR}/Assets/"
+    )
+else ()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ASSETS_PATH=""
+    )
+endif ()
+
 # Install glslang via FetchContent
 set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)
 set(GLSLANG_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
