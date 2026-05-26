@@ -18,9 +18,14 @@ namespace RR
         m_shaderProgram = _shaderProgram;
     }
 
-    void Material::SetParam(const std::string &_name, const float _val)
+    void Material::SetParam(const std::string &_name, const float _v0)
     {
-        m_floatParams[_name] = _val;
+        m_floatParams[_name] = _v0;
+    }
+
+    void Material::SetParam(const std::string& _name, float _v0, float _v1)
+    {
+        m_float2Params[_name] = {_v0, _v1};
     }
 
     /**
@@ -37,15 +42,22 @@ namespace RR
         // Bind shader
         m_shaderProgram->Bind();
 
-        // Iterate over parameters and set them for the shader program
+        // Set 1f uniforms
         for (auto& [name, val]: m_floatParams)
         {
             m_shaderProgram->SetUniform(name, val);
         }
+
+        // set 2f uniforms
+        for (auto& [name, pair] : m_float2Params)
+        {
+            m_shaderProgram->SetUniform(name, pair.first, pair.second);
+        }
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
-
-
-
 }
+
+
+
+

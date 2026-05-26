@@ -24,7 +24,8 @@ namespace RR
         void Bind() const;
 
         GLint GetUniformLocation(const std::string& _name);
-        void SetUniform(const std::string& _name, const float& _value);
+        void SetUniform(const std::string& _name, float _v0);
+        void SetUniform(const std::string& _name, float _v0, float _v1);
 
     private:
         // Use a cache to avoid redundant openGL call

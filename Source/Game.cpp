@@ -72,6 +72,25 @@ void Game::Update(float _deltaTime)
         SetShouldClose(true);
     }
 
+    if (input.IsKeyPressed(GLFW_KEY_A))
+    {
+        m_offsetX -= 0.001f;
+    }
+    if (input.IsKeyPressed(GLFW_KEY_D))
+    {
+        m_offsetX += 0.001f;
+    }
+    if (input.IsKeyPressed(GLFW_KEY_W))
+    {
+        m_offsetY += 0.001f;
+    }
+    if (input.IsKeyPressed(GLFW_KEY_S))
+    {
+        m_offsetY -= 0.001f;
+    }
+
+    m_mat.SetParam("uOffset", m_offsetX, m_offsetY);
+
     RR::RenderCommand command;
     command.material = &m_mat;
     command.mesh = m_mesh.get();

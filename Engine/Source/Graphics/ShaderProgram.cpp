@@ -35,17 +35,27 @@ namespace RR
     }
 
     /**
-     * @brief This is an example wrapper or a set uniform func
+     * @brief Sets the uniform to desired value in the current shader program
      * @param _name Name of the uniform you want to write to
-     * @param _value Value which is being written to the uniform
+     * @param _v0 float to write to uniform
      */
-    void ShaderProgram::SetUniform(const std::string& _name, const float& _value)
+    void ShaderProgram::SetUniform(const std::string& _name, const float _v0)
     {
         auto location = GetUniformLocation(_name);
+        glUniform1f(location, _v0);
+    }
 
-        glUniform1f(location, _value);
+    /**
+     * @brief Sets the uniform to desired value in the current shader program
+     * @param _name Name of the uniform you want to write to
+     * @param _v0 float 1 to write to uniform
+     * @param _v1 float 2 to write to uniform
+     */
+    void ShaderProgram::SetUniform(const std::string &_name, float _v0, float _v1)
+    {
+        auto location = GetUniformLocation(_name);
+        glUniform2f(location, _v0, _v1);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
-
 }
