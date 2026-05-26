@@ -18,8 +18,8 @@ namespace RR
         InputManager& operator=(const InputManager&) = delete;
 
         // Delete move
-        InputManager(InputManager&&) = delete;
-        InputManager& operator=(InputManager&&) = delete;
+        InputManager(InputManager&&) noexcept = delete;
+        InputManager& operator=(InputManager&&) noexcept = delete;
 
         // METHODS -----------------------------------------------------------------------------------------------------
 

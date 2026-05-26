@@ -1,6 +1,7 @@
 #pragma once
 
 #include <RR.h>
+#include <memory>
 
 class Game : public RR::Application
 {
@@ -14,6 +15,7 @@ public:
 
 private:
     RR::Material m_mat;
+    std::unique_ptr<RR::Mesh> m_mesh;
 };
 
 

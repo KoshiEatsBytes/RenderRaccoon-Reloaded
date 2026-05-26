@@ -120,7 +120,10 @@ namespace RR
 
             m_application->Update(deltaTime);
 
-            // placeholder
+            // Rendering
+            m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            m_graphicsAPI.ClearBuffers();
+            m_renderQueue.Draw(m_graphicsAPI);
             glfwSwapBuffers(m_window);
         }
     }
@@ -164,5 +167,10 @@ namespace RR
     GraphicsAPI& Engine::GetGraphicsAPI()
     {
         return m_graphicsAPI;
+    }
+
+    RenderQueue& Engine::GetRenderQueue()
+    {
+        return m_renderQueue;
     }
 }

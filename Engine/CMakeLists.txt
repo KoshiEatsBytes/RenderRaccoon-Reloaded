@@ -22,6 +22,8 @@ set(PROJECT_SOURCE_FILES
         Source/Render/Mesh.cpp
         Source/Render/Mesh.h
         Source/Graphics/VertexLayout.h
+        Source/Render/RenderQueue.cpp
+        Source/Render/RenderQueue.h
 )
 
 # Compose application structure

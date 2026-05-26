@@ -3,6 +3,7 @@
 #include "ShaderProgram.h"
 #include "Render/Material.h"
 #include "Helpers/ShaderLoader.hpp"
+#include "Render/Mesh.h"
 
 namespace RR
 {
@@ -179,6 +180,38 @@ namespace RR
         }
 
         _material->Bind();
+    }
+
+    void GraphicsAPI::BindMesh(Mesh *_mesh)
+    {
+        if (!_mesh)
+        {
+            Warn("[BINDING - MESH] Tried to bind INVALID mesh");
+            return;
+        }
+
+        _mesh->Bind();
+    }
+
+    void GraphicsAPI::DrawMesh(Mesh *_mesh)
+    {
+        if (!_mesh)
+        {
+            Warn("[DRAWING - MESH] Tried to draw INVALID mesh");
+            return;
+        }
+
+        _mesh->Draw();
+    }
+
+    void GraphicsAPI::ClearBuffers()
+    {
+        glClear(GL_COLOR_BUFFER_BIT);
+    }
+
+    void GraphicsAPI::SetClearColor(const float _r, const float _g, const float _b, const float _a)
+    {
+        glClearColor(_r, _g, _b, _a);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

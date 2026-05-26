@@ -5,6 +5,7 @@
 
 #include "Input/InputManager.h"
 #include "Graphics/GraphicsAPI.h"
+#include "Render/RenderQueue.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -46,6 +47,7 @@ namespace RR
 
         InputManager& GetInputManager();
         GraphicsAPI& GetGraphicsAPI();
+        RenderQueue& GetRenderQueue();
 
     private:
         std::unique_ptr<Application> m_application;
@@ -54,6 +56,7 @@ namespace RR
         GLFWwindow* m_window = nullptr;
         InputManager m_inputManager;
         GraphicsAPI m_graphicsAPI;
+        RenderQueue m_renderQueue;
     };
 }
 

@@ -9,6 +9,7 @@ namespace RR
 {
     class ShaderProgram;
     class Material;
+    class Mesh;
 
     /**
      * @details Centralized interface for rendering operations
@@ -27,8 +28,8 @@ namespace RR
         GraphicsAPI& operator=(const GraphicsAPI&) = delete;
 
         // Delete move
-        GraphicsAPI(GraphicsAPI&&) = delete;
-        GraphicsAPI& operator=(GraphicsAPI&&) = delete;
+        GraphicsAPI(GraphicsAPI&&) noexcept = delete;
+        GraphicsAPI& operator=(GraphicsAPI&&) noexcept = delete;
 
         // METHODS -----------------------------------------------------------------------------------------------------
 
@@ -39,8 +40,12 @@ namespace RR
         GLuint CreateElementBufferObject(const std::vector<uint32_t>& _indices);
 
         void BindShaderProgram(ShaderProgram* _shaderProgram);
-
         void BindMaterial(Material* _material);
+        void BindMesh(Mesh* _mesh);
+        void DrawMesh(Mesh* _mesh);
+        void ClearBuffers();
+
+        void SetClearColor(float _r, float _g, float _b, float _a);
     };
 }
 
