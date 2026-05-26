@@ -24,6 +24,10 @@ set(PROJECT_SOURCE_FILES
         Source/Graphics/VertexLayout.h
         Source/Render/RenderQueue.cpp
         Source/Render/RenderQueue.h
+        Source/Scene/GameObject.cpp
+        Source/Scene/GameObject.h
+        Source/Scene/Scene.cpp
+        Source/Scene/Scene.h
 )
 
 # Compose application structure
