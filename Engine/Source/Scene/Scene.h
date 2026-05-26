@@ -29,7 +29,7 @@ namespace RR
             return obj;
         }
 
-        void SetParent(GameObject* obj, GameObject* _parent);
+        bool SetParent(GameObject* _obj, GameObject* _parent);
 
     private:
         std::vector<std::unique_ptr<GameObject>> m_objects;

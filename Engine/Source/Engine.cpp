@@ -91,7 +91,7 @@ namespace RR
 
         // If init fails terminate engine and log to console
         Error("[INITIALIZATION] Failed to initialize application, terminating.");
-        InfoLog("This is not a fault with the engine module but with application: ", typeid(*m_application).name());
+        InfoLog("This is not a fault with the engine module but with application: '", typeid(*m_application).name(), "'");
         glfwTerminate();
         return false;
     }
