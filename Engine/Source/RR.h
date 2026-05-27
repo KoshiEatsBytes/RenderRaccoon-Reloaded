@@ -19,3 +19,4 @@
 #include "Scene/Scene.h"
 #include "Scene/Component.h"
 #include "Scene/Components/MeshComponent.h"
+#include "Scene/Components/CameraComponent.h"

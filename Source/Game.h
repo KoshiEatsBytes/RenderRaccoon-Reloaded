@@ -14,7 +14,7 @@ public:
     void Destroy()                      override;
 
 private:
-    RR::Scene m_scene;
+    RR::Scene* m_scene = nullptr;
 };
 
 

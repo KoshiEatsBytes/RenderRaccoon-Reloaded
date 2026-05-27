@@ -126,8 +126,15 @@ namespace RR
             m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             m_graphicsAPI.ClearBuffers();
 
-            // Collect camera data
+            // Collect camera and view data
             CameraData camData;
+
+            // Dynamically adjusts the aspect ratio
+            int width = 0;
+            int height = 0;
+            glfwGetWindowSize(m_window, &width, &height);
+            float aspect = static_cast<float>(width) / static_cast<float>(height);
+
             if (m_currentScene)
             {
                 if (auto camObj = m_currentScene->GetMainCamera())
@@ -136,7 +143,7 @@ namespace RR
                     if (auto camComponent = camObj->GetComponent<CameraComponent>())
                     {
                         camData.viewMatrix = camComponent->GetViewMatrix();
-                        camData.projMatrix = camComponent->GetProjectionMatrix();
+                        camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
                     }
                 }
             }

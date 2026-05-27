@@ -1,5 +1,7 @@
 
 #include "CameraComponent.h"
+
+#include "glm/ext/matrix_clip_space.hpp"
 #include "Scene/GameObject.h"
 
 namespace RR
@@ -22,8 +24,9 @@ namespace RR
         return glm::inverse(m_owner->GetWorldTransform());
     }
 
-    Mat4 CameraComponent::GetProjectionMatrix() const
+    Mat4 CameraComponent::GetProjectionMatrix(float _aspect) const
     {
-        return Mat4(1.0f);
+        // calculate projection matrix
+        return glm::perspective(glm::radians(m_fov), _aspect, m_nearPlane, m_farPlane);
     }
 }
