@@ -1,8 +1,9 @@
 
 #include "RenderQueue.h"
-#include "Mesh.h"
+
 #include "Material.h"
 #include "Graphics/GraphicsAPI.h"
+#include "Graphics/ShaderProgram.h"
 
 
 namespace RR
@@ -34,7 +35,11 @@ namespace RR
     {
         for (auto& command : m_commands)
         {
+            // material
             graphicsAPI.BindMaterial(command.material);
+            command.material->GetShaderProgram()->SetUniform("uModel", command.modelMatrix);
+
+            // Mesh
             graphicsAPI.BindMesh(command.mesh);
             graphicsAPI.DrawMesh(command.mesh);
         }

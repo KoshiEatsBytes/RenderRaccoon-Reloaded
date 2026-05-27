@@ -59,30 +59,32 @@ void TestObject::Update(float _deltaTime)
 {
     GameObject::Update(_deltaTime);
 
+    auto position = GetPosition();
     auto& input = RR::Engine::GetInstance().GetInputManager();
 
     if (input.IsKeyPressed(GLFW_KEY_A))
     {
-        m_offsetX -= 0.001f;
+        position.x -= 0.001f;
     }
     if (input.IsKeyPressed(GLFW_KEY_D))
     {
-        m_offsetX += 0.001f;
+        position.x += 0.001f;
     }
     if (input.IsKeyPressed(GLFW_KEY_W))
     {
-        m_offsetY += 0.001f;
+        position.y += 0.001f;
     }
     if (input.IsKeyPressed(GLFW_KEY_S))
     {
-        m_offsetY -= 0.001f;
+        position.y -= 0.001f;
     }
 
-    m_mat.SetParam("uOffset", m_offsetX, m_offsetY);
+    SetPosition(position);
 
     RR::RenderCommand command;
     command.material = &m_mat;
     command.mesh = m_mesh.get();
+    command.modelMatrix = GetWorldTransform();
 
     auto& renderQueue = RR::Engine::GetInstance().GetRenderQueue();
     renderQueue.Submit(command);

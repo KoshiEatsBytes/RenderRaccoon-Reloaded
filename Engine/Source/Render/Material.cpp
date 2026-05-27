@@ -13,21 +13,6 @@ namespace RR
     Material::~Material()
     = default;
 
-    void Material::SetShaderProgram(const std::shared_ptr<ShaderProgram> &_shaderProgram)
-    {
-        m_shaderProgram = _shaderProgram;
-    }
-
-    void Material::SetParam(const std::string &_name, const float _v0)
-    {
-        m_floatParams[_name] = _v0;
-    }
-
-    void Material::SetParam(const std::string& _name, float _v0, float _v1)
-    {
-        m_float2Params[_name] = {_v0, _v1};
-    }
-
     /**
      * @brief Binds the shader and sets all the uniforms
      */
@@ -55,7 +40,27 @@ namespace RR
         }
     }
 
-    // PRIVATE ---------------------------------------------------------------------------------------------------------
+    // GETTER / SETTERS ------------------------------------------------------------------------------------------------
+
+    void Material::SetShaderProgram(const std::shared_ptr<ShaderProgram> &_shaderProgram)
+    {
+        m_shaderProgram = _shaderProgram;
+    }
+
+    ShaderProgram* Material::GetShaderProgram() const
+    {
+        return m_shaderProgram.get();
+    }
+
+    void Material::SetParam(const std::string &_name, const float _v0)
+    {
+        m_floatParams[_name] = _v0;
+    }
+
+    void Material::SetParam(const std::string& _name, float _v0, float _v1)
+    {
+        m_float2Params[_name] = {_v0, _v1};
+    }
 }
 
 

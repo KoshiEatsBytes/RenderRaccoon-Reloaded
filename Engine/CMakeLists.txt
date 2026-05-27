@@ -28,6 +28,7 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/GameObject.h
         Source/Scene/Scene.cpp
         Source/Scene/Scene.h
+        Source/Types.h
 )
 
 # Compose application structure

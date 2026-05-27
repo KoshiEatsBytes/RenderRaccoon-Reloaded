@@ -4,10 +4,11 @@ layout (location = 1) in vec3 color;
 
 out vec3 vColor;
 
-uniform vec2 uOffset;
+// Transform matrix
+uniform mat4 uModel;
 
 void main()
 {
     vColor = color;
-    gl_Position = vec4(position.x + uOffset.x, position.y + uOffset.y, position.z, 1.0);
+    gl_Position = uModel * vec4(position, 1.0);
 }

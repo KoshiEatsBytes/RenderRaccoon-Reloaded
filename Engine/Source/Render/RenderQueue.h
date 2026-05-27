@@ -1,6 +1,7 @@
 
 #pragma once
 #include <vector>
+#include "Types.h"
 
 namespace RR
 {
@@ -12,6 +13,7 @@ namespace RR
     {
         Mesh* mesh = nullptr;
         Material* material = nullptr;
+        Mat4 modelMatrix;
     };
 
     class RenderQueue

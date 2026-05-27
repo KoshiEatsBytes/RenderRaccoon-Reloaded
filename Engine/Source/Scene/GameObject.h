@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 
+#include "Types.h"
+
 namespace RR
 {
     class GameObject
@@ -22,6 +24,19 @@ namespace RR
         GameObject* GetParent();
         bool IsAlive() const;
 
+        // pos/rot/scale set/get
+        const Vec3& GetPosition() const;
+        void SetPosition(const Vec3& _pos);
+        const Vec3& GetRotation() const;
+        void SetRotation(const Vec3& _rot);
+        const Vec3& GetScale() const;
+        void SetScale(const Vec3& _scale);
+
+        // Transform get/set
+        Mat4 GetLocalTransform() const;
+        Mat4 GetWorldTransform() const;
+
+
     protected:
         GameObject();
 
@@ -30,6 +45,11 @@ namespace RR
         std::string m_name;
         GameObject* m_parent = nullptr;
         std::vector<std::unique_ptr<GameObject>> m_children;
+
+        // Object Transform Values
+        Vec3 m_position = Vec3(0.0f);
+        Vec3 m_rotation = Vec3(0.0f);
+        Vec3 m_scale    = Vec3(1.0f);
     };
 }
 

@@ -1,5 +1,6 @@
 
 #include "ShaderProgram.h"
+#include <glm/gtc/type_ptr.hpp>
 
 namespace RR
 {
@@ -51,10 +52,21 @@ namespace RR
      * @param _v0 float 1 to write to uniform
      * @param _v1 float 2 to write to uniform
      */
-    void ShaderProgram::SetUniform(const std::string &_name, float _v0, float _v1)
+    void ShaderProgram::SetUniform(const std::string& _name, float _v0, float _v1)
     {
         auto location = GetUniformLocation(_name);
         glUniform2f(location, _v0, _v1);
+    }
+
+    /**
+     * @brief Sets the uniform to desired matrix in the current shader program
+     * @param _name Name of the uniform to write to
+     * @param _mat Transform matrix to apply
+     */
+    void ShaderProgram::SetUniform(const std::string& _name, const Mat4& _mat)
+    {
+        auto location = GetUniformLocation(_name);
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(_mat));
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

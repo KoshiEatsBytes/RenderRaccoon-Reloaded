@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <GL/glew.h>
+#include <Types.h>
 
 namespace RR
 {
@@ -26,6 +27,7 @@ namespace RR
         GLint GetUniformLocation(const std::string& _name);
         void SetUniform(const std::string& _name, float _v0);
         void SetUniform(const std::string& _name, float _v0, float _v1);
+        void SetUniform(const std::string& _name, const Mat4& _mat);
 
     private:
         // Use a cache to avoid redundant openGL call

@@ -13,12 +13,15 @@ namespace RR
         Material();
         ~Material();
 
+        void Bind();
+
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
+        ShaderProgram* GetShaderProgram() const;
 
         void SetParam(const std::string& _name, float _v0);
         void SetParam(const std::string& _name, float _v0, float _v1);
 
-        void Bind();
+
 
     private:
         std::shared_ptr<ShaderProgram> m_shaderProgram;
