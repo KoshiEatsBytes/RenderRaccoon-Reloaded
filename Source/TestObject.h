@@ -12,8 +12,6 @@ public:
     void Update(float _deltaTime) override;
 
 private:
-    RR::Material m_mat;
-    std::shared_ptr<RR::Mesh> m_mesh;
 };
 
 

@@ -29,6 +29,10 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/Scene.cpp
         Source/Scene/Scene.h
         Source/Types.h
+        Source/Scene/Component.cpp
+        Source/Scene/Component.h
+        Source/Scene/Components/MeshComponent.cpp
+        Source/Scene/Components/MeshComponent.h
 )
 
 # Compose application structure

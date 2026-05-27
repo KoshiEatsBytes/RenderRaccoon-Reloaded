@@ -16,6 +16,12 @@ namespace RR
 
     void GameObject::Update(const float _deltaTime)
     {
+        // Update each component
+        for (const auto& component : m_components)
+        {
+            component->Update(_deltaTime);
+        }
+
         // Update each child, or destroy marked
         for (auto it = m_children.begin(); it != m_children.end();)
         {
@@ -30,6 +36,16 @@ namespace RR
                 it = m_children.erase(it);
             }
         }
+    }
+
+    /**
+     * @brief Adds a component to the current GameObject
+     * @param _component Ptr to the component you want to add
+     */
+    void GameObject::AddComponent(Component* _component)
+    {
+        m_components.emplace_back(_component);
+        _component->m_owner = this;
     }
 
     void GameObject::MarkForDestroy()

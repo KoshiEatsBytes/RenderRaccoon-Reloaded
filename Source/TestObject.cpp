@@ -12,7 +12,8 @@ TestObject::TestObject()
 
     auto shaderProgram = graphicsAPI.CreateShaderProgram(vertPath, fragPath);
 
-    m_mat.SetShaderProgram(shaderProgram);
+    auto material = std::make_shared<RR::Material>();
+    material->SetShaderProgram(shaderProgram);
 
     // Triangle made with vertices
     // Color of each vertices is on the right
@@ -52,7 +53,9 @@ TestObject::TestObject()
     // Stride
     vertexLayout.stride = sizeof(float) * 6;
 
-    m_mesh = std::make_shared<RR::Mesh>(vertexLayout, vertices, indeces);
+    auto mesh = std::make_shared<RR::Mesh>(vertexLayout, vertices, indeces);
+
+    AddComponent(new RR::MeshComponent(material, mesh));
 }
 
 void TestObject::Update(float _deltaTime)
@@ -80,12 +83,4 @@ void TestObject::Update(float _deltaTime)
     }
 
     SetPosition(position);
-
-    RR::RenderCommand command;
-    command.material = &m_mat;
-    command.mesh = m_mesh.get();
-    command.modelMatrix = GetWorldTransform();
-
-    auto& renderQueue = RR::Engine::GetInstance().GetRenderQueue();
-    renderQueue.Submit(command);
 }

@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "Types.h"
+#include "Component.h"
 
 namespace RR
 {
@@ -13,9 +14,9 @@ namespace RR
     public:
         friend class Scene;
         virtual ~GameObject();
-
         virtual void Update(float _deltaTime);
 
+        void AddComponent(Component* _component);
         void MarkForDestroy();
 
         // getters/setters
@@ -44,7 +45,10 @@ namespace RR
         bool m_isAlive = true;
         std::string m_name;
         GameObject* m_parent = nullptr;
+
+        // Heirarchy
         std::vector<std::unique_ptr<GameObject>> m_children;
+        std::vector<std::unique_ptr<Component>> m_components;
 
         // Object Transform Values
         Vec3 m_position = Vec3(0.0f);

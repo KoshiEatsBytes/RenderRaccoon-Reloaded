@@ -16,3 +16,5 @@
 #include "Render/RenderQueue.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
+#include "Scene/Component.h"
+#include "Scene/Components/MeshComponent.h"
