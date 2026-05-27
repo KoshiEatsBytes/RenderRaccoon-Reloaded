@@ -37,6 +37,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/Source"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glew/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glfw-3.4/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glm"
 )
 
 # Add GLFW library
@@ -46,6 +47,9 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glfw-3.4" "${CMAKE_BINARY_D
 set(BUILD_UTILS OFF CACHE BOOL "utilities" FORCE)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glew/build/cmake" "${CMAKE_BINARY_DIR}/glew_build")
 
+# Add GLM library
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glm" "${CMAKE_BINARY_DIR}/glm_build")
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC GLEW_NO_GLU)
 
 set_property(TARGET glew_s PROPERTY FOLDER GLEW)
@@ -54,4 +58,5 @@ set_property(TARGET glew PROPERTY FOLDER GLEW)
 target_link_libraries(${PROJECT_NAME} PUBLIC
         glfw
         glew_s
+        glm
 )
