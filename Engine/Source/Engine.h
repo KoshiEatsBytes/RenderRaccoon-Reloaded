@@ -6,6 +6,7 @@
 #include "Input/InputManager.h"
 #include "Graphics/GraphicsAPI.h"
 #include "Render/RenderQueue.h"
+#include "Scene/Scene.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -42,8 +43,12 @@ namespace RR
         void Launch();
         void Destroy();
 
-        void SetApp(Application* app);
+        // Get/Sets
+        void SetApp(Application* _app);
         Application* GetApp() const;
+
+        void SetScene(Scene* _scene);
+        Scene* GetScene() const;
 
         InputManager& GetInputManager();
         GraphicsAPI& GetGraphicsAPI();
@@ -52,6 +57,7 @@ namespace RR
     private:
         std::unique_ptr<Application> m_application;
         std::chrono::steady_clock::time_point m_lastTimePoint;
+        std::unique_ptr<Scene> m_currentScene;
 
         GLFWwindow* m_window = nullptr;
         InputManager m_inputManager;

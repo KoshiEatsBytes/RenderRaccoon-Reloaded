@@ -9,11 +9,23 @@ namespace RR
     class Material;
     class GraphicsAPI;
 
+    /**
+     * Contains the render data to render a gameObject
+     */
     struct RenderCommand
     {
         Mesh* mesh = nullptr;
         Material* material = nullptr;
         Mat4 modelMatrix;
+    };
+
+    /**
+     * Global projection and view for a scene
+     */
+    struct CameraData
+    {
+        Mat4 viewMatrix;
+        Mat4 projMatrix;
     };
 
     class RenderQueue
@@ -35,7 +47,7 @@ namespace RR
 
 
         void Submit(const RenderCommand& _command);
-        void Draw(GraphicsAPI& graphicsAPI);
+        void Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData);
 
     private:
         std::vector<RenderCommand> m_commands;

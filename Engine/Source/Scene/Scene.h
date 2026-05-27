@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "GameObject.h"
+#include "Concepts.h"
 
 namespace RR
 {
@@ -19,7 +20,26 @@ namespace RR
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
 
-        template<typename T, typename = typename std::enable_if<std::is_base_of_v<GameObject, T>>>
+        // Get/Sets
+        bool SetParent(GameObject* _obj, GameObject* _parent);
+        void SetMainCamera(GameObject* _camera);
+        GameObject* GetMainCamera();
+
+    private:
+        std::vector<std::unique_ptr<GameObject>> m_objects;
+        GameObject* m_mainCamera = nullptr;
+
+    public:
+        // Templates ---------------------------------------------------------------------------------------------------
+
+        /**
+         * @brief Uses polymorphism to instantiate the desired gameObject
+         * @tparam T Type of the GO
+         * @param _name Name of the GO
+         * @param _parent Parent of the GO
+         * @return pointer to the GO
+         */
+        template<GameObjectType T>
         T* CreateObject(const std::string& _name, GameObject* _parent = nullptr)
         {
             auto obj = new T();
@@ -28,11 +48,6 @@ namespace RR
             SetParent(obj, _parent);
             return obj;
         }
-
-        bool SetParent(GameObject* _obj, GameObject* _parent);
-
-    private:
-        std::vector<std::unique_ptr<GameObject>> m_objects;
     };
 }
 

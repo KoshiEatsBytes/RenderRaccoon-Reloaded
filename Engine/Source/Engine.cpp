@@ -5,6 +5,8 @@
 #include "Engine.h"
 #include "Application.h"
 #include "Helpers/Printer.hpp"
+#include "Scene/Component.h"
+#include "Scene/Components/CameraComponent.h"
 
 namespace RR
 {
@@ -120,10 +122,26 @@ namespace RR
 
             m_application->Update(deltaTime);
 
-            // Rendering
+            // Drawing
             m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             m_graphicsAPI.ClearBuffers();
-            m_renderQueue.Draw(m_graphicsAPI);
+
+            // Collect camera data
+            CameraData camData;
+            if (m_currentScene)
+            {
+                if (auto camObj = m_currentScene->GetMainCamera())
+                {
+                    // logic for matrices
+                    if (auto camComponent = camObj->GetComponent<CameraComponent>())
+                    {
+                        camData.viewMatrix = camComponent->GetViewMatrix();
+                        camData.projMatrix = camComponent->GetProjectionMatrix();
+                    }
+                }
+            }
+
+            m_renderQueue.Draw(m_graphicsAPI, camData);
             glfwSwapBuffers(m_window);
         }
     }
@@ -149,14 +167,24 @@ namespace RR
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
-    void Engine::SetApp(Application* app)
+    void Engine::SetApp(Application* _app)
     {
-        m_application.reset(app);
+        m_application.reset(_app);
     }
 
     Application* Engine::GetApp() const
     {
         return m_application.get();
+    }
+
+    void Engine::SetScene(Scene* _scene)
+    {
+        m_currentScene.reset(_scene);
+    }
+
+    Scene* Engine::GetScene() const
+    {
+        return m_currentScene.get();
     }
 
     InputManager& Engine::GetInputManager()

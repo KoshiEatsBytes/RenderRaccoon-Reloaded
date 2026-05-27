@@ -7,8 +7,13 @@ out vec3 vColor;
 // Transform matrix
 uniform mat4 uModel;
 
+// Camera matrices
+uniform mat4 uView;
+uniform mat4 uProj;
+
 void main()
 {
     vColor = color;
-    gl_Position = uModel * vec4(position, 1.0);
+    // mvp transformation
+    gl_Position = uProj * uView * uModel * vec4(position, 1.0);
 }

@@ -224,6 +224,18 @@ namespace RR
 
         return result;
     }
+
+    // GETTER / SETTERS ------------------------------------------------------------------------------------------------
+
+    void Scene::SetMainCamera(GameObject* _camera)
+    {
+        m_mainCamera = _camera;
+    }
+
+    GameObject* Scene::GetMainCamera()
+    {
+        return m_mainCamera;
+    }
 }
 
 

@@ -16,4 +16,9 @@ namespace RR
     {
         return m_owner;
     }
+
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    // Init component ID
+    sizeT Component::nextID = 1;
 }

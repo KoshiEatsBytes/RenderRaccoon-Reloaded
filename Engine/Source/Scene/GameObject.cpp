@@ -55,7 +55,7 @@ namespace RR
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
-    const std::string & GameObject::GetName() const
+    const std::string& GameObject::GetName() const
     {
         return m_name;
     }

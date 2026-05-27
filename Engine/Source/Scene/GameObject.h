@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 
+#include "Concepts.h"
 #include "Types.h"
 #include "Component.h"
 
@@ -46,7 +47,7 @@ namespace RR
         std::string m_name;
         GameObject* m_parent = nullptr;
 
-        // Heirarchy
+        // Hierarchy
         std::vector<std::unique_ptr<GameObject>> m_children;
         std::vector<std::unique_ptr<Component>> m_components;
 
@@ -54,6 +55,29 @@ namespace RR
         Vec3 m_position = Vec3(0.0f);
         Vec3 m_rotation = Vec3(0.0f);
         Vec3 m_scale    = Vec3(1.0f);
+
+    public:
+        // Templates ---------------------------------------------------------------------------------------------------
+
+        /**
+         * @brief Searches and returns a component of the game-object
+         * @tparam T Component type you're searching for
+         * @return Pointer to the componet
+         */
+        template<ComponentType T>
+        T* GetComponent()
+        {
+            sizeT typeID = Component::StaticTypeID<T>();
+
+            for (auto& component : m_components)
+            {
+                if (component->GetTypeID() == typeID)
+                {
+                    return static_cast<T*>(component.get());
+                }
+            }
+            return nullptr;
+        }
     };
 }
 
