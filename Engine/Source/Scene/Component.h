@@ -44,7 +44,6 @@ namespace RR
 
 // Macro for overriding vital component interface easily
 #define COMPONENT(ComponentClass) \
-    public: \
     static sizeT TypeID() { return Component::StaticTypeID<ComponentClass>(); } \
     sizeT GetTypeID() const override {return TypeID(); }
 }

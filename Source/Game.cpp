@@ -17,6 +17,7 @@ bool Game::Init()
     auto camera = m_scene->CreateObject("Camera");
     camera->AddComponent(new RR::CameraComponent());
     camera->SetPosition(Vec3(0.0f, 0.0f, 2.0f));
+    camera->AddComponent(new RR::PlayerControllerComponent);
 
     m_scene->SetMainCamera(camera);
     m_scene->CreateObject<TestObject>("TestObject");

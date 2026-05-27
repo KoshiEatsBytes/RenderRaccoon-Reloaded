@@ -11,9 +11,9 @@ namespace RR
 
     class MeshComponent : public Component
     {
+    public:
         COMPONENT(MeshComponent)
 
-    public:
         MeshComponent(const std::shared_ptr<Material>& _material,
             const std::shared_ptr<Mesh>& _mesh);
         ~MeshComponent() override;

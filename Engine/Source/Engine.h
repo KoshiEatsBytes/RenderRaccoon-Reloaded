@@ -22,9 +22,17 @@ namespace RR
         Engine();
         ~Engine();
 
-        // handles input via callback
+        // Callback keyboard input
         static void KeyCallBack(GLFWwindow* _window, int _key,
-                                int _scanCode, int _action, int _mods);
+            int _scanCode, int _action, int _mods);
+
+        // Callback mouse buttons
+        static void MouseButtonCallBack(GLFWwindow* _window,
+            int _button, int _action, int _mods);
+
+        // Cursor position callback
+        static void CursorPositionCallBack(GLFWwindow* _window,
+            double xPos, double yPos);
 
     public:
         // Delete copy

@@ -7,9 +7,9 @@ namespace RR
 {
     class CameraComponent : public Component
     {
+    public:
         COMPONENT(CameraComponent);
 
-    public:
         CameraComponent();
         ~CameraComponent() override;
 

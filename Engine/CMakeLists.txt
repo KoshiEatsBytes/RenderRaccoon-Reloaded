@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCE_FILES
         Source/RR.h
+        Source/Concepts.h
+        Source/Types.h
         Source/Engine.h
         Source/Engine.cpp
         Source/Application.h
@@ -28,14 +30,14 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/GameObject.h
         Source/Scene/Scene.cpp
         Source/Scene/Scene.h
-        Source/Types.h
         Source/Scene/Component.cpp
         Source/Scene/Component.h
         Source/Scene/Components/MeshComponent.cpp
         Source/Scene/Components/MeshComponent.h
         Source/Scene/Components/CameraComponent.cpp
         Source/Scene/Components/CameraComponent.h
-        Source/Graphics/Concepts.h
+        Source/Scene/Components/PlayerControllerComponent.cpp
+        Source/Scene/Components/PlayerControllerComponent.h
 )
 
 # Compose application structure

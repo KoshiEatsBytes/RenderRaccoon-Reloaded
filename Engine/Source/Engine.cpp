@@ -18,11 +18,18 @@ namespace RR
     Engine::~Engine()
     = default;
 
+    /**
+     * @brief Updates input manager with keyboard inputs
+     * @param _window GLFW window pointer
+     * @param _key keyboard key identifier
+     * @param _scanCode unknown
+     * @param _action If pressed / released
+     * @param _mods any modifiers (such as shift)
+     */
     void Engine::KeyCallBack(GLFWwindow* _window, int _key, int _scanCode, int _action, int _mods)
     {
         auto& inputManager = GetInstance().GetInputManager();
 
-        // Automatically updates input manager from keyboard input
         if (_action == GLFW_PRESS)
         {
             inputManager.SetKeyPressed(_key, true);
@@ -31,6 +38,44 @@ namespace RR
         {
             inputManager.SetKeyPressed(_key, false);
         }
+    }
+
+    /**
+     * @brief Updates input manager with mouse button inputs
+     * @param _window GLFW window pointer
+     * @param _button Mouse button identifier
+     * @param _action If pressed / Released
+     * @param _mods any modifiers
+     */
+    void Engine::MouseButtonCallBack(GLFWwindow* _window, int _button, int _action, int _mods)
+    {
+        auto& inputManager = GetInstance().GetInputManager();
+
+        if (_action == GLFW_PRESS)
+        {
+            inputManager.SetMouseButtonPressed(_button, true);
+        }
+        else if (_action == GLFW_RELEASE)
+        {
+            inputManager.SetMouseButtonPressed(_button, false);
+        }
+    }
+
+    /**
+     * @brief Updates input manager with new cursor pos
+     * @param _window GLFW window pointer
+     * @param xPos new cursor xPos
+     * @param yPos new cursor yPos
+     */
+    void Engine::CursorPositionCallBack(GLFWwindow* _window, double xPos, double yPos)
+    {
+        auto& inputManager = GetInstance().GetInputManager();
+
+        // push back last frame pos
+        inputManager.SetMousePositionOld(inputManager.GetMousePositionCurrent());
+
+        const Vec2 currentPos = {static_cast<float>(xPos), static_cast<float>(yPos)};
+        inputManager.SetMousePositionCurrent(currentPos);
     }
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
@@ -74,6 +119,8 @@ namespace RR
 
         // Input polling
         glfwSetKeyCallback(m_window, KeyCallBack);
+        glfwSetMouseButtonCallback(m_window, MouseButtonCallBack);
+        glfwSetCursorPosCallback(m_window, CursorPositionCallBack);
 
         glfwMakeContextCurrent(m_window);
         glfwSwapInterval(0); // Turn off vertical sync
@@ -150,6 +197,9 @@ namespace RR
 
             m_renderQueue.Draw(m_graphicsAPI, camData);
             glfwSwapBuffers(m_window);
+
+            // Update mouse pos
+            m_inputManager.SetMousePositionOld(m_inputManager.GetMousePositionCurrent());
         }
     }
 

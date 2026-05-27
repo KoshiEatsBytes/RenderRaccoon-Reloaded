@@ -62,25 +62,25 @@ void TestObject::Update(float _deltaTime)
 {
     GameObject::Update(_deltaTime);
 
-    auto position = GetPosition();
-    auto& input = RR::Engine::GetInstance().GetInputManager();
-
-    if (input.IsKeyPressed(GLFW_KEY_A))
-    {
-        position.x -= 0.001f;
-    }
-    if (input.IsKeyPressed(GLFW_KEY_D))
-    {
-        position.x += 0.001f;
-    }
-    if (input.IsKeyPressed(GLFW_KEY_W))
-    {
-        position.y += 0.001f;
-    }
-    if (input.IsKeyPressed(GLFW_KEY_S))
-    {
-        position.y -= 0.001f;
-    }
-
-    SetPosition(position);
+    // auto position = GetPosition();
+    // auto& input = RR::Engine::GetInstance().GetInputManager();
+    //
+    // if (input.IsKeyPressed(GLFW_KEY_A))
+    // {
+    //     position.x -= 0.001f;
+    // }
+    // if (input.IsKeyPressed(GLFW_KEY_D))
+    // {
+    //     position.x += 0.001f;
+    // }
+    // if (input.IsKeyPressed(GLFW_KEY_W))
+    // {
+    //     position.y += 0.001f;
+    // }
+    // if (input.IsKeyPressed(GLFW_KEY_S))
+    // {
+    //     position.y -= 0.001f;
+    // }
+    //
+    // SetPosition(position);
 }
