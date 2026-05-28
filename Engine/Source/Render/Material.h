@@ -16,6 +16,8 @@ namespace RR
 
         void Bind();
 
+        static std::shared_ptr<Material> Load(const std::string& _path);
+
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
         ShaderProgram* GetShaderProgram() const;
 

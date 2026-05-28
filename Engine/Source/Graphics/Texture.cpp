@@ -51,7 +51,7 @@ namespace RR
 
         // get fullpath
         auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
-        auto fullPath = fileSys.GetAssetFolder() / "Textures"/ _path;
+        auto fullPath = fileSys.GetAssetFolder() / _path;
 
         // Check if file is present
         if (!std::filesystem::exists(fullPath))

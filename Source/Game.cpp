@@ -12,12 +12,6 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
-    auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
-    const std::string vertSource = fileSys.LoadAssetFileText("Shaders/basic.vert");
-    const std::string fragSource = fileSys.LoadAssetFileText("Shaders/basic.frag");
-
-    auto texture = RR::Texture::Load("brick.png");
-
     m_scene = new RR::Scene;
 
     // Create scene camera
@@ -29,13 +23,7 @@ bool Game::Init()
     m_scene->SetMainCamera(camera);
     //m_scene->CreateObject<TestObject>("TestObject");
 
-    auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
-
-    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertSource, fragSource);
-
-    auto material = std::make_shared<RR::Material>();
-    material->SetShaderProgram(shaderProgram);
-    material->SetParam("brickTexture", texture);
+    auto material = RR::Material::Load("Materials/Brick.json");
 
     // Triangle made with vertices
     // Color of each vertices is on the right

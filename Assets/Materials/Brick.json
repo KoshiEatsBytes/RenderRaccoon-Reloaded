@@ -1,0 +1,14 @@
+{
+  "Shaders": {
+    "Vertex": "Shaders/basic.vert",
+    "Fragment": "Shaders/basic.frag"
+  },
+  "Params": {
+    "Textures": [
+      {
+        "Name": "brickTexture",
+        "Path": "Textures/brick.png"
+      }
+    ]
+  }
+}

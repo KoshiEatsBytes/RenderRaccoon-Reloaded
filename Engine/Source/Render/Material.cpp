@@ -1,8 +1,13 @@
 
 #include "Material.h"
+
+#include <nlohmann/json.hpp>
+#include "Engine.h"
 #include "Graphics/ShaderProgram.h"
 #include "Graphics/Texture.h"
 #include "Helpers/Printer.hpp"
+
+using nJson = nlohmann::json;
 
 namespace RR
 {
@@ -45,6 +50,121 @@ namespace RR
         {
             m_shaderProgram->SetTexture(name, texture.get());
         }
+    }
+
+    std::shared_ptr<Material> Material::Load(const std::string& _path)
+    {
+        auto& fileSys = Engine::GetInstance().GetFileSystem();
+        auto& graphicsAPI = Engine::GetInstance().GetGraphicsAPI();
+        auto contents = fileSys.LoadAssetFileText(_path);
+
+        if (contents.empty())
+        {
+            Warn("[MATERIAL - LOAD] File not found: '", _path, "'");
+            return nullptr;
+        }
+
+        // Materials are stored as Jsons, parse it when loading
+        nJson json;
+        try
+        {
+            json = nJson::parse(contents);
+        }
+        catch (const nJson::parse_error& e)
+        {
+            // Check if files are valid
+            Error("[MATERIAL - LOAD] Failed to parse JSON in '", _path, "' - ", e.what());
+            return nullptr;
+        }
+
+        std::shared_ptr<Material> result;
+
+        // SHADERS //////////////////////////////////////////////////////////////////////////
+        if (json.contains("Shaders"))
+        {
+            const auto shaderObj = json["Shaders"];
+            std::string vertexPath = shaderObj.value("Vertex", "");
+            std::string fragmentPath = shaderObj.value("Fragment", "");
+
+            // check if valid path
+            if (vertexPath.empty() || fragmentPath.empty())
+            {
+                Warn("[MATERIAL - LOAD] Missing vertex or fragment shader path in '", _path, "'");
+                return nullptr;
+            }
+
+            auto vertexSrc = fileSys.LoadAssetFileText(vertexPath);
+            auto fragmentSrc = fileSys.LoadAssetFileText(fragmentPath);
+
+            // create shader program
+            auto shaderProgram = graphicsAPI.CreateShaderProgram(vertexSrc, fragmentSrc);
+            if (!shaderProgram)
+            {
+                Warn("[MATERIAL - LOAD] Shader Program generation has FAILED when loading a material");
+                return nullptr;
+            }
+
+            // Init material
+            result = std::make_shared<Material>();
+            result->SetShaderProgram(shaderProgram);
+        }
+        else
+        {
+            // No shader block found
+            Warn("[MATERIAL - LOAD] '", _path, "' is missing a Shaders block");
+            return nullptr;
+        }
+
+        // PARAMS ///////////////////////////////////////////////////////////////////////////
+        if (json.contains("Params"))
+        {
+            auto paramsObj = json["Params"];
+
+            // Float 1 param loop
+            if (paramsObj.contains("Float"))
+            {
+                for (auto& param : paramsObj["Float"])
+                {
+                    std::string name = param.value("Name", "");
+                    float v0 = param.value("V0", 0.0f);
+                    result->SetParam(name, v0);
+                }
+            }
+
+            // Float 2 param loop
+            if (paramsObj.contains("Float2"))
+            {
+                for (auto& param : paramsObj["Float2"])
+                {
+                    std::string name = param.value("Name", "");
+                    float v0 = param.value("V0", 0.0f);
+                    float v1 = param.value("V1", 0.0f);
+                    result->SetParam(name, v0, v1);
+                }
+            }
+
+            // Textures param loop
+            if (paramsObj.contains("Textures"))
+            {
+                for (auto& param : paramsObj["Textures"])
+                {
+                    std::string name = param.value("Name", "");
+                    std::string texPath = param.value("Path", "");
+                    auto texture = Texture::Load(texPath);
+
+                    // does texture loads correctly?
+                    if (!texture)
+                    {
+                        Warn("[MATERIAL - LOAD] Skipping texture '", name, "' in '", _path, "' - failed to load");
+                        continue;
+                    }
+
+                    result->SetParam(name, texture);
+                }
+            }
+        }
+
+        return result;
     }
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
