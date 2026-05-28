@@ -1,13 +1,30 @@
 
+#include <stb_image.h>
+
 #include "Texture.h"
+#include "Engine.h"
+#include "Helpers/Printer.hpp"
 
 namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-
     Texture::Texture(const int _width, const int _height, const int _channels, const uChar *_data)
         : m_width(_width), m_height(_height), m_channels(_channels)
+    {
+        Init(_width, _height, _channels, _data);
+    }
+
+    Texture::~Texture()
+    {
+        // Free GPU memory
+        if (m_textureID > 0)
+        {
+            glDeleteTextures(1, &m_textureID);
+        }
+    }
+
+    void Texture::Init(int _width, int _height, int _channels, const uChar *_data)
     {
         glGenTextures(1, &m_textureID);
         glBindTexture(GL_TEXTURE_2D, m_textureID);
@@ -28,13 +45,36 @@ namespace RR
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     }
 
-    Texture::~Texture()
+    std::shared_ptr<Texture> Texture::Load(const std::string& _path)
     {
-        // Free GPU memory
-        if (m_textureID > 0)
+        int width, height, channels;
+
+        // get fullpath
+        auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+        auto fullPath = fileSys.GetAssetFolder() / "Textures"/ _path;
+
+        // Check if file is present
+        if (!std::filesystem::exists(fullPath))
         {
-            glDeleteTextures(1, &m_textureID);
+            Warn("[TEXTURE - LOAD] File not found: ", fullPath.string());
+            return nullptr;
         }
+
+        uChar* data = stbi_load(fullPath.string().c_str(), &width, &height,
+            &channels, 0);
+
+        // Check if data is not corrupted
+        if (data)
+        {
+            std::shared_ptr<Texture> result = std::make_shared<Texture>(width, height, channels, data);
+            stbi_image_free(data);
+
+            return result;
+        }
+
+        Warn("[TEXTURE - LOAD] Failed to decode: '", fullPath.string(), "'");
+        InfoLog(stbi_failure_reason());
+        return nullptr;
     }
 
     GLuint Texture::GetID() const
@@ -42,3 +82,22 @@ namespace RR
         return m_textureID;
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,9 +1,10 @@
 
-#include "GraphicsApi.h"
+#include "Engine.h"
+#include "GraphicsAPI.h"
 #include "ShaderProgram.h"
 #include "GLFW/glfw3.h"
+#include "Helpers/Printer.hpp"
 #include "Render/Material.h"
-#include "Helpers/ShaderLoader.hpp"
 #include "Render/Mesh.h"
 
 namespace RR
@@ -29,14 +30,16 @@ namespace RR
      * @param _fragmentPath .frag shader file location
      * @return new compiled ShaderProgram if successfully, otherwise nullptr
      */
-    std::shared_ptr<ShaderProgram> GraphicsAPI::CreateShaderProgram(const std::string &_vertexPath,
-                                                                    const std::string &_fragmentPath)
+    std::shared_ptr<ShaderProgram> GraphicsAPI::CreateShaderProgram(const std::string& _vertexPath,
+                                                                    const std::string& _fragmentPath)
     {
         // VERTEX SHADER -----------------------------------------------------------------------------------------------
 
+        auto& fileSys = Engine::GetInstance().GetFileSystem();
+
         // Load vertex shader from file and compile it
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        std::string vertexShaderSource = ShaderLoader::LoadFromFile(_vertexPath);
+        std::string vertexShaderSource = fileSys.LoadAssetFileText("Shaders/" + _vertexPath);
 
         // check if valid path
         if (vertexShaderSource.empty())
@@ -69,7 +72,7 @@ namespace RR
 
         // Load fragment shader from file and compile it
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        std::string fragmentShaderSource = ShaderLoader::LoadFromFile(_fragmentPath);
+        std::string fragmentShaderSource = fileSys.LoadAssetFileText("Shaders/" + _fragmentPath);
 
         // check if valid path
         if (fragmentShaderSource.empty())

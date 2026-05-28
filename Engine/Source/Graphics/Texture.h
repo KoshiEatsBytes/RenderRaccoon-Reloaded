@@ -12,6 +12,9 @@ namespace RR
         Texture(int _width, int _height, int _channels, const uChar* _data);
         ~Texture();
 
+        void Init(int _width, int _height, int _channels, const uChar* _data);
+        static std::shared_ptr<Texture> Load(const std::string& _path);
+
         GLuint GetID() const;
 
     private:

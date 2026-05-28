@@ -25,7 +25,6 @@ set(PROJECT_SOURCE_FILES
         Source/Application.h
         Source/Application.cpp
         Source/Helpers/Printer.hpp
-        Source/Helpers/ShaderLoader.hpp
         Source/Helpers/StbImageImpl.cpp
         Source/Input/InputManager.cpp
         Source/Input/InputManager.h

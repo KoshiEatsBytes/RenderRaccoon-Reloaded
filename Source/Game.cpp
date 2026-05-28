@@ -1,8 +1,8 @@
 
-#include "Game.h"
-
-#include "TestObject.h"
 #include <stb_image.h>
+
+#include "Game.h"
+#include "TestObject.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -12,27 +12,7 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
-    auto& fs = RR::Engine::GetInstance().GetFileSystem();
-    auto imagePath = fs.GetAssetFolder() / "Textures" / "brick.png";
-    auto vertPath = fs.GetAssetFolder() / "Shaders" / "basic.vert";
-    auto fragPath = fs.GetAssetFolder() / "Shaders" / "basic.frag";
-
-    int width, height, channels;
-    uChar* data = stbi_load(imagePath.string().c_str(), &width, &height, &channels, 0);
-    std::shared_ptr<RR::Texture> texture;
-
-    if (!data)
-    {
-        RR::Warn("[TEXTURE] Failed to load: ", imagePath.string(), " - ", stbi_failure_reason());
-    }
-    else
-    {
-        RR::Success("[TEXTURE] Image loaded correctly");
-
-        texture = std::make_shared<RR::Texture>(width, height, channels, data);
-
-        stbi_image_free(data);
-    }
+    auto texture = RR::Texture::Load("brick.png");
 
     m_scene = new RR::Scene;
 
@@ -47,7 +27,7 @@ bool Game::Init()
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
-    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertPath.string(), fragPath.string());
+    auto shaderProgram = graphicsAPI.CreateShaderProgram("basic.vert", "basic.frag");
 
     auto material = std::make_shared<RR::Material>();
     material->SetShaderProgram(shaderProgram);
