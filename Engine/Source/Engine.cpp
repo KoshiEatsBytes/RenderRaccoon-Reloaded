@@ -74,7 +74,7 @@ namespace RR
         // push back last frame pos
         inputManager.SetMousePositionOld(inputManager.GetMousePositionCurrent());
 
-        const Vec2 currentPos = {static_cast<float>(xPos), static_cast<float>(yPos)};
+        const vec2 currentPos = {static_cast<float>(xPos), static_cast<float>(yPos)};
         inputManager.SetMousePositionCurrent(currentPos);
     }
 
@@ -263,5 +263,10 @@ namespace RR
     RenderQueue& Engine::GetRenderQueue()
     {
         return m_renderQueue;
+    }
+
+    FileSystem& Engine::GetFileSystem()
+    {
+        return m_fileSystem;
     }
 }

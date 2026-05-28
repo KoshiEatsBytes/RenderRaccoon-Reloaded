@@ -63,7 +63,7 @@ namespace RR
      * @param _name Name of the uniform to write to
      * @param _mat Transform matrix to apply
      */
-    void ShaderProgram::SetUniform(const std::string& _name, const Mat4& _mat)
+    void ShaderProgram::SetUniform(const std::string& _name, const mat4& _mat)
     {
         auto location = GetUniformLocation(_name);
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(_mat));

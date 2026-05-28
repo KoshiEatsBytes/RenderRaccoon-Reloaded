@@ -31,14 +31,14 @@ namespace RR
 
             // horizontal rot
             float yAngle = -deltaX * m_sensitivity * _deltaTime;
-            Quat yRot = glm::angleAxis(yAngle, Vec3(0.0f, 1.0f, 0.0f));
+            quat yRot = glm::angleAxis(yAngle, vec3(0.0f, 1.0f, 0.0f));
             // vertical rot
             float xAngle = -deltaY * m_sensitivity * _deltaTime;
-            Vec3 right = rotation * Vec3(1.0f, 0.0f, 0.0f);
-            Quat xRot = glm::angleAxis(xAngle, right);
+            vec3 right = rotation * vec3(1.0f, 0.0f, 0.0f);
+            quat xRot = glm::angleAxis(xAngle, right);
 
             // combine rot
-            Quat deltaRot = yRot * xRot;
+            quat deltaRot = yRot * xRot;
             rotation = glm::normalize(deltaRot * rotation);
 
             // set rot to owner GO
@@ -46,8 +46,8 @@ namespace RR
         }
 
         // forward along z axis, right x
-        Vec3 forward = rotation * Vec3(0.0f, 0.0f, -1.0f);
-        Vec3 right   = rotation * Vec3(1.0f, 0.0f, 0.0f);
+        vec3 forward = rotation * vec3(0.0f, 0.0f, -1.0f);
+        vec3 right   = rotation * vec3(1.0f, 0.0f, 0.0f);
 
         auto position = m_owner->GetPosition();
 

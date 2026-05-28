@@ -5,8 +5,8 @@
 
 TestObject::TestObject()
 {
-    const std::string vertPath = std::string(ASSETS_PATH) + "Shaders/basic.vert";
-    const std::string fragPath = std::string(ASSETS_PATH) + "Shaders/basic.frag";
+    const std::string vertPath = "Shaders/basic.vert";
+    const std::string fragPath = "Shaders/basic.frag";
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 

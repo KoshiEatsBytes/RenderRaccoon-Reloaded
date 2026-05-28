@@ -2,6 +2,7 @@
 #include "Game.h"
 
 #include "TestObject.h"
+#include <stb_image.h>
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -11,19 +12,37 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
+    auto& fs = RR::Engine::GetInstance().GetFileSystem();
+    auto path = fs.GetAssetFolder() / "Textures" / "brick.png";
+
+    int width, height, channels;
+    uChar* data = stbi_load(path.string().c_str(), &width, &height, &channels, 0);
+
+    if (!data)
+    {
+        RR::Warn("[TEXTURE] Failed to load: ", path.string(), " - ", stbi_failure_reason());
+    }
+    else
+    {
+        RR::Success("[TEXTURE] Image loaded correctly");
+
+        // use data, width, height, channels...
+        stbi_image_free(data); // always free after uploading to GPU
+    }
+
     m_scene = new RR::Scene;
 
     // Create scene camera
     auto camera = m_scene->CreateObject("Camera");
     camera->AddComponent(new RR::CameraComponent());
-    camera->SetPosition(Vec3(0.0f, 0.0f, 2.0f));
+    camera->SetPosition(vec3(0.0f, 0.0f, 2.0f));
     camera->AddComponent(new RR::PlayerControllerComponent);
 
     m_scene->SetMainCamera(camera);
     //m_scene->CreateObject<TestObject>("TestObject");
 
-    const std::string vertPath = std::string(ASSETS_PATH) + "Shaders/basic.vert";
-    const std::string fragPath = std::string(ASSETS_PATH) + "Shaders/basic.frag";
+    const std::string vertPath = "Shaders/basic.vert";
+    const std::string fragPath = "Shaders/basic.frag";
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
@@ -97,18 +116,18 @@ bool Game::Init()
 
     auto objectA = m_scene->CreateObject("ObjectA");
     objectA->AddComponent(new RR::MeshComponent(material, mesh));
-    objectA->SetPosition(Vec3(0.0f, 2.0f, 0.0f));
+    objectA->SetPosition(vec3(0.0f, 2.0f, 0.0f));
 
     auto objectB = m_scene->CreateObject("ObjectB");
     objectB->AddComponent(new RR::MeshComponent(material, mesh));
-    objectB->SetPosition(Vec3(0.0f, 2.0f, 2.0f));
-    objectB->SetRotation(Vec3(0.0f, 2.0f, 0.0f));
+    objectB->SetPosition(vec3(0.0f, 2.0f, 2.0f));
+    objectB->SetRotation(vec3(0.0f, 2.0f, 0.0f));
 
     auto objectC = m_scene->CreateObject("ObjectC");
     objectC->AddComponent(new RR::MeshComponent(material, mesh));
-    objectC->SetPosition(Vec3(-2.0f, 0.0f, 0.0f));
-    objectC->SetRotation(Vec3(1.0f, 0.0f, 1.0f));
-    objectC->SetScale(Vec3(1.5f));
+    objectC->SetPosition(vec3(-2.0f, 0.0f, 0.0f));
+    objectC->SetRotation(vec3(1.0f, 0.0f, 1.0f));
+    objectC->SetScale(vec3(1.5f));
 
 
 

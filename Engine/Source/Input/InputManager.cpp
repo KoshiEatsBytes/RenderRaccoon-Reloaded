@@ -63,22 +63,22 @@ namespace RR
 
     // GET/SETS --------------------------------------------------------------------------------------------------------
 
-    void InputManager::SetMousePositionOld(const Vec2& _pos)
+    void InputManager::SetMousePositionOld(const vec2& _pos)
     {
         m_mousePosOld = _pos;
     }
 
-    const Vec2& InputManager::GetMousePositionOld() const
+    const vec2& InputManager::GetMousePositionOld() const
     {
         return m_mousePosOld;
     }
 
-    void InputManager::SetMousePositionCurrent(const Vec2& _pos)
+    void InputManager::SetMousePositionCurrent(const vec2& _pos)
     {
         m_mousePosCurrent = _pos;
     }
 
-    const Vec2& InputManager::GetMousePositionCurrent() const
+    const vec2& InputManager::GetMousePositionCurrent() const
     {
         return m_mousePosCurrent;
     }

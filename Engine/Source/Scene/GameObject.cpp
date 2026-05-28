@@ -75,32 +75,32 @@ namespace RR
         return m_isAlive;
     }
 
-    const Vec3& GameObject::GetPosition() const
+    const vec3& GameObject::GetPosition() const
     {
         return m_position;
     }
 
-    void GameObject::SetPosition(const Vec3& _pos)
+    void GameObject::SetPosition(const vec3& _pos)
     {
         m_position = _pos;
     }
 
-    const Quat& GameObject::GetRotation() const
+    const quat& GameObject::GetRotation() const
     {
         return m_rotation;
     }
 
-    void GameObject::SetRotation(const Quat& _rot)
+    void GameObject::SetRotation(const quat& _rot)
     {
         m_rotation = _rot;
     }
 
-    const Vec3& GameObject::GetScale() const
+    const vec3& GameObject::GetScale() const
     {
         return m_scale;
     }
 
-    void GameObject::SetScale(const Vec3& _scale)
+    void GameObject::SetScale(const vec3& _scale)
     {
         m_scale = _scale;
     }
@@ -109,9 +109,9 @@ namespace RR
      * @brief Return a matrix combining pos rot and scale in local space
      * @return Local transform matrix
      */
-    Mat4 GameObject::GetLocalTransform() const
+    mat4 GameObject::GetLocalTransform() const
     {
-        Mat4 mat = Mat4(1.0f);
+        mat4 mat = mat4(1.0f);
 
         // Translation
         mat = glm::translate(mat, m_position);
@@ -129,7 +129,7 @@ namespace RR
      * @brief Return a matrix combining pos rot and scale in world space
      * @return World space matrix
      */
-    Mat4 GameObject::GetWorldTransform() const
+    mat4 GameObject::GetWorldTransform() const
     {
         // consider parent transform
         if (m_parent)

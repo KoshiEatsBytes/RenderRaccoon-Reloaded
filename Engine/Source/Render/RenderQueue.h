@@ -16,7 +16,7 @@ namespace RR
     {
         Mesh* mesh = nullptr;
         Material* material = nullptr;
-        Mat4 modelMatrix;
+        mat4 modelMatrix;
     };
 
     /**
@@ -24,8 +24,8 @@ namespace RR
      */
     struct CameraData
     {
-        Mat4 viewMatrix;
-        Mat4 projMatrix;
+        mat4 viewMatrix;
+        mat4 projMatrix;
     };
 
     class RenderQueue

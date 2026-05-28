@@ -30,17 +30,17 @@ namespace RR
         bool IsMouseButtonPressed(int _button) const;
 
         // Set/Gets
-        void SetMousePositionOld(const Vec2& _pos);
-        const Vec2& GetMousePositionOld() const;
-        void SetMousePositionCurrent(const Vec2& _pos);
-        const Vec2& GetMousePositionCurrent() const;
+        void SetMousePositionOld(const vec2& _pos);
+        const vec2& GetMousePositionOld() const;
+        void SetMousePositionCurrent(const vec2& _pos);
+        const vec2& GetMousePositionCurrent() const;
 
     private:
         std::array<bool, 384> m_keys = {false};
         std::array<bool, 16> m_mouseKeys = {false};
 
-        Vec2 m_mousePosOld = Vec2(0.0f);
-        Vec2 m_mousePosCurrent = Vec2(0.0f);
+        vec2 m_mousePosOld = vec2(0.0f);
+        vec2 m_mousePosCurrent = vec2(0.0f);
 
 
     };

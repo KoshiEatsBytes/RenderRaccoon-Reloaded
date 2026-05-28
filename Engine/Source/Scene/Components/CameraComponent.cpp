@@ -18,13 +18,13 @@ namespace RR
     {
     }
 
-    Mat4 CameraComponent::GetViewMatrix() const
+    mat4 CameraComponent::GetViewMatrix() const
     {
-        Mat4 mat = Mat4(1.0f);
+        mat4 mat = mat4(1.0f);
 
         // Transformation order does not follow MVP - dont apply scale
         mat = glm::mat4_cast(m_owner->GetRotation());
-        mat[3] = Vec4(m_owner->GetPosition(), 1.0f);
+        mat[3] = vec4(m_owner->GetPosition(), 1.0f);
 
         // Apply parent transform is present
         if (m_owner->GetParent())
@@ -35,7 +35,7 @@ namespace RR
         return glm::inverse(mat);
     }
 
-    Mat4 CameraComponent::GetProjectionMatrix(float _aspect) const
+    mat4 CameraComponent::GetProjectionMatrix(float _aspect) const
     {
         // calculate projection matrix
         return glm::perspective(glm::radians(m_fov), _aspect, m_nearPlane, m_farPlane);

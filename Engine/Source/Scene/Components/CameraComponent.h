@@ -15,8 +15,8 @@ namespace RR
 
         void Update(float _deltaTime) override;
 
-        Mat4 GetViewMatrix() const;
-        Mat4 GetProjectionMatrix(float _aspect) const;
+        mat4 GetViewMatrix() const;
+        mat4 GetProjectionMatrix(float _aspect) const;
 
     private:
         float m_fov = 60.0f;

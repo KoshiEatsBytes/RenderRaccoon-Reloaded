@@ -27,16 +27,16 @@ namespace RR
         bool IsAlive() const;
 
         // pos/rot/scale set/get
-        const Vec3& GetPosition() const;
-        void SetPosition(const Vec3& _pos);
-        const Quat& GetRotation() const;
-        void SetRotation(const Quat& _rot);
-        const Vec3& GetScale() const;
-        void SetScale(const Vec3& _scale);
+        const vec3& GetPosition() const;
+        void SetPosition(const vec3& _pos);
+        const quat& GetRotation() const;
+        void SetRotation(const quat& _rot);
+        const vec3& GetScale() const;
+        void SetScale(const vec3& _scale);
 
         // Transform get/set
-        Mat4 GetLocalTransform() const;
-        Mat4 GetWorldTransform() const;
+        mat4 GetLocalTransform() const;
+        mat4 GetWorldTransform() const;
 
 
     protected:
@@ -52,9 +52,9 @@ namespace RR
         std::vector<std::unique_ptr<Component>> m_components;
 
         // Object Transform Values
-        Vec3 m_position = Vec3(0.0f);
-        Quat m_rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
-        Vec3 m_scale    = Vec3(1.0f);
+        vec3 m_position = vec3(0.0f);
+        quat m_rotation = quat(1.0f, 0.0f, 0.0f, 0.0f);
+        vec3 m_scale    = vec3(1.0f);
 
     public:
         // Templates ---------------------------------------------------------------------------------------------------

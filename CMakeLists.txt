@@ -26,17 +26,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         RenderRaccoonEngine
 )
 
-# Change asset path from debug to release
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        ASSETS_PATH="${CMAKE_SOURCE_DIR}/Assets/"
-    )
-else ()
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        ASSETS_PATH=""
-    )
-endif ()
-
 # Install glslang via FetchContent
 set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)
 set(GLSLANG_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
@@ -93,11 +82,3 @@ add_custom_target(validate_shaders
 )
 
 add_dependencies(${PROJECT_NAME} validate_shaders)
-
-# Copy shaders over to executable after build
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_SOURCE_DIR}/Assets/Shaders"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/Shaders"
-        COMMENT "Copying shaders to output directory"
-)
