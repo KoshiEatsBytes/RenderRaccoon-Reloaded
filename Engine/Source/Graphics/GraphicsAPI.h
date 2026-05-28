@@ -35,8 +35,8 @@ namespace RR
 
         bool Init();
 
-        std::shared_ptr<ShaderProgram> CreateShaderProgram(const std::string& _vertexPath,
-            const std::string& _fragmentPath);
+        std::shared_ptr<ShaderProgram> CreateShaderProgram(const std::string& _vertexShaderSource,
+            const std::string& _fragmentShaderSource);
 
         GLuint CreateVertexBufferObject(const std::vector<float>& _vertices);
         GLuint CreateElementBufferObject(const std::vector<uint32_t>& _indices);

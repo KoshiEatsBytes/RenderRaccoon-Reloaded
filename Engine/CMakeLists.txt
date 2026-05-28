@@ -66,6 +66,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glfw-3.4/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glm"
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stb_image"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/json"
 )
 
 # Add GLFW library

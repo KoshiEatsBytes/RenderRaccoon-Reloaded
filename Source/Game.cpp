@@ -12,6 +12,10 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
+    auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+    const std::string vertSource = fileSys.LoadAssetFileText("Shaders/basic.vert");
+    const std::string fragSource = fileSys.LoadAssetFileText("Shaders/basic.frag");
+
     auto texture = RR::Texture::Load("brick.png");
 
     m_scene = new RR::Scene;
@@ -27,7 +31,7 @@ bool Game::Init()
 
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
-    auto shaderProgram = graphicsAPI.CreateShaderProgram("basic.vert", "basic.frag");
+    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertSource, fragSource);
 
     auto material = std::make_shared<RR::Material>();
     material->SetShaderProgram(shaderProgram);

@@ -26,30 +26,27 @@ namespace RR
 
     /**
      * @brief Compiles, links and creates a new shader program
-     * @param _vertexPath .vert shader file location
-     * @param _fragmentPath .frag shader file location
+     * @param _vertexShaderSource Vertex shader source code as string
+     * @param _fragmentShaderSource Fragment shader source code as string
      * @return new compiled ShaderProgram if successfully, otherwise nullptr
      */
-    std::shared_ptr<ShaderProgram> GraphicsAPI::CreateShaderProgram(const std::string& _vertexPath,
-                                                                    const std::string& _fragmentPath)
+    std::shared_ptr<ShaderProgram> GraphicsAPI::CreateShaderProgram(const std::string& _vertexShaderSource,
+                                                                    const std::string& _fragmentShaderSource)
     {
         // VERTEX SHADER -----------------------------------------------------------------------------------------------
 
-        auto& fileSys = Engine::GetInstance().GetFileSystem();
-
         // Load vertex shader from file and compile it
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        std::string vertexShaderSource = fileSys.LoadAssetFileText("Shaders/" + _vertexPath);
 
         // check if valid path
-        if (vertexShaderSource.empty())
+        if (_vertexShaderSource.empty())
         {
-            Error("[VERTEX SHADER] Could not load file at: ", _vertexPath);
+            Error("[VERTEX SHADER] INVALID vertex shader source provided to shader program");
             glDeleteShader(vertexShader);
             return nullptr;
         }
 
-        const char* vertexShaderSourceCStr = vertexShaderSource.c_str();
+        const char* vertexShaderSourceCStr = _vertexShaderSource.c_str();
         glShaderSource(vertexShader, 1, &vertexShaderSourceCStr, nullptr);
         glCompileShader(vertexShader);
 
@@ -60,7 +57,7 @@ namespace RR
         {
             char infoLog[512];
             glGetShaderInfoLog(vertexShader, 512, nullptr, infoLog);
-            Error("[VERTEX SHADER] Compilation Failed! File: ", _vertexPath);
+            Error("[VERTEX SHADER] Compilation Failed!");
             InfoLog(infoLog);
 
             // Clean-up
@@ -72,12 +69,11 @@ namespace RR
 
         // Load fragment shader from file and compile it
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        std::string fragmentShaderSource = fileSys.LoadAssetFileText("Shaders/" + _fragmentPath);
 
         // check if valid path
-        if (fragmentShaderSource.empty())
+        if (_fragmentShaderSource.empty())
         {
-            Error("[FRAGMENT SHADER] Could not load file at: ", _fragmentPath);
+            Error("[FRAGMENT SHADER] INVALID fragment shader source provided to shader program");
 
             // clean-up
             glDeleteShader(fragmentShader);
@@ -85,7 +81,7 @@ namespace RR
             return nullptr;
         }
 
-        const char* fragmentShaderSourceCStr = fragmentShaderSource.c_str();
+        const char* fragmentShaderSourceCStr = _fragmentShaderSource.c_str();
         glShaderSource(fragmentShader, 1, &fragmentShaderSourceCStr, nullptr);
         glCompileShader(fragmentShader);
 
@@ -95,7 +91,7 @@ namespace RR
         {
             char infoLog[512];
             glGetShaderInfoLog(fragmentShader, 512, nullptr, infoLog);
-            Error("[FRAGMENT SHADER] Compilation Failed! File: ", _fragmentPath);
+            Error("[FRAGMENT SHADER] Compilation Failed!");
             InfoLog(infoLog);
 
             // clean-up
