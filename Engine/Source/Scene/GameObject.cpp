@@ -85,12 +85,12 @@ namespace RR
         m_position = _pos;
     }
 
-    const Vec3& GameObject::GetRotation() const
+    const Quat& GameObject::GetRotation() const
     {
         return m_rotation;
     }
 
-    void GameObject::SetRotation(const Vec3& _rot)
+    void GameObject::SetRotation(const Quat& _rot)
     {
         m_rotation = _rot;
     }
@@ -117,9 +117,7 @@ namespace RR
         mat = glm::translate(mat, m_position);
 
         // Rotation
-        mat = glm::rotate(mat, m_rotation.x, Vec3(1.0f, 0.0f, 0.0f)); // X axis rot
-        mat = glm::rotate(mat, m_rotation.y, Vec3(0.0f, 1.0f, 0.0f)); // Y axis rot
-        mat = glm::rotate(mat, m_rotation.z, Vec3(0.0f, 0.0f, 1.0f)); // Z axis rot
+        mat = mat * glm::mat4_cast(m_rotation);
 
         // Scale
         mat = glm::scale(mat, m_scale);

@@ -1,6 +1,7 @@
 
 #include "GraphicsApi.h"
 #include "ShaderProgram.h"
+#include "GLFW/glfw3.h"
 #include "Render/Material.h"
 #include "Helpers/ShaderLoader.hpp"
 #include "Render/Mesh.h"
@@ -14,6 +15,13 @@ namespace RR
     GraphicsAPI::~GraphicsAPI() = default;
 
     // PUBLIC -----------------------------------------------------------------------------------------------------------
+
+    bool GraphicsAPI::Init()
+    {
+        glfwSwapInterval(0); // Turn off vertical sync
+        glEnable(GL_DEPTH_TEST);
+        return true;
+    }
 
     /**
      * @brief Compiles, links and creates a new shader program
@@ -206,7 +214,7 @@ namespace RR
 
     void GraphicsAPI::ClearBuffers()
     {
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
     void GraphicsAPI::SetClearColor(const float _r, const float _g, const float _b, const float _a)

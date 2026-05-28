@@ -20,8 +20,19 @@ namespace RR
 
     Mat4 CameraComponent::GetViewMatrix() const
     {
-        // Camera has inverted matrix
-        return glm::inverse(m_owner->GetWorldTransform());
+        Mat4 mat = Mat4(1.0f);
+
+        // Transformation order does not follow MVP - dont apply scale
+        mat = glm::mat4_cast(m_owner->GetRotation());
+        mat[3] = Vec4(m_owner->GetPosition(), 1.0f);
+
+        // Apply parent transform is present
+        if (m_owner->GetParent())
+        {
+            mat = m_owner->GetParent()->GetWorldTransform() * mat;
+        }
+
+        return glm::inverse(mat);
     }
 
     Mat4 CameraComponent::GetProjectionMatrix(float _aspect) const

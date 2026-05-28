@@ -123,11 +123,17 @@ namespace RR
         glfwSetCursorPosCallback(m_window, CursorPositionCallBack);
 
         glfwMakeContextCurrent(m_window);
-        glfwSwapInterval(0); // Turn off vertical sync
 
         if (glewInit() != GLEW_OK)
         {
             Error("[INITIALIZATION] Failed to initialize GLEW library.");
+            glfwTerminate();
+            return false;
+        }
+
+        if (!m_graphicsAPI.Init())
+        {
+            Error("[INITIALIZATION] Failed to initialize RR Graphics API");
             glfwTerminate();
             return false;
         }

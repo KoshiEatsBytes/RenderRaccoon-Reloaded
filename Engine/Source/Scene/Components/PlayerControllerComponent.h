@@ -16,8 +16,8 @@ namespace RR
         void Update(float _deltaTime) override;
 
     private:
-        float m_sensitivity = 1.0f;
-        float m_moveSpeed = 1.0f;
+        float m_sensitivity = 2.0f;
+        float m_moveSpeed = 2.0f;
     };
 }
 

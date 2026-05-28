@@ -29,8 +29,8 @@ namespace RR
         // pos/rot/scale set/get
         const Vec3& GetPosition() const;
         void SetPosition(const Vec3& _pos);
-        const Vec3& GetRotation() const;
-        void SetRotation(const Vec3& _rot);
+        const Quat& GetRotation() const;
+        void SetRotation(const Quat& _rot);
         const Vec3& GetScale() const;
         void SetScale(const Vec3& _scale);
 
@@ -53,7 +53,7 @@ namespace RR
 
         // Object Transform Values
         Vec3 m_position = Vec3(0.0f);
-        Vec3 m_rotation = Vec3(0.0f);
+        Quat m_rotation = Quat(1.0f, 0.0f, 0.0f, 0.0f);
         Vec3 m_scale    = Vec3(1.0f);
 
     public:

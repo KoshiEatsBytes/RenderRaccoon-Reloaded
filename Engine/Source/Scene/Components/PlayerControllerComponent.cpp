@@ -29,35 +29,36 @@ namespace RR
             float deltaX = currPos.x - oldPos.x;
             float deltaY = currPos.y - oldPos.y;
 
-            // rot around Y axis
-            rotation.y -= deltaX * m_sensitivity * _deltaTime;
-            // rot around Y axis
-            rotation.x -= deltaY * m_sensitivity * _deltaTime;
+            // horizontal rot
+            float yAngle = -deltaX * m_sensitivity * _deltaTime;
+            Quat yRot = glm::angleAxis(yAngle, Vec3(0.0f, 1.0f, 0.0f));
+            // vertical rot
+            float xAngle = -deltaY * m_sensitivity * _deltaTime;
+            Vec3 right = rotation * Vec3(1.0f, 0.0f, 0.0f);
+            Quat xRot = glm::angleAxis(xAngle, right);
+
+            // combine rot
+            Quat deltaRot = yRot * xRot;
+            rotation = glm::normalize(deltaRot * rotation);
 
             // set rot to owner GO
             m_owner->SetRotation(rotation);
         }
 
-        // Movement relative to camera rot
-        Mat4 rotMat(1.0f);
-        rotMat = glm::rotate(rotMat, rotation.x, Vec3(1.0f, 0.0f, 0.0f));
-        rotMat = glm::rotate(rotMat, rotation.y, Vec3(0.0f, 1.0f, 0.0f));
-        rotMat = glm::rotate(rotMat, rotation.z, Vec3(0.0f, 0.0f, 1.0f));
-
         // forward along z axis, right x
-        Vec3 forward = glm::normalize(Vec3(rotMat * Vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-        Vec3 right   = glm::normalize(Vec3(rotMat * Vec4(1.0f, 0.0f, 0.0f, 0.0f)));
+        Vec3 forward = rotation * Vec3(0.0f, 0.0f, -1.0f);
+        Vec3 right   = rotation * Vec3(1.0f, 0.0f, 0.0f);
 
         auto position = m_owner->GetPosition();
 
         // Left/Right
         if (inputManager.IsKeyPressed(GLFW_KEY_A))
         {
-            position += right * m_moveSpeed * _deltaTime;
+            position -= right * m_moveSpeed * _deltaTime;
         }
         if (inputManager.IsKeyPressed(GLFW_KEY_D))
         {
-            position -= right * m_moveSpeed * _deltaTime;
+            position += right * m_moveSpeed * _deltaTime;
         }
 
         // Up/Down

@@ -33,6 +33,8 @@ namespace RR
 
         // METHODS -----------------------------------------------------------------------------------------------------
 
+        bool Init();
+
         std::shared_ptr<ShaderProgram> CreateShaderProgram(const std::string& _vertexPath,
             const std::string& _fragmentPath);
 
