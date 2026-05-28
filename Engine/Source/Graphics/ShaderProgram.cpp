@@ -1,6 +1,8 @@
 
-#include "ShaderProgram.h"
 #include <glm/gtc/type_ptr.hpp>
+
+#include "ShaderProgram.h"
+#include "Graphics/Texture.h"
 
 namespace RR
 {
@@ -13,9 +15,10 @@ namespace RR
         glDeleteProgram(m_shaderProgramID);
     }
 
-    void ShaderProgram::Bind() const
+    void ShaderProgram::Bind()
     {
         glUseProgram(m_shaderProgramID);
+        m_currentTextureUnit = 0;
     }
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
@@ -67,6 +70,17 @@ namespace RR
     {
         auto location = GetUniformLocation(_name);
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(_mat));
+    }
+
+    void ShaderProgram::SetTexture(const std::string& _name, Texture* _texture)
+    {
+        // In this case location of the sampler
+        auto location = GetUniformLocation(_name);
+
+        // unitIndex is the location of the texture slot
+        glActiveTexture(GL_TEXTURE0 + m_currentTextureUnit);
+        glBindTexture(GL_TEXTURE_2D, _texture->GetID());
+        glUniform1i(location, m_currentTextureUnit);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

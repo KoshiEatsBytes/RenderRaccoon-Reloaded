@@ -13,21 +13,25 @@ Game::~Game() = default;
 bool Game::Init()
 {
     auto& fs = RR::Engine::GetInstance().GetFileSystem();
-    auto path = fs.GetAssetFolder() / "Textures" / "brick.png";
+    auto imagePath = fs.GetAssetFolder() / "Textures" / "brick.png";
+    auto vertPath = fs.GetAssetFolder() / "Shaders" / "basic.vert";
+    auto fragPath = fs.GetAssetFolder() / "Shaders" / "basic.frag";
 
     int width, height, channels;
-    uChar* data = stbi_load(path.string().c_str(), &width, &height, &channels, 0);
+    uChar* data = stbi_load(imagePath.string().c_str(), &width, &height, &channels, 0);
+    std::shared_ptr<RR::Texture> texture;
 
     if (!data)
     {
-        RR::Warn("[TEXTURE] Failed to load: ", path.string(), " - ", stbi_failure_reason());
+        RR::Warn("[TEXTURE] Failed to load: ", imagePath.string(), " - ", stbi_failure_reason());
     }
     else
     {
         RR::Success("[TEXTURE] Image loaded correctly");
 
-        // use data, width, height, channels...
-        stbi_image_free(data); // always free after uploading to GPU
+        texture = std::make_shared<RR::Texture>(width, height, channels, data);
+
+        stbi_image_free(data);
     }
 
     m_scene = new RR::Scene;
@@ -41,31 +45,53 @@ bool Game::Init()
     m_scene->SetMainCamera(camera);
     //m_scene->CreateObject<TestObject>("TestObject");
 
-    const std::string vertPath = "Shaders/basic.vert";
-    const std::string fragPath = "Shaders/basic.frag";
-
     auto& graphicsAPI = RR::Engine::GetInstance().GetGraphicsAPI();
 
-    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertPath, fragPath);
+    auto shaderProgram = graphicsAPI.CreateShaderProgram(vertPath.string(), fragPath.string());
 
     auto material = std::make_shared<RR::Material>();
     material->SetShaderProgram(shaderProgram);
+    material->SetParam("brickTexture", texture);
 
     // Triangle made with vertices
     // Color of each vertices is on the right
     std::vector<float> vertices
     {
         // Front face
-        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, 0.5f, 1.0f, 1.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+
+        // Top face
+        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, 0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+
+        // Right face
+        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+
+        // Left face
+        -0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+
+        // Bottom face
+        0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f,
 
         // Back face
-        0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f,
-        -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f,
-        0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f
+        -0.5f, 0.5f, -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f,
+        0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f,
+        0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f
     };
 
     // Instead of re-rendering vertices, use them from the existent array
@@ -75,20 +101,20 @@ bool Game::Init()
         0, 1, 2,
         0, 2, 3,
         // top face
-        4, 5, 1,
-        4, 1, 0,
+        4, 5, 6,
+        4, 6, 7,
         // right face
-        4, 0, 3,
-        4, 3, 7,
+        8, 9, 10,
+        8, 10, 11,
         //left face
-        1, 5, 6,
-        1, 6, 2,
+        12, 13, 14,
+        12, 14, 15,
         // bottom face
-        3, 2, 6,
-        3, 6, 7,
+        16, 17, 18,
+        16, 18, 19,
         // back face
-        4, 7, 6,
-        4, 6, 5
+        20, 21, 22,
+        20, 22, 23
     };
 
     RR::VertexLayout vertexLayout;
@@ -109,8 +135,16 @@ bool Game::Init()
         sizeof(float) * 3
         });
 
+    // UV
+    vertexLayout.elements.push_back({
+        2,
+        2,
+        GL_FLOAT,
+        sizeof(float) * 6
+    });
+
     // Stride
-    vertexLayout.stride = sizeof(float) * 6;
+    vertexLayout.stride = sizeof(float) * 8;
 
     auto mesh = std::make_shared<RR::Mesh>(vertexLayout, vertices, indeces);
 

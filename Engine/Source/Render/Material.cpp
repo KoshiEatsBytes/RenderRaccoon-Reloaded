@@ -1,6 +1,7 @@
 
 #include "Material.h"
 #include "Graphics/ShaderProgram.h"
+#include "Graphics/Texture.h"
 #include "Helpers/Printer.hpp"
 
 namespace RR
@@ -38,12 +39,24 @@ namespace RR
         {
             m_shaderProgram->SetUniform(name, pair.first, pair.second);
         }
+
+        // Set textures
+        for (auto& [name, texture]: m_textures)
+        {
+            m_shaderProgram->SetTexture(name, texture.get());
+        }
     }
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
-    void Material::SetShaderProgram(const std::shared_ptr<ShaderProgram> &_shaderProgram)
+    void Material::SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram)
     {
+        if (!_shaderProgram)
+        {
+            Error("[MATERIAL] Tried setting an INVALID shader program to a material");
+            return;
+        }
+
         m_shaderProgram = _shaderProgram;
     }
 
@@ -60,6 +73,17 @@ namespace RR
     void Material::SetParam(const std::string& _name, float _v0, float _v1)
     {
         m_float2Params[_name] = {_v0, _v1};
+    }
+
+    void Material::SetParam(const std::string &_name, const std::shared_ptr<Texture>& _texture)
+    {
+        if (!_texture)
+        {
+            Error("[MATERIAL] Tried setting an INVALID texture to a material");
+            return;
+        }
+
+        m_textures[_name] = _texture;
     }
 }
 
