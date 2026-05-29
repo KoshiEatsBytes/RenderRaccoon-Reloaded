@@ -25,7 +25,7 @@ set(PROJECT_SOURCE_FILES
         Source/Application.h
         Source/Application.cpp
         Source/Helpers/Printer.hpp
-        Source/Helpers/StbImageImpl.cpp
+        Source/Helpers/Implementations.cpp
         Source/Input/InputManager.cpp
         Source/Input/InputManager.h
         Source/Graphics/ShaderProgram.h
@@ -67,6 +67,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/OpenGL/glm"
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stb_image"
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/json"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/cgltf"
 )
 
 # Add GLFW library

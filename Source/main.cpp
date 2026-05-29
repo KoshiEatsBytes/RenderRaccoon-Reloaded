@@ -10,7 +10,7 @@ int main()
     RR::Engine& engine = RR::Engine::GetInstance();
     engine.SetApp(game);
 
-    if (engine.Init(1920, 1080, "First Test"))
+    if (engine.Init(1920, 1080, "RenderRaccoon"))
     {
         RR::Log("Launching application...");
 
