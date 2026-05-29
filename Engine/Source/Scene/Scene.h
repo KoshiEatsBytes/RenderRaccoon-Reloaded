@@ -23,7 +23,7 @@ namespace RR
         // Get/Sets
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
-        GameObject* GetMainCamera();
+        GameObject* GetMainCamera() const;
 
     private:
         std::vector<std::unique_ptr<GameObject>> m_objects;

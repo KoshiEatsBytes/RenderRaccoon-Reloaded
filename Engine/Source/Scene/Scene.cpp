@@ -232,7 +232,7 @@ namespace RR
         m_mainCamera = _camera;
     }
 
-    GameObject* Scene::GetMainCamera()
+    GameObject* Scene::GetMainCamera() const
     {
         return m_mainCamera;
     }

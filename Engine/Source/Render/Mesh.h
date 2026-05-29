@@ -1,5 +1,6 @@
 
 #pragma once
+#include <memory>
 #include <GL/glew.h>
 #include "Graphics/VertexLayout.h"
 
@@ -22,6 +23,8 @@ namespace RR
 
         void Bind();
         void Draw();
+
+        static std::shared_ptr<Mesh> LoadGLTF(const std::string& _path);
 
     private:
         VertexLayout m_vertexLayout;

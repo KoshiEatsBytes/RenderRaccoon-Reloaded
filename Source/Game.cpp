@@ -122,7 +122,7 @@ bool Game::Init()
 
     auto objectA = m_scene->CreateObject("ObjectA");
     objectA->AddComponent(new RR::MeshComponent(material, mesh));
-    objectA->SetPosition(vec3(0.0f, 2.0f, 0.0f));
+    objectA->SetPosition(vec3(1.0f, 0.0f, -5.0f));
 
     auto objectB = m_scene->CreateObject("ObjectB");
     objectB->AddComponent(new RR::MeshComponent(material, mesh));
@@ -135,6 +135,12 @@ bool Game::Init()
     objectC->SetRotation(vec3(1.0f, 0.0f, 1.0f));
     objectC->SetScale(vec3(1.5f));
 
+    auto suzanneMesh = RR::Mesh::LoadGLTF("Models/Suzanne/Suzanne.gltf");
+    auto suzanneMat = RR::Material::Load("Materials/Suzanne.json");
+
+    auto suzanneObj = m_scene->CreateObject("Suzanne");
+    suzanneObj->AddComponent(new RR::MeshComponent(suzanneMat, suzanneMesh));
+    suzanneObj->SetPosition(vec3(-2.0f, 0.0f, -5.0f));
 
 
     RR::Engine::GetInstance().SetScene(m_scene);

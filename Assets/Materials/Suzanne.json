@@ -7,7 +7,7 @@
     "Textures": [
       {
         "Name": "baseColorTexture",
-        "Path": "Textures/brick.png"
+        "Path": "Models/Suzanne/Suzanne_BaseColor.png"
       }
     ]
   }
