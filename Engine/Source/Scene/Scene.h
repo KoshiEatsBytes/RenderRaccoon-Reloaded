@@ -51,6 +51,7 @@ namespace RR
 
             obj->SetName(_name);
             SetParent(obj, _parent);
+            obj->m_scene = this;
             return obj;
         }
     };

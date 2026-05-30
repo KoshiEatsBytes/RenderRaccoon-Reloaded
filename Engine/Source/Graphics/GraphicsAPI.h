@@ -38,6 +38,8 @@ namespace RR
         std::shared_ptr<ShaderProgram> CreateShaderProgram(const std::string& _vertexShaderSource,
             const std::string& _fragmentShaderSource);
 
+        const std::shared_ptr<ShaderProgram>& GetDefaultShaderProgram();
+
         GLuint CreateVertexBufferObject(const std::vector<float>& _vertices);
         GLuint CreateElementBufferObject(const std::vector<uint32_t>& _indices);
 
@@ -48,6 +50,14 @@ namespace RR
         void ClearBuffers();
 
         void SetClearColor(float _r, float _g, float _b, float _a);
+
+    private:
+        std::shared_ptr<ShaderProgram> m_defaultShaderProgram;
     };
 }
+
+
+
+
+
 

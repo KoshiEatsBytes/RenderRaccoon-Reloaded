@@ -132,6 +132,21 @@ namespace RR
         return std::make_shared<ShaderProgram>(shaderProgramID);
     }
 
+    const std::shared_ptr<ShaderProgram>& GraphicsAPI::GetDefaultShaderProgram()
+    {
+        // Init shader program if it has not been already initialized
+        if (!m_defaultShaderProgram)
+        {
+            auto& fileSys = Engine::GetInstance().GetFileSystem();
+            auto vertexSrc = fileSys.LoadAssetFileText("Shaders/Default/Default.vert");
+            auto fragmentSrc = fileSys.LoadAssetFileText("Shaders/Default/Default.frag");
+
+            m_defaultShaderProgram = CreateShaderProgram(vertexSrc, fragmentSrc);
+        }
+
+        return m_defaultShaderProgram;
+    }
+
     /**
      * @brief Uploads vertex data to the GPU via buffer
      * @param _vertices vertices to buffer

@@ -2,6 +2,8 @@
 #include <stb_image.h>
 
 #include "Game.h"
+
+#include "GLTFLib.hpp"
 #include "TestObject.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
@@ -13,6 +15,7 @@ Game::~Game() = default;
 bool Game::Init()
 {
     m_scene = new RR::Scene;
+    RR::Engine::GetInstance().SetScene(m_scene);
 
     // Create scene camera
     auto camera = m_scene->CreateObject("Camera");
@@ -28,7 +31,7 @@ bool Game::Init()
 
     auto objectA = m_scene->CreateObject("ObjectA");
     objectA->AddComponent(new RR::MeshComponent(material, mesh));
-    objectA->SetPosition(vec3(1.0f, 0.0f, -5.0f));
+    objectA->SetPosition(vec3(1.0f, 0.0f, -15.0f));
 
     auto objectB = m_scene->CreateObject("ObjectB");
     objectB->AddComponent(new RR::MeshComponent(material, mesh));
@@ -41,20 +44,21 @@ bool Game::Init()
     objectC->SetRotation(vec3(1.0f, 0.0f, 1.0f));
     objectC->SetScale(vec3(1.5f));
 
-    auto suzanneMesh = RR::Mesh::LoadGLTF("Models/Suzanne/Suzanne.gltf");
-    auto suzanneMat = RR::Material::Load("Materials/Suzanne.json");
+    //auto suzanneMesh = RR::Mesh::LoadGLTF("Models/Suzanne/Suzanne.gltf");
+    //auto suzanneMat = RR::Material::Load("Materials/Suzanne.json");
 
-    auto suzanneObj = m_scene->CreateObject("Suzanne");
-    suzanneObj->AddComponent(new RR::MeshComponent(suzanneMat, suzanneMesh));
-    suzanneObj->SetPosition(vec3(-2.0f, 0.0f, -5.0f));
+    //auto suzanneObj = m_scene->CreateObject("Suzanne");
+    //suzanneObj->AddComponent(new RR::MeshComponent(suzanneMat, suzanneMesh));
+    //suzanneObj->SetPosition(vec3(-2.0f, 0.0f, -5.0f));
+
+    auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf");
+    suzanneObj->SetPosition(vec3(0.0f, 0.0f, -5.0f));
 
     auto light = m_scene->CreateObject("Light");
     auto lightComponent = new RR::LightComponent();
     lightComponent->SetColor(vec3(1.0f));
     light->AddComponent(lightComponent);
     light->SetPosition(vec3(0.0f, 5.0f, 0.0f));
-
-    RR::Engine::GetInstance().SetScene(m_scene);
 
     return true;
 }

@@ -58,7 +58,7 @@ set(PROJECT_SOURCE_FILES
         Source/Graphics/Texture.h
         Source/Scene/Components/LightComponent.cpp
         Source/Scene/Components/LightComponent.h
-        Source/GLTFTypes.h
+        Source/GLTFLib.hpp
 )
 
 # Compose application structure

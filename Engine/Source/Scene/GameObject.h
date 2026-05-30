@@ -10,6 +10,7 @@
 
 namespace RR
 {
+    class Scene;
     class GameObject
     {
     public:
@@ -25,7 +26,12 @@ namespace RR
         // getters/setters
         const std::string& GetName() const;
         void SetName(const std::string& _name);
-        GameObject* GetParent();
+
+        bool SetParent(GameObject* _parent);
+        GameObject* GetParent() const;
+
+        Scene* GetScene() const;
+
         bool IsAlive() const;
 
         // pos/rot/scale set/get
@@ -50,6 +56,7 @@ namespace RR
         bool m_isAlive = true;
         std::string m_name;
         GameObject* m_parent = nullptr;
+        Scene* m_scene = nullptr;
 
         // Hierarchy
         std::vector<std::unique_ptr<GameObject>> m_children;
