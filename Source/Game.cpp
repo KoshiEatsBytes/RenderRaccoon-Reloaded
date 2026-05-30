@@ -51,6 +51,7 @@ bool Game::Init()
     //suzanneObj->AddComponent(new RR::MeshComponent(suzanneMat, suzanneMesh));
     //suzanneObj->SetPosition(vec3(-2.0f, 0.0f, -5.0f));
 
+    //auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Tardis/Tardis Exterior.gltf");
     auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf");
     suzanneObj->SetPosition(vec3(0.0f, 0.0f, -5.0f));
 

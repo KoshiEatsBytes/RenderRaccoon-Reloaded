@@ -81,8 +81,17 @@ namespace RR
 
             std::string modelName = "CGLTFLoadedModel" + std::to_string(m_resultIndex);
             auto resultObject = scene->CreateObject(modelName);
+            m_resultIndex++;
 
             // GLTF files can have scenes, for now only grab scene no. 1 (index 0)
+            // also check if there is a valid scene
+            if (data->scenes_count == 0)
+            {
+                Warn("[GLTF - LOADING] No scenes found in: '", _path, "'");
+                cgltf_free(data);
+                return nullptr;
+            }
+
             auto modelScene = &data->scenes[0];
 
             for (cgSize i = 0; i < modelScene->nodes_count; i++)
@@ -100,7 +109,8 @@ namespace RR
 
         static void ParseNode(cgNode* _node, GameObject* _parent, const fSysPath& _folder)
         {
-            GameObject* object = _parent->GetScene()->CreateObject(_node->name, _parent);
+            std::string nodeName = _node->name ? _node->name : "UnnamedNode";
+            GameObject* object = _parent->GetScene()->CreateObject(nodeName, _parent);
 
             /**
              *  GLTF nodes can store transformation in 2 ways
@@ -311,8 +321,6 @@ namespace RR
                      */
 
                     auto mat = std::make_shared<Material>();
-
-                    // Default fallback if model does not have material
                     mat->SetShaderProgram(Engine::GetInstance().GetGraphicsAPI().GetDefaultShaderProgram());
 
                     // if primitive mat exists
@@ -355,9 +363,9 @@ namespace RR
                                 }
                             }
                         }
-
-                        object->AddComponent(new MeshComponent(mat, mesh));
                     }
+
+                    object->AddComponent(new MeshComponent(mat, mesh));
                 }
             }
 

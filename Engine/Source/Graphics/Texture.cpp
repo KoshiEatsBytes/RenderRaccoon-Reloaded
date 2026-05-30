@@ -26,12 +26,36 @@ namespace RR
 
     void Texture::Init(int _width, int _height, int _channels, const uChar *_data)
     {
+        GLenum channelFormat = 0;
+
+        switch (_channels)
+        {
+            case 1:
+                channelFormat = GL_RED;
+                break;
+            case 2:
+                channelFormat = GL_RG;
+                break;
+            case 3:
+                channelFormat = GL_RGB;
+                break;
+            case 4:
+                channelFormat = GL_RGBA;
+                break;
+
+            default:
+                Warn("[TEXTURE - INIT - CHANNELS] Current texture channels are out of scope, defaulting to RGBA");
+                channelFormat = GL_RGBA;
+                break;
+        }
+
         glGenTextures(1, &m_textureID);
         glBindTexture(GL_TEXTURE_2D, m_textureID);
 
         // load image into gpu
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, _width, _height,
-            0, GL_RGB, GL_UNSIGNED_BYTE, _data);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glTexImage2D(GL_TEXTURE_2D, 0, channelFormat, _width, _height,
+            0, channelFormat, GL_UNSIGNED_BYTE, _data);
 
         // generate mipMap
         glGenerateMipmap(GL_TEXTURE_2D);
