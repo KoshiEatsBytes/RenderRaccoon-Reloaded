@@ -1,7 +1,9 @@
 
 #pragma once
 #include <vector>
+
 #include "Types.h"
+#include "Common.h"
 
 namespace RR
 {
@@ -17,15 +19,6 @@ namespace RR
         Mesh* mesh = nullptr;
         Material* material = nullptr;
         mat4 modelMatrix;
-    };
-
-    /**
-     * Global projection and view for a scene
-     */
-    struct CameraData
-    {
-        mat4 viewMatrix;
-        mat4 projMatrix;
     };
 
     class RenderQueue
@@ -47,7 +40,8 @@ namespace RR
 
 
         void Submit(const RenderCommand& _command);
-        void Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData);
+        void Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData,
+            const std::vector<LightData>& _lights);
 
     private:
         std::vector<RenderCommand> m_commands;

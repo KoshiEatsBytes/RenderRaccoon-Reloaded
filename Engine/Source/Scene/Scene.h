@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 
+#include "Common.h"
 #include "GameObject.h"
 #include "Concepts.h"
 
@@ -20,12 +21,16 @@ namespace RR
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
 
+        std::vector<LightData> CollectLights();
+
         // Get/Sets
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
         GameObject* GetMainCamera() const;
 
     private:
+        void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);
+
         std::vector<std::unique_ptr<GameObject>> m_objects;
         GameObject* m_mainCamera = nullptr;
 

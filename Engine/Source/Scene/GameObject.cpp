@@ -1,6 +1,10 @@
 
 #include "GameObject.h"
+
+#include "Engine.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "Helpers/Printer.hpp"
+#include "GLTFTypes.h"
 
 namespace RR
 {
@@ -53,6 +57,50 @@ namespace RR
         m_isAlive = false;
     }
 
+    GameObject* GameObject::LoadGLTF(const std::string& _path)
+    {
+        auto& fileSys = Engine::GetInstance().GetFileSystem();
+
+        auto contents = fileSys.LoadAssetFileText(_path);
+
+        if (contents.empty())
+        {
+            Warn("[GAME-OBJECT - LOADING - GLTF] File not found: '", _path, "'");
+            return nullptr;
+        }
+
+        cgOptions options = {};
+        cgData* data = nullptr;
+        cgResult res = cgltf_parse(&options, contents.data(), contents.size(), &data);
+
+        // if prase unsuccessful
+        if (res != cgltf_result_success)
+        {
+            Warn("[GAME-OBJECT - LOADING - GLTF] GLTF File was not parsed successfully at: '", _path, "'");
+            return nullptr;
+        }
+
+        auto fullPath = fileSys.GetAssetFolder() / _path;
+        auto fullFolderPath = fullPath.remove_filename();
+        auto relativeFolderPath = fSysPath(_path).remove_filename();
+
+        // Load binary buffer
+        res = cgltf_load_buffers(&options, data, fullFolderPath.string().c_str());
+
+        // check if ok
+        if (res != cgltf_result_success)
+        {
+            Warn("[GAME-OBJECT - LOADING - GLTF] GLTF failed to load buffer successfully of file at path: '", _path, "'");
+            cgltf_free(data);
+            return nullptr;
+        }
+
+        
+
+
+
+    }
+
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
     const std::string& GameObject::GetName() const
@@ -78,6 +126,12 @@ namespace RR
     const vec3& GameObject::GetPosition() const
     {
         return m_position;
+    }
+
+    vec3 GameObject::GetWorldPosition() const
+    {
+        const vec4 hom = GetWorldTransform() * vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        return vec3(hom) / hom.w;
     }
 
     void GameObject::SetPosition(const vec3& _pos)

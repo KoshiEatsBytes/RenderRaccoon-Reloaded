@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+#include "Components/LightComponent.h"
 #include "Helpers/Printer.hpp"
 
 namespace RR
@@ -44,6 +45,25 @@ namespace RR
         obj->SetName(_name);
         SetParent(obj, _parent);
         return obj;
+    }
+
+    /**
+     * WARNING - HEAVY TO RUN METHOD.
+     *
+     * @brief Iterates through all objects, recursively check if they have a light component
+     *        if so, grab its color and world position
+     * @return list of all lights
+     */
+    std::vector<LightData> Scene::CollectLights()
+    {
+        std::vector<LightData> lights;
+
+        for (auto& obj : m_objects)
+        {
+            CollectLightsRecursive(obj.get(), lights);
+        }
+
+        return lights;
     }
 
     /**
@@ -225,6 +245,27 @@ namespace RR
         return result;
     }
 
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    void Scene::CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out)
+    {
+        // check if it has a light component
+        if (const auto light = _obj->GetComponent<LightComponent>())
+        {
+            // save light source to light vec
+            LightData lData;
+            lData.color = light->GetColor();
+            lData.position = _obj->GetWorldPosition();
+            _out.push_back(lData);
+        }
+
+        // keep going for each child of child
+        for (auto& child : _obj->m_children)
+        {
+            CollectLightsRecursive(child.get(), _out);
+        }
+    }
+
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
     void Scene::SetMainCamera(GameObject* _camera)
@@ -236,6 +277,8 @@ namespace RR
     {
         return m_mainCamera;
     }
+
+
 }
 
 

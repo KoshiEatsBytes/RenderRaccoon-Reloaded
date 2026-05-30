@@ -162,6 +162,10 @@ namespace RR
         // Get last time point before application start to compute dt
         m_lastTimePoint = std::chrono::steady_clock::now();
 
+        // Collect camera and light data
+        CameraData camData;
+        std::vector<LightData> lights;
+
         // Main application loop
         while (!m_application->GetShouldClose() &&
                !glfwWindowShouldClose(m_window))
@@ -178,9 +182,6 @@ namespace RR
             // Drawing
             m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
             m_graphicsAPI.ClearBuffers();
-
-            // Collect camera and view data
-            CameraData camData;
 
             // Dynamically adjusts the aspect ratio
             int width = 0;
@@ -199,9 +200,11 @@ namespace RR
                         camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
                     }
                 }
+
+                lights = m_currentScene->CollectLights();
             }
 
-            m_renderQueue.Draw(m_graphicsAPI, camData);
+            m_renderQueue.Draw(m_graphicsAPI, camData, lights);
             glfwSwapBuffers(m_window);
 
             // Update mouse pos

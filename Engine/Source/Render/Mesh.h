@@ -24,6 +24,7 @@ namespace RR
         void Bind();
         void Draw();
 
+        static std::shared_ptr<Mesh> CreateCube();
         static std::shared_ptr<Mesh> LoadGLTF(const std::string& _path);
 
     private:

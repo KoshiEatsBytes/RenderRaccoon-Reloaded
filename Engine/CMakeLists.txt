@@ -20,6 +20,7 @@ set(PROJECT_SOURCE_FILES
         Source/RR.h
         Source/Concepts.h
         Source/Types.h
+        Source/Common.h
         Source/Engine.h
         Source/Engine.cpp
         Source/Application.h
@@ -55,6 +56,9 @@ set(PROJECT_SOURCE_FILES
         Source/FileSystem/FileSystem.h
         Source/Graphics/Texture.cpp
         Source/Graphics/Texture.h
+        Source/Scene/Components/LightComponent.cpp
+        Source/Scene/Components/LightComponent.h
+        Source/GLTFTypes.h
 )
 
 # Compose application structure

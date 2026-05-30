@@ -32,7 +32,8 @@ namespace RR
      * @param _graphicsAPI engine ref to the graphics api
      * @param _camData
      */
-    void RenderQueue::Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData)
+    void RenderQueue::Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData,
+        const std::vector<LightData>& _lights)
     {
         for (auto& command : m_commands)
         {
@@ -45,6 +46,15 @@ namespace RR
             // Camera
             shaderProgram->SetUniform("uView", _camData.viewMatrix);
             shaderProgram->SetUniform("uProj", _camData.projMatrix);
+
+            // Lights
+            // for now only use 1 light
+            if (!_lights.empty())
+            {
+                auto& light = _lights[0];
+                shaderProgram->SetUniform("uLight.color", light.color);
+                shaderProgram->SetUniform("uLight.position", light.position);
+            }
 
             // Mesh
             _graphicsAPI.BindMesh(command.mesh);

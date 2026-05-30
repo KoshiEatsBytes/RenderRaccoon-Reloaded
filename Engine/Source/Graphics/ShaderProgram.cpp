@@ -61,6 +61,12 @@ namespace RR
         glUniform2f(location, _v0, _v1);
     }
 
+    void ShaderProgram::SetUniform(const std::string& _name, const vec3& _vec)
+    {
+        auto location = GetUniformLocation(_name);
+        glUniform3fv(location, 1, glm::value_ptr(_vec));
+    }
+
     /**
      * @brief Sets the uniform to desired matrix in the current shader program
      * @param _name Name of the uniform to write to

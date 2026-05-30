@@ -29,6 +29,7 @@ namespace RR
         GLint GetUniformLocation(const std::string& _name);
         void SetUniform(const std::string& _name, float _v0);
         void SetUniform(const std::string& _name, float _v0, float _v1);
+        void SetUniform(const std::string& _name, const vec3& _vec);
         void SetUniform(const std::string& _name, const mat4& _mat);
 
         void SetTexture(const std::string& _name, Texture* _texture);

@@ -20,6 +20,8 @@ namespace RR
         void AddComponent(Component* _component);
         void MarkForDestroy();
 
+        static GameObject* LoadGLTF(const std::string& _path);
+
         // getters/setters
         const std::string& GetName() const;
         void SetName(const std::string& _name);
@@ -28,16 +30,18 @@ namespace RR
 
         // pos/rot/scale set/get
         const vec3& GetPosition() const;
+        vec3 GetWorldPosition() const;
         void SetPosition(const vec3& _pos);
+
         const quat& GetRotation() const;
         void SetRotation(const quat& _rot);
+
         const vec3& GetScale() const;
         void SetScale(const vec3& _scale);
 
         // Transform get/set
         mat4 GetLocalTransform() const;
         mat4 GetWorldTransform() const;
-
 
     protected:
         GameObject();

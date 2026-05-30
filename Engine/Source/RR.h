@@ -27,3 +27,4 @@
 #include "Scene/Components/MeshComponent.h"
 #include "Scene/Components/CameraComponent.h"
 #include "Scene/Components/PlayerControllerComponent.h"
+#include "Scene/Components/LightComponent.h"
