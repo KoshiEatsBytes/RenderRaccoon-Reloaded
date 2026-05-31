@@ -3,6 +3,7 @@ project(RenderRaccoonEngine)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
 
 # Sets assets dir
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -62,6 +63,8 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/Components/AnimationComponent.cpp
         Source/Scene/Components/AnimationComponent.h
         Source/Scene/Components/AnimationStructs.h
+        Source/Physics/PhysicsManager.cpp
+        Source/Physics/PhysicsManager.h
 )
 
 # Compose application structure
@@ -75,6 +78,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/stb_image"
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/json"
         "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/cgltf"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/bullet3-3.25/src"
 )
 
 # Add GLFW library
@@ -94,10 +98,24 @@ set_property(TARGET glew PROPERTY FOLDER GLEW)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_BINARY_DIR})
 
+# add bullet library
+set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_UNIT_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_EXTRAS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_CPU_DEMOS OFF CACHE BOOL "" FORCE)
+set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/bullet3-3.25" "${CMAKE_BINARY_DIR}/bullet_build")
+
+# link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC
         glfw
         glew_s
         glm
+        BulletDynamics
+        BulletCollision
+        LinearMath
 )
 
 # Copies assets over at build

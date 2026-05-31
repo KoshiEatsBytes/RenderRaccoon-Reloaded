@@ -1,7 +1,7 @@
 
 #pragma once
 #include "Scene/Component.h"
-#include "Types.h"
+#include "../../Helpers/Types.h"
 
 namespace RR
 {

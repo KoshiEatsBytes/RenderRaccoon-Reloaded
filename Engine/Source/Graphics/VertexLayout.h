@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 #include <vector>
 
-#include "Types.h"
+#include "../Helpers/Types.h"
 
 namespace RR
 {

@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <GL/glew.h>
-#include <Types.h>
+#include <../Helpers/Types.h>
 
 namespace RR
 {

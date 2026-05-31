@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 #include <unordered_map>
 
-#include "Types.h"
+#include "../Helpers/Types.h"
 
 namespace RR
 {

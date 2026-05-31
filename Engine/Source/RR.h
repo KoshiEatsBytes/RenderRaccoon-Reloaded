@@ -7,7 +7,7 @@
 // Engine
 #include "Application.h"
 #include "Engine.h"
-#include "Types.h"
+#include "Helpers/Types.h"
 #include "Input/InputManager.h"
 #include "FileSystem/FileSystem.h"
 

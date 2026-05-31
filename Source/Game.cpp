@@ -2,7 +2,7 @@
 
 #include "Game.h"
 
-#include "GLTFLib.hpp"
+#include "../Engine/Source/Helpers/GLTFLib.hpp"
 #include "TestObject.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
