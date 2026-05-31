@@ -21,7 +21,7 @@ using quat = glm::quat;
 // Default
 using uChar  = unsigned char;
 using uInt   = unsigned int;
-using sizeT  = size_t;
 using wChar  = wchar_t;
+using sizeT  = size_t;
 using uint32 = uint32_t;
 

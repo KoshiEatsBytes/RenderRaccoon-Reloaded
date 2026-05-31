@@ -20,6 +20,8 @@ namespace RR
 
     void GameObject::Update(const float _deltaTime)
     {
+        if (!m_active) return;
+
         // Update each component
         for (const auto& component : m_components)
         {
@@ -54,7 +56,7 @@ namespace RR
 
     void GameObject::MarkForDestroy()
     {
-        m_isAlive = false;
+        m_alive = false;
     }
 
     GameObject* GameObject::LoadGLTF(const std::string& _path)
@@ -86,14 +88,49 @@ namespace RR
         return m_parent;
     }
 
+    GameObject* GameObject::GetChildByName(const std::string& _name)
+    {
+        if (m_name == _name)
+        {
+            return this;
+        }
+
+        // not the most efficent, recursively iterates trough children of children to find
+        // GO with specified name
+        for (auto& child : m_children)
+        {
+            if (auto res = child->GetChildByName(_name))
+            {
+                return res;
+            }
+        }
+
+        return nullptr;
+    }
+
     Scene* GameObject::GetScene() const
     {
         return m_scene;
     }
 
+    void GameObject::SetAlive(bool _alive)
+    {
+        m_alive = _alive;
+    }
+
     bool GameObject::IsAlive() const
     {
-        return m_isAlive;
+        return m_alive;
+    }
+
+    void GameObject::SetActive(const bool _active)
+    {
+        m_active = _active;
+    }
+
+    bool GameObject::IsActive() const
+    {
+        return m_active;
     }
 
     const vec3& GameObject::GetPosition() const

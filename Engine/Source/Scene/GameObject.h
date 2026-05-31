@@ -29,10 +29,15 @@ namespace RR
 
         bool SetParent(GameObject* _parent);
         GameObject* GetParent() const;
+        GameObject *GetChildByName(const std::string& _name);
 
         Scene* GetScene() const;
 
+        void SetAlive(bool _alive);
         bool IsAlive() const;
+
+        void SetActive(bool _active);
+        bool IsActive() const;
 
         // pos/rot/scale set/get
         const vec3& GetPosition() const;
@@ -53,7 +58,8 @@ namespace RR
         GameObject();
 
     private:
-        bool m_isAlive = true;
+        bool m_alive = true;
+        bool m_active = true;
         std::string m_name;
         GameObject* m_parent = nullptr;
         Scene* m_scene = nullptr;

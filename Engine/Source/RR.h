@@ -28,3 +28,4 @@
 #include "Scene/Components/CameraComponent.h"
 #include "Scene/Components/PlayerControllerComponent.h"
 #include "Scene/Components/LightComponent.h"
+#include "Scene/Components/AnimationComponent.h"

@@ -54,10 +54,25 @@ bool Game::Init()
     auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf");
     suzanneObj->SetPosition(vec3(0.0f, 0.0f, -5.0f));
 
-    auto gunObj = RR::GameObject::LoadGLTF("Models/Gun/scene.gltf");
-    gunObj->SetParent(camera);
-    gunObj->SetPosition(vec3(0.75f, -0.5f, -0.75f));
-    gunObj->SetScale(vec3(-1.0f, 1.0f, 1.0f));
+    auto gun = RR::GameObject::LoadGLTF("Models/Gun/scene.gltf");
+    gun->SetParent(camera);
+    gun->SetPosition(vec3(0.75f, -0.5f, -0.75f));
+    gun->SetScale(vec3(-1.0f, 1.0f, 1.0f));
+
+    if (auto anim = gun->GetComponent<RR::AnimationComponent>())
+    {
+        if (auto bullet = gun->GetChildByName("bullet_33"))
+        {
+            bullet->SetActive(false);
+        }
+
+        if (auto flash = gun->GetChildByName("BOOM_35"))
+        {
+            flash->SetActive(false);
+        }
+
+        anim->Play("shoot", true);
+    }
 
     auto light = m_scene->CreateObject("Light");
     auto lightComponent = new RR::LightComponent();

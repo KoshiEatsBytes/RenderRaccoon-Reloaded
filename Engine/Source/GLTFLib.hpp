@@ -11,6 +11,8 @@
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Scene/Components/MeshComponent.h"
+#include "Scene/Components/AnimationComponent.h"
+#include "Scene/Components/AnimationStructs.h"
 
 using cgAccessor = cgltf_accessor;
 using cgOptions = cgltf_options;
@@ -36,6 +38,54 @@ namespace RR
             cgUint out = 0;
             const cgBool ok = cgltf_accessor_read_uint(_acc, _i, &out, 1);
             return ok ? static_cast<uint32>(out) : 0;
+        }
+
+        static float ReadScalar(cgAccessor* _acc, cgSize _index)
+        {
+            float res = 0.0f;
+            cgltf_accessor_read_float(_acc, _index, &res, 1);
+            return res;
+        }
+
+        static vec3 ReadVec3(cgAccessor* _acc, cgSize _index)
+        {
+            vec3 res;
+            cgltf_accessor_read_float(_acc, _index, glm::value_ptr(res), 3);
+            return res;
+        }
+
+        static quat ReadQuat(cgAccessor* _acc, cgSize _index)
+        {
+            float res[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+            cgltf_accessor_read_float(_acc, _index, res, 4);
+            return quat(res[3], res[0], res[1], res[2]);
+        }
+
+        static void ReadTimes(cgAccessor* _acc, std::vector<float>& _outTimes)
+        {
+            _outTimes.resize(_acc->count);
+            for (cgSize i = 0; i < _acc->count; i++)
+            {
+                _outTimes[i] = ReadScalar(_acc, i);
+            }
+        }
+
+        static void ReadOutputVec3(cgAccessor* _acc, std::vector<vec3>& _outValues)
+        {
+            _outValues.resize(_acc->count);
+            for (cgSize i = 0; i < _acc->count; i++)
+            {
+                _outValues[i] = ReadVec3(_acc, i);
+            }
+        }
+
+        static void ReadOutputQuat(cgAccessor* _acc, std::vector<quat>& _outValues)
+        {
+            _outValues.resize(_acc->count);
+            for (cgSize i = 0; i < _acc->count; i++)
+            {
+                _outValues[i] = ReadQuat(_acc, i);
+            }
         }
 
         static GameObject* LoadGLTF(const std::string& _path)
@@ -99,6 +149,126 @@ namespace RR
                 auto node = modelScene->nodes[i];
 
                 ParseNode(node, resultObject, relativeFolderPath);
+            }
+
+            // Parse all animation
+            std::vector<std::shared_ptr<AnimationClip>> clips;
+
+            // ai -> Animation Index
+            for (cgSize ai = 0; ai < data->animations_count; ai++)
+            {
+                auto& anim = data->animations[ai];
+
+                // Create animation clip
+                auto clip = std::make_shared<AnimationClip>();
+                clip->name = anim.name ? anim.name : "NoNameAnim";
+                clip->duration = 0;
+
+                // Populate animation clip
+                std::unordered_map<cgNode*, sizeT> trackIndexOf;
+
+                // Helper lambda for track creation
+                auto GetOrCreateTrack = [&](cgNode* _node) -> TransformTrack&
+                {
+                    auto it = trackIndexOf.find(_node);
+
+                    // if clip registered return it
+                    if (it != trackIndexOf.end())
+                    {
+                        return clip->tracks[it->second];
+                    }
+
+                    // if not found create new track
+                    TransformTrack track;
+                    track.targetName = _node->name;
+                    clip->tracks.push_back(track);
+                    sizeT idx = clip->tracks.size() - 1;
+                    trackIndexOf[_node] = idx;
+                    return clip->tracks[idx];
+                };
+
+                // ci -> Channel Index
+                for (cgSize ci = 0; ci < anim.channels_count; ci++)
+                {
+                    auto& channel = anim.channels[ci];
+                    auto sampler = channel.sampler;
+
+                    if (!channel.target_node || !sampler ||
+                        !sampler->input || !sampler->output)
+                    {
+                        continue;
+                    }
+
+                    std::vector<float> timeStamps;
+                    ReadTimes(sampler->input, timeStamps);
+
+                    auto& track = GetOrCreateTrack(channel.target_node);
+
+                    switch (channel.target_path)
+                    {
+                        case cgltf_animation_path_type_translation:
+                        {
+                            std::vector<vec3> values;
+                            ReadOutputVec3(sampler->output, values);
+                            track.positions.resize(timeStamps.size());
+
+                            for (sizeT i = 0; i < timeStamps.size(); i++)
+                            {
+                                track.positions[i].timeStamp = timeStamps[i];
+                                track.positions[i].value = values[i];
+                            }
+                        }
+                        break;
+
+                        case cgltf_animation_path_type_rotation:
+                        {
+                            std::vector<quat> values;
+                            ReadOutputQuat(sampler->output, values);
+                            track.rotations.resize(timeStamps.size());
+
+                            for (sizeT i = 0; i < timeStamps.size(); i++)
+                            {
+                                track.rotations[i].timeStamp = timeStamps[i];
+                                track.rotations[i].value = values[i];
+                            }
+                        }
+                        break;
+
+                        case cgltf_animation_path_type_scale:
+                        {
+                            std::vector<vec3> values;
+                            ReadOutputVec3(sampler->output, values);
+                            track.scales.resize(timeStamps.size());
+
+                            for (sizeT i = 0; i < timeStamps.size(); i++)
+                            {
+                                track.scales[i].timeStamp = timeStamps[i];
+                                track.scales[i].value = values[i];
+                            }
+                        }
+                        break;
+
+                        default:
+                            break;
+                    }
+
+                    clip->duration = std::max(clip->duration, timeStamps.back());
+                }
+
+                clips.push_back(std::move(clip));
+            }
+
+            // if there is at least one animation prepare an animation component
+            if (!clips.empty())
+            {
+                auto animComp = new AnimationComponent();
+                resultObject->AddComponent(animComp);
+
+                // Add clips to anim comp
+                for (auto& clip : clips)
+                {
+                    animComp->RegisterClip(clip->name, clip);
+                }
             }
 
             Success("[GLTF - SUCCESS] GLTF Model Loaded correctly!");
