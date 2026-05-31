@@ -19,14 +19,15 @@ configure_file(
 
 set(PROJECT_SOURCE_FILES
         Source/RR.h
-        Source/Concepts.h
-        Source/Types.h
-        Source/Common.h
         Source/Engine.h
         Source/Engine.cpp
         Source/Application.h
         Source/Application.cpp
+        Source/Helpers/Concepts.h
+        Source/Helpers/Types.h
+        Source/Helpers/Common.h
         Source/Helpers/Printer.hpp
+        Source/Helpers/GLTFLib.hpp
         Source/Helpers/Implementations.cpp
         Source/Input/InputManager.cpp
         Source/Input/InputManager.h
@@ -59,12 +60,15 @@ set(PROJECT_SOURCE_FILES
         Source/Graphics/Texture.h
         Source/Scene/Components/LightComponent.cpp
         Source/Scene/Components/LightComponent.h
-        Source/GLTFLib.hpp
         Source/Scene/Components/AnimationComponent.cpp
         Source/Scene/Components/AnimationComponent.h
         Source/Scene/Components/AnimationStructs.h
         Source/Physics/PhysicsManager.cpp
         Source/Physics/PhysicsManager.h
+        Source/Physics/Collider.cpp
+        Source/Physics/Collider.h
+        Source/Physics/RigidBody.cpp
+        Source/Physics/RigidBody.h
 )
 
 # Compose application structure

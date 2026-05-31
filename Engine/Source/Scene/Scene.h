@@ -4,9 +4,9 @@
 #include <vector>
 #include <memory>
 
-#include "../Helpers/Common.h"
+#include "Helpers/Concepts.h"
+#include "Helpers/Common.h"
 #include "GameObject.h"
-#include "Concepts.h"
 
 namespace RR
 {

@@ -7,6 +7,7 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include "LinearMath/btVector3.h"
 
 // FileSystem
 using fSysPath = std::filesystem::path;
@@ -17,6 +18,9 @@ using vec3 = glm::vec3;
 using vec4 = glm::vec4;
 using mat4 = glm::mat4;
 using quat = glm::quat;
+
+// Bullet
+using btVec3 = btVector3;
 
 // Default
 using uChar  = unsigned char;

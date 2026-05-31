@@ -2,8 +2,8 @@
 #pragma once
 #include <vector>
 
-#include "Types.h"
-#include "../Helpers/Common.h"
+#include "Helpers/Types.h"
+#include "Helpers/Common.h"
 
 namespace RR
 {

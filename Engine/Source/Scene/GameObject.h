@@ -4,8 +4,8 @@
 #include <vector>
 #include <memory>
 
-#include "../Helpers/Concepts.h"
-#include "Types.h"
+#include "Helpers/Concepts.h"
+#include "Helpers/Types.h"
 #include "Component.h"
 
 namespace RR

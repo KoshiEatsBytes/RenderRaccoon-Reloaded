@@ -9,6 +9,7 @@
 #include "Render/RenderQueue.h"
 #include "Scene/Scene.h"
 #include "FileSystem/FileSystem.h"
+#include "Physics/PhysicsManager.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -65,6 +66,7 @@ namespace RR
         RenderQueue& GetRenderQueue();
         FileSystem& GetFileSystem();
         TextureManager& GetTextureManager();
+        PhysicsManager& GetPhysicsManager();
 
     private:
         std::unique_ptr<Application> m_application;
@@ -77,6 +79,7 @@ namespace RR
         RenderQueue m_renderQueue;
         FileSystem m_fileSystem;
         TextureManager m_textureManager;
+        PhysicsManager m_physicsManager;
     };
 }
 

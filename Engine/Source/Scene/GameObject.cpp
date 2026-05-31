@@ -4,7 +4,7 @@
 #include "Engine.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include "Helpers/Printer.hpp"
-#include "../Helpers/GLTFLib.hpp"
+#include "Helpers/GLTFLib.hpp"
 
 namespace RR
 {

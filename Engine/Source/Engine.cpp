@@ -138,6 +138,13 @@ namespace RR
             return false;
         }
 
+        if (!m_physicsManager.Init())
+        {
+            Error("[INITIALIZATION] Failed to initialize RR Physics Engine");
+            glfwTerminate();
+            return false;
+        }
+
         if (m_application->Init())
         {
             Success("[INITIALIZATION] Application Initialized Correctly.");
@@ -177,6 +184,8 @@ namespace RR
             float deltaTime = std::chrono::duration<float>(now - m_lastTimePoint).count();
             m_lastTimePoint = now;
 
+            // Update physics world then application
+            m_physicsManager.Update(deltaTime);
             m_application->Update(deltaTime);
 
             // Drawing
@@ -277,5 +286,10 @@ namespace RR
     TextureManager & Engine::GetTextureManager()
     {
         return m_textureManager;
+    }
+
+    PhysicsManager& Engine::GetPhysicsManager()
+    {
+        return m_physicsManager;
     }
 }
