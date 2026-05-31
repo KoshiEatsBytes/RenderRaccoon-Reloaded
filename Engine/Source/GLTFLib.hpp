@@ -109,6 +109,8 @@ namespace RR
 
         static void ParseNode(cgNode* _node, GameObject* _parent, const fSysPath& _folder)
         {
+            auto& textureManager = Engine::GetInstance().GetTextureManager();
+
             std::string nodeName = _node->name ? _node->name : "UnnamedNode";
             GameObject* object = _parent->GetScene()->CreateObject(nodeName, _parent);
 
@@ -340,7 +342,7 @@ namespace RR
                                 if (texture->image->uri)
                                 {
                                     auto path = _folder / std::string(texture->image->uri);
-                                    auto tex = Texture::Load(path.string());
+                                    auto tex = textureManager.GetOrLoadTexture(path.string());
 
                                     mat->SetParam("baseColorTexture", tex);
                                 }
@@ -357,7 +359,7 @@ namespace RR
                                 if (texture->image->uri)
                                 {
                                     auto path = _folder / std::string(texture->image->uri);
-                                    auto tex = Texture::Load(path.string());
+                                    auto tex = textureManager.GetOrLoadTexture(path.string());
 
                                     mat->SetParam("baseColorTexture", tex);
                                 }

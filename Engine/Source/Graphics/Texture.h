@@ -1,6 +1,7 @@
 
 #pragma once
 #include <GL/glew.h>
+#include <unordered_map>
 
 #include "Types.h"
 
@@ -24,5 +25,28 @@ namespace RR
         int m_channels = 0;
 
         GLuint m_textureID = 0;
+    };
+
+    class TextureManager
+    {
+        TextureManager();
+        ~TextureManager();
+
+    public:
+        // Only engine can construct this class
+        friend class Engine;
+
+        // Delete copy
+        TextureManager(const TextureManager&) = delete;
+        TextureManager& operator=(const TextureManager&) = delete;
+
+        // Delete move
+        TextureManager(TextureManager&&) noexcept = delete;
+        TextureManager& operator=(TextureManager&&) noexcept = delete;
+
+        std::shared_ptr<Texture> GetOrLoadTexture(const std::string& _path);
+
+    private:
+        std::unordered_map<std::string, std::shared_ptr<Texture>> m_textures;
     };
 }

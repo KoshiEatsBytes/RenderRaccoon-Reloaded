@@ -198,6 +198,7 @@ namespace RR
                     {
                         camData.viewMatrix = camComponent->GetViewMatrix();
                         camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
+                        camData.position = camObj->GetWorldPosition();
                     }
                 }
 
@@ -271,5 +272,10 @@ namespace RR
     FileSystem& Engine::GetFileSystem()
     {
         return m_fileSystem;
+    }
+
+    TextureManager & Engine::GetTextureManager()
+    {
+        return m_textureManager;
     }
 }

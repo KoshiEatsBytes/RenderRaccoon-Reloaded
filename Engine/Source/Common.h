@@ -14,6 +14,7 @@ namespace RR
     {
         mat4 viewMatrix;
         mat4 projMatrix;
+        vec3 position;
     };
 
     struct LightData

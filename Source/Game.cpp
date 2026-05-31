@@ -1,5 +1,4 @@
 
-#include <stb_image.h>
 
 #include "Game.h"
 
@@ -54,6 +53,11 @@ bool Game::Init()
     //auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Tardis/Tardis Exterior.gltf");
     auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf");
     suzanneObj->SetPosition(vec3(0.0f, 0.0f, -5.0f));
+
+    auto gunObj = RR::GameObject::LoadGLTF("Models/Gun/scene.gltf");
+    gunObj->SetParent(camera);
+    gunObj->SetPosition(vec3(0.75f, -0.5f, -0.75f));
+    gunObj->SetScale(vec3(-1.0f, 1.0f, 1.0f));
 
     auto light = m_scene->CreateObject("Light");
     auto lightComponent = new RR::LightComponent();

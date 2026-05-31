@@ -46,6 +46,7 @@ namespace RR
             // Camera
             shaderProgram->SetUniform("uView", _camData.viewMatrix);
             shaderProgram->SetUniform("uProj", _camData.projMatrix);
+            shaderProgram->SetUniform("uCameraPos", _camData.position);
 
             // Lights
             // for now only use 1 light

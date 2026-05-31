@@ -5,6 +5,7 @@
 
 #include "Input/InputManager.h"
 #include "Graphics/GraphicsAPI.h"
+#include "Graphics/Texture.h"
 #include "Render/RenderQueue.h"
 #include "Scene/Scene.h"
 #include "FileSystem/FileSystem.h"
@@ -63,6 +64,7 @@ namespace RR
         GraphicsAPI& GetGraphicsAPI();
         RenderQueue& GetRenderQueue();
         FileSystem& GetFileSystem();
+        TextureManager& GetTextureManager();
 
     private:
         std::unique_ptr<Application> m_application;
@@ -74,6 +76,7 @@ namespace RR
         GraphicsAPI m_graphicsAPI;
         RenderQueue m_renderQueue;
         FileSystem m_fileSystem;
+        TextureManager m_textureManager;
     };
 }
 
