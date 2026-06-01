@@ -16,6 +16,11 @@ namespace RR
     {
     }
 
+    int Component::GetExecutionOrder() const
+    {
+        return 0;
+    }
+
     GameObject* Component::GetOwner() const
     {
         return m_owner;

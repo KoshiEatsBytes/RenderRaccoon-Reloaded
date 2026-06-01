@@ -1,16 +1,31 @@
-//
-// Created by Simon on 01/06/2026.
-//
 
-#ifndef RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
-#define RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
+#pragma once
 
-namespace RR {
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
 
-class ColliderComponent {
+#include "Physics/Collider.h"
+#include "Scene/Component.h"
 
-};
+namespace RR
+{
+    class ColliderComponent : public Component
+    {
+    public:
+        COMPONENT(ColliderComponent)
 
-} // RR
+        ColliderComponent(const std::shared_ptr<Collider>& _col);
+        ~ColliderComponent() override;
 
-#endif //RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
+        void Init() override;
+        void Update(float _deltaTime) override;
+
+        Collider* GetCollider() const;
+        std::shared_ptr<Collider> GetColliderShared() const;
+
+    private:
+        std::shared_ptr<Collider> m_collider;
+    };
+}
+
+

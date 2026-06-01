@@ -3,19 +3,26 @@
 #include <btBulletCollisionCommon.h>
 
 #include "RigidBody.h"
+
 #include "Engine.h"
 #include "Helpers/Printer.hpp"
+#include "Scene/Components/ColliderComponent.h"
+#include "Scene/Components/PhysicsComponent.h"
 
 namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    RigidBody::RigidBody(BodyType _type, const std::shared_ptr<Collider>& _collider, float _mass, float _friction)
-        : m_type(_type), m_mass(_mass), m_friction(_friction), m_collider(_collider)
+    RigidBody::RigidBody(
+        std::unique_ptr<btCompoundShape> _compound,
+        std::vector<std::shared_ptr<Collider>> _colliders,
+        BodyType _type, float _mass, float _friction)
+            : m_type(_type), m_mass(_mass), m_friction(_friction),
+              m_colliders(std::move(_colliders)), m_compound(std::move(_compound))
     {
-        if (!_collider)
+        if (!m_compound || m_compound->getNumChildShapes() == 0)
         {
-            Error("[PHYSICS - RIGIDBODY] Tried initializing a RigidBody without a collider.");
+            Error("[PHYSICS - RIGIDBODY] Tried initializing a RigidBody without shapes");
             return;
         }
 
@@ -29,27 +36,18 @@ namespace RR
         btVec3 inertia {0.0f, 0.0f, 0.0f};
         if (m_type == BodyType::DYNAMIC && _mass > 0.0f)
         {
-            if (m_collider->GetShape())
-            {
-                m_collider->GetShape()->calculateLocalInertia(static_cast<btScalar>(_mass), inertia);
-            }
-            else
-            {
-                Error("[PHYSICS - RIGIDBODY] Tried initializing a RigidBody without a shape.");
-                return;
-            }
+            m_compound->calculateLocalInertia(static_cast<btScalar>(_mass), inertia);
         }
 
         btTransform transform;
         transform.setIdentity();
-
         m_motionState = std::make_unique<btDefaultMotionState>(transform);
 
-        // Constructs the rigidbody identity with the object's info
+        // Constructs the compound identity with the object's info
         btRigidBody::btRigidBodyConstructionInfo info(
             (m_type == BodyType::DYNAMIC) ? static_cast<btScalar>(_mass) : static_cast<btScalar>(0),
             m_motionState.get(),
-            m_collider->GetShape(),
+            m_compound.get(),
             inertia
         );
 
@@ -86,7 +84,7 @@ namespace RR
 
         m_body.reset();
         m_motionState.reset();
-        m_collider.reset();
+        m_compound.reset();
     }
 
     BodyType RigidBody::GetType() const
@@ -161,7 +159,7 @@ namespace RR
             m_body->setLinearVelocity({0.f,0.f,0.f});
             m_body->setAngularVelocity({0.f,0.f,0.f});
         }
-        m_body->activate(true);
+        if (m_type != BodyType::KINEMATIC) m_body->activate(true);
     }
 
     vec3 RigidBody::GetPosition() const
@@ -174,7 +172,7 @@ namespace RR
     {
         if (!m_body)
         {
-            Warn("[RIGIDBODY - SETTER] Tried updating RigidBody's rotation AFTER addition to physic scene");
+            Warn("[RIGIDBODY - SETTER] Tried updating RigidBody's rotation AFTER constructor failed");
             return;
         }
 
@@ -196,7 +194,7 @@ namespace RR
             m_body->setLinearVelocity({0.f,0.f,0.f});
             m_body->setAngularVelocity({0.f,0.f,0.f});
         }
-        m_body->activate(true);
+        if (m_type != BodyType::KINEMATIC) m_body->activate(true);
     }
 
     quat RigidBody::GetRotation() const

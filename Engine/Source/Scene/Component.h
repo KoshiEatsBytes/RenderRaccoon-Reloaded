@@ -18,6 +18,7 @@ namespace RR
         virtual void Update(float _deltaTime) = 0;
         virtual sizeT GetTypeID() const       = 0;
 
+        virtual int GetExecutionOrder() const;
         GameObject* GetOwner() const;
 
     protected:

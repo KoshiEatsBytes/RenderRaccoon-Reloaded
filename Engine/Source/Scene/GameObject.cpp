@@ -52,11 +52,19 @@ namespace RR
     {
         if (!_component)
         {
+            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding INVALID component to GO: '", m_name, "'");
             return;
         }
 
         m_components.emplace_back(_component);
         _component->m_owner = this;
+
+        // Sorts components by execution order
+        std::stable_sort(m_components.begin(), m_components.end(),
+        [](const auto& a, const auto& b) {
+            return a->GetExecutionOrder() < b->GetExecutionOrder();
+        });
+
         _component->Init();
     }
 
@@ -114,6 +122,11 @@ namespace RR
         return nullptr;
     }
 
+    const std::vector<std::unique_ptr<GameObject>>& GameObject::GetChildren() const
+    {
+        return m_children;
+    }
+
     Scene* GameObject::GetScene() const
     {
         return m_scene;
@@ -139,7 +152,7 @@ namespace RR
         return m_active;
     }
 
-    const vec3& GameObject::GetPosition() const
+    vec3 GameObject::GetPosition() const
     {
         return m_position;
     }
@@ -155,7 +168,20 @@ namespace RR
         m_position = _pos;
     }
 
-    const quat& GameObject::GetRotation() const
+    void GameObject::SetWorldPosition(const vec3& _pos)
+    {
+        if (m_parent)
+        {
+            const mat4 inverseParent = glm::inverse(m_parent->GetWorldTransform());
+            m_position = vec3(inverseParent * vec4(_pos, 1.0f));
+        }
+        else
+        {
+            m_position = _pos;
+        }
+    }
+
+    quat GameObject::GetRotation() const
     {
         return m_rotation;
     }
@@ -163,6 +189,29 @@ namespace RR
     void GameObject::SetRotation(const quat& _rot)
     {
         m_rotation = _rot;
+    }
+
+    quat GameObject::GetWorldRotation() const
+    {
+        if (m_parent)
+        {
+            return m_parent->GetWorldRotation() * m_rotation;
+        }
+
+        return m_rotation;
+    }
+
+    void GameObject::SetWorldRotation(const quat& _rot)
+    {
+        if (m_parent)
+        {
+            quat inverseParent = glm::inverse(m_parent->GetWorldRotation());
+            m_rotation = inverseParent * _rot;
+        }
+        else
+        {
+            m_rotation = _rot;
+        }
     }
 
     const vec3& GameObject::GetScale() const
@@ -173,6 +222,16 @@ namespace RR
     void GameObject::SetScale(const vec3& _scale)
     {
         m_scale = _scale;
+    }
+
+    vec3 GameObject::GetWorldScale() const
+    {
+        if (m_parent)
+        {
+            return m_parent->GetWorldScale() * m_scale;
+        }
+
+        return m_scale;
     }
 
     /**

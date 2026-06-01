@@ -29,7 +29,9 @@ namespace RR
 
         bool SetParent(GameObject* _parent);
         GameObject* GetParent() const;
-        GameObject *GetChildByName(const std::string& _name);
+
+        GameObject* GetChildByName(const std::string& _name);
+        const std::vector<std::unique_ptr<GameObject>>& GetChildren() const;
 
         Scene* GetScene() const;
 
@@ -40,15 +42,19 @@ namespace RR
         bool IsActive() const;
 
         // pos/rot/scale set/get
-        const vec3& GetPosition() const;
+        vec3 GetPosition() const;
         vec3 GetWorldPosition() const;
         void SetPosition(const vec3& _pos);
+        void SetWorldPosition(const vec3& _pos);
 
-        const quat& GetRotation() const;
+        quat GetRotation() const;
         void SetRotation(const quat& _rot);
+        quat GetWorldRotation() const;
+        void SetWorldRotation(const quat& _rot);
 
         const vec3& GetScale() const;
         void SetScale(const vec3& _scale);
+        vec3 GetWorldScale() const;
 
         // Transform get/set
         mat4 GetLocalTransform() const;
@@ -94,6 +100,27 @@ namespace RR
                 }
             }
             return nullptr;
+        }
+
+        /**
+         * @brief Searches and returns all component of the type
+         *        given in the GameObject
+         * @tparam T Component type you're searching for
+         * @return vector of pointers to the componet
+         */
+        template<ComponentType T>
+        std::vector<T*> GetComponents()
+        {
+            std::vector<T*> result;
+            sizeT typeID = Component::StaticTypeID<T>();
+            for (auto& component : m_components)
+            {
+                if (component->GetTypeID() == typeID)
+                {
+                    result.push_back(static_cast<T*>(component.get()));
+                }
+            }
+            return result;
         }
     };
 }

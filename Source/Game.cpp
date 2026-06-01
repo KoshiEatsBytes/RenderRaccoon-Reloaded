@@ -91,17 +91,17 @@ bool Game::Init()
     auto groundMesh = RR::Mesh::CreateBox(groundExtents);
     ground->AddComponent(new RR::MeshComponent(material, groundMesh));
 
-    auto groundCollider = std::make_shared<RR::BoxCollider>(groundExtents);
-    auto groundBody = std::make_shared<RR::RigidBody>(RR::BodyType::STATIC, groundCollider, 0.0f, 0.5f);
-    ground->AddComponent(new RR::PhysicsComponent(groundBody));
-
-    auto boxObj = m_scene->CreateObject("FallingBox");
-    boxObj->AddComponent(new RR::MeshComponent(material, mesh));
-    boxObj->SetPosition(vec3(0.0f, 2.0f, 2.0f));
-    boxObj->SetRotation(quat(vec3(1.0f,2.0f,0.0f)));
-    auto boxCollider = std::make_shared<RR::BoxCollider>(vec3(1.0f));
-    auto boxBody = std::make_shared<RR::RigidBody>(RR::BodyType::DYNAMIC, boxCollider, 5.0f, 0.5f);
-    boxObj->AddComponent(new RR::PhysicsComponent(boxBody));
+    // auto groundCollider = std::make_shared<RR::BoxCollider>(groundExtents);
+    // auto groundBody = std::make_shared<RR::RigidBody>(RR::BodyType::STATIC, groundCollider, 0.0f, 0.5f);
+    // ground->AddComponent(new RR::PhysicsComponent(groundBody));
+    //
+    // auto boxObj = m_scene->CreateObject("FallingBox");
+    // boxObj->AddComponent(new RR::MeshComponent(material, mesh));
+    // boxObj->SetPosition(vec3(0.0f, 2.0f, 2.0f));
+    // boxObj->SetRotation(quat(vec3(1.0f,2.0f,0.0f)));
+    // auto boxCollider = std::make_shared<RR::BoxCollider>(vec3(1.0f));
+    // auto boxBody = std::make_shared<RR::RigidBody>(RR::BodyType::DYNAMIC, boxCollider, 5.0f, 0.5f);
+    // boxObj->AddComponent(new RR::PhysicsComponent(boxBody));
 
     camera->SetPosition(vec3(0.0f, 1.0f, 7.0f));
 

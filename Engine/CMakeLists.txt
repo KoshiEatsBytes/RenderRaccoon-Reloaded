@@ -71,6 +71,9 @@ set(PROJECT_SOURCE_FILES
         Source/Physics/RigidBody.h
         Source/Scene/Components/PhysicsComponent.cpp
         Source/Scene/Components/PhysicsComponent.h
+        Source/Physics/BtConv.hpp
+        Source/Scene/Components/ColliderComponent.cpp
+        Source/Scene/Components/ColliderComponent.h
 )
 
 # Compose application structure

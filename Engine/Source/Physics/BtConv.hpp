@@ -5,7 +5,10 @@
 
 namespace RR
 {
-    struct BulletConversions
+    /**
+     * Helper to implement easy conversion between bullet and glm data types :)
+     */
+    struct BtConv
     {
         static btVec3 ToBt(const vec3& _vec)
         {

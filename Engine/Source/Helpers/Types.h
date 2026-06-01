@@ -7,6 +7,8 @@
 #include <glm/vec3.hpp>
 #include <glm/mat4x4.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include "LinearMath/btQuaternion.h"
 #include "LinearMath/btVector3.h"
 
 // FileSystem
@@ -21,6 +23,7 @@ using quat = glm::quat;
 
 // Bullet
 using btVec3 = btVector3;
+using btQuat = btQuaternion;
 
 // Default
 using uChar  = unsigned char;

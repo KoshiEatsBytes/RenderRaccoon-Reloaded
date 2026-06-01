@@ -7,10 +7,12 @@
 #include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 
 class btRigidBody;
+class btCompoundShape;
 struct btDefaultMotionState;
 
 namespace RR
 {
+    class GameObject;
     /**
      * Three main rigidbody behaviors
      *
@@ -28,8 +30,10 @@ namespace RR
     class RigidBody
     {
     public:
-        RigidBody(BodyType _type, const std::shared_ptr<Collider>& _collider,
-            float _mass, float _friction);
+        RigidBody(
+            std::unique_ptr<btCompoundShape> _compound,
+            std::vector<std::shared_ptr<Collider>> _colliders,
+            BodyType _type, float _mass, float _friction);
         ~RigidBody();
 
         BodyType GetType() const;
@@ -58,8 +62,9 @@ namespace RR
         int m_group = btBroadphaseProxy::StaticFilter;
         int m_mask = btBroadphaseProxy::AllFilter;
 
-        std::unique_ptr<btRigidBody> m_body;
+        std::vector<std::shared_ptr<Collider>> m_colliders;
+        std::unique_ptr<btCompoundShape> m_compound;
         std::unique_ptr<btDefaultMotionState> m_motionState;
-        std::shared_ptr<Collider> m_collider;
+        std::unique_ptr<btRigidBody> m_body;
     };
 }
