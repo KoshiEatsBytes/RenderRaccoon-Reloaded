@@ -13,6 +13,7 @@ namespace RR
         LightComponent();
         ~LightComponent() override;
 
+        void Init() override;
         void Update(float _deltaTime) override;
 
         const vec3& GetColor() const;

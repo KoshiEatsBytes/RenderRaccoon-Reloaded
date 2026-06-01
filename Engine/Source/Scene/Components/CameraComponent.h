@@ -13,6 +13,7 @@ namespace RR
         CameraComponent();
         ~CameraComponent() override;
 
+        void Init() override;
         void Update(float _deltaTime) override;
 
         mat4 GetViewMatrix() const;

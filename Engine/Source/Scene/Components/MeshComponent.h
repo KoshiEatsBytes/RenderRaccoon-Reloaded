@@ -18,6 +18,7 @@ namespace RR
             const std::shared_ptr<Mesh>& _mesh);
         ~MeshComponent() override;
 
+        void Init() override;
         void Update(float _deltaTime) override;
 
     private:

@@ -15,6 +15,11 @@ namespace RR
     PlayerControllerComponent::~PlayerControllerComponent()
     = default;
 
+    void PlayerControllerComponent::Init()
+    {
+        Component::Init();
+    }
+
     void PlayerControllerComponent::Update(float _deltaTime)
     {
         auto& inputManager = Engine::GetInstance().GetInputManager();

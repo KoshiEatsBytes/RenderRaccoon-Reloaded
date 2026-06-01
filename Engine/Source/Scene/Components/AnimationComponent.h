@@ -13,6 +13,7 @@ namespace RR
         AnimationComponent();
         ~AnimationComponent() override;
 
+        void Init() override;
         void Update(float _deltaTime) override;
 
         void Play(const std::string& _name, bool loop = true);

@@ -4,6 +4,9 @@
 
 #include "../Engine/Source/Helpers/GLTFLib.hpp"
 #include "TestObject.h"
+#include "Physics/Collider.h"
+#include "Physics/RigidBody.h"
+#include "Scene/Components/PhysicsComponent.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -26,7 +29,7 @@ bool Game::Init()
     //m_scene->CreateObject<TestObject>("TestObject");
 
     auto material = RR::Material::Load("Materials/Brick.json");
-    auto mesh = RR::Mesh::CreateCube();
+    auto mesh = RR::Mesh::CreateBox();
 
     auto objectA = m_scene->CreateObject("ObjectA");
     objectA->AddComponent(new RR::MeshComponent(material, mesh));
@@ -71,14 +74,36 @@ bool Game::Init()
             flash->SetActive(false);
         }
 
-        anim->Play("shoot", true);
+        anim->Play("shoot", false);
     }
+
 
     auto light = m_scene->CreateObject("Light");
     auto lightComponent = new RR::LightComponent();
     lightComponent->SetColor(vec3(1.0f));
     light->AddComponent(lightComponent);
     light->SetPosition(vec3(0.0f, 5.0f, 0.0f));
+
+    auto ground = m_scene->CreateObject("Ground");
+    ground->SetPosition(vec3(0.0f, -5.0f, 0.0f));
+
+    vec3 groundExtents (20.f, 2.f, 20.f);
+    auto groundMesh = RR::Mesh::CreateBox(groundExtents);
+    ground->AddComponent(new RR::MeshComponent(material, groundMesh));
+
+    auto groundCollider = std::make_shared<RR::BoxCollider>(groundExtents);
+    auto groundBody = std::make_shared<RR::RigidBody>(RR::BodyType::STATIC, groundCollider, 0.0f, 0.5f);
+    ground->AddComponent(new RR::PhysicsComponent(groundBody));
+
+    auto boxObj = m_scene->CreateObject("FallingBox");
+    boxObj->AddComponent(new RR::MeshComponent(material, mesh));
+    boxObj->SetPosition(vec3(0.0f, 2.0f, 2.0f));
+    boxObj->SetRotation(quat(vec3(1.0f,2.0f,0.0f)));
+    auto boxCollider = std::make_shared<RR::BoxCollider>(vec3(1.0f));
+    auto boxBody = std::make_shared<RR::RigidBody>(RR::BodyType::DYNAMIC, boxCollider, 5.0f, 0.5f);
+    boxObj->AddComponent(new RR::PhysicsComponent(boxBody));
+
+    camera->SetPosition(vec3(0.0f, 1.0f, 7.0f));
 
     return true;
 }

@@ -18,6 +18,11 @@ namespace RR
     MeshComponent::~MeshComponent()
     = default;
 
+    void MeshComponent::Init()
+    {
+        Component::Init();
+    }
+
     void MeshComponent::Update(float _deltaTime)
     {
         if (!m_material || !m_mesh) return;

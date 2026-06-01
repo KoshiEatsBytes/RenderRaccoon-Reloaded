@@ -11,6 +11,11 @@ namespace RR
     LightComponent::~LightComponent()
     = default;
 
+    void LightComponent::Init()
+    {
+        Component::Init();
+    }
+
     void LightComponent::Update(float _deltaTime)
     {
     }

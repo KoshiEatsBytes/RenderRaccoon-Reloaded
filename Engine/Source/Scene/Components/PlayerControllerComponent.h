@@ -13,6 +13,7 @@ namespace RR
         PlayerControllerComponent();
         ~PlayerControllerComponent() override;
 
+        void Init() override;
         void Update(float _deltaTime) override;
 
     private:

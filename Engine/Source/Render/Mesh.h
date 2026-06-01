@@ -3,6 +3,7 @@
 #include <memory>
 #include <GL/glew.h>
 #include "Graphics/VertexLayout.h"
+#include "Helpers/Types.h"
 
 namespace RR
 {
@@ -24,7 +25,7 @@ namespace RR
         void Bind();
         void Draw();
 
-        static std::shared_ptr<Mesh> CreateCube();
+        static std::shared_ptr<Mesh> CreateBox(const vec3& _extents = vec3(1.0f));
 
     private:
         VertexLayout m_vertexLayout;

@@ -14,6 +14,7 @@ namespace RR
         Component();
         virtual ~Component();
 
+        virtual void Init();
         virtual void Update(float _deltaTime) = 0;
         virtual sizeT GetTypeID() const       = 0;
 

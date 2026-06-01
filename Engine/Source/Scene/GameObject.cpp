@@ -50,8 +50,14 @@ namespace RR
      */
     void GameObject::AddComponent(Component* _component)
     {
+        if (!_component)
+        {
+            return;
+        }
+
         m_components.emplace_back(_component);
         _component->m_owner = this;
+        _component->Init();
     }
 
     void GameObject::MarkForDestroy()

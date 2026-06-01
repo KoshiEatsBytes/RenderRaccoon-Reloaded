@@ -12,6 +12,10 @@ namespace RR
     Component::~Component()
     = default;
 
+    void Component::Init()
+    {
+    }
+
     GameObject* Component::GetOwner() const
     {
         return m_owner;

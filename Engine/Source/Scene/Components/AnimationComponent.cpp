@@ -14,6 +14,11 @@ namespace RR
     AnimationComponent::~AnimationComponent()
     = default;
 
+    void AnimationComponent::Init()
+    {
+        Component::Init();
+    }
+
     void AnimationComponent::Update(float _deltaTime)
     {
         if (!m_clip) return;

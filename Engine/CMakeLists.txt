@@ -69,6 +69,8 @@ set(PROJECT_SOURCE_FILES
         Source/Physics/Collider.h
         Source/Physics/RigidBody.cpp
         Source/Physics/RigidBody.h
+        Source/Scene/Components/PhysicsComponent.cpp
+        Source/Scene/Components/PhysicsComponent.h
 )
 
 # Compose application structure
