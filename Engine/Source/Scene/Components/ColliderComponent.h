@@ -1,0 +1,16 @@
+//
+// Created by Simon on 01/06/2026.
+//
+
+#ifndef RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
+#define RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
+
+namespace RR {
+
+class ColliderComponent {
+
+};
+
+} // RR
+
+#endif //RENDERRACCOON_RELOADED_COLLIDERCOMPONENT_H
