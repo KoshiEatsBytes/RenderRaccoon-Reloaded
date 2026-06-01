@@ -16,7 +16,10 @@ namespace RR
     = default;
 
     Engine::~Engine()
-    = default;
+    {
+        // Make sure scene is the first to be reset while other members are still alive
+        m_currentScene.reset();
+    }
 
     /**
      * @brief Updates input manager with keyboard inputs

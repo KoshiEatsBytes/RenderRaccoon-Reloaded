@@ -66,24 +66,28 @@ namespace RR
         {
             m_world->addRigidBody(
                 rigidBody,
-                btBroadphaseProxy::StaticFilter,
-                btBroadphaseProxy::AllFilter
+                _body->GetGroup(),
+                _body->GetMask()
                 );
+
             _body->SetAddedToWorld(true);
+            return;
         }
+
+        Warn("[RIGIDBODY - ADD] Tried adding a RigidBody with a missing m-body");
     }
 
     void PhysicsManager::RemoveRigidBody(RigidBody* _body)
     {
         if (!_body)
         {
-            Warn("[RIGIDBODY - ADD] Tried removing INVALID RigidBody to physics scene");
+            Warn("[RIGIDBODY - REMOVE] Tried removing INVALID RigidBody to physics scene");
             return;
         }
 
         if (!m_world)
         {
-            Warn("[RIGIDBODY - ADD] Tried removing a RigidBody when the physic scene has not been initialized");
+            Warn("[RIGIDBODY - REMOVE] Tried removing a RigidBody when the physic scene has not been initialized");
             return;
         }
 

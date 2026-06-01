@@ -19,6 +19,12 @@ namespace RR
             return;
         }
 
+        if (m_type == BodyType::DYNAMIC && _mass <= 0.0f)
+        {
+            Error("[PHYSICS - RIGIDBODY] DYNAMIC body created with zero or negative mass.");
+            return;
+        }
+
         // Calculate inertia if mass is more than 0 and body is dynamic
         btVec3 inertia {0.0f, 0.0f, 0.0f};
         if (m_type == BodyType::DYNAMIC && _mass > 0.0f)
@@ -30,18 +36,19 @@ namespace RR
             else
             {
                 Error("[PHYSICS - RIGIDBODY] Tried initializing a RigidBody without a shape.");
+                return;
             }
         }
 
         btTransform transform;
         transform.setIdentity();
 
-        btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+        m_motionState = std::make_unique<btDefaultMotionState>(transform);
 
         // Constructs the rigidbody identity with the object's info
         btRigidBody::btRigidBodyConstructionInfo info(
             (m_type == BodyType::DYNAMIC) ? static_cast<btScalar>(_mass) : static_cast<btScalar>(0),
-            motionState,
+            m_motionState.get(),
             m_collider->GetShape(),
             inertia
         );
@@ -49,10 +56,24 @@ namespace RR
         m_body = std::make_unique<btRigidBody>(info);
         m_body->setFriction(_friction);
 
-        if (m_type == BodyType::KINEMATIC)
-        {
-            m_body->setCollisionFlags(m_body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-            m_body->setActivationState(DISABLE_DEACTIVATION);
+        switch (m_type)
+            {
+            case BodyType::STATIC:
+                m_group = btBroadphaseProxy::StaticFilter;
+                m_mask = btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::KinematicFilter;
+                break;
+
+            case BodyType::DYNAMIC:
+                m_group = btBroadphaseProxy::DefaultFilter;
+                m_mask = btBroadphaseProxy::AllFilter;
+                break;
+
+            case BodyType::KINEMATIC:
+                m_group = btBroadphaseProxy::KinematicFilter;
+                m_mask = btBroadphaseProxy::DefaultFilter | btBroadphaseProxy::CharacterFilter | btBroadphaseProxy::StaticFilter;
+                m_body->setCollisionFlags(m_body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+                m_body->setActivationState(DISABLE_DEACTIVATION);
+                break;
         }
     }
 
@@ -62,6 +83,10 @@ namespace RR
         {
             Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(this);
         }
+
+        m_body.reset();
+        m_motionState.reset();
+        m_collider.reset();
     }
 
     BodyType RigidBody::GetType() const
@@ -74,6 +99,11 @@ namespace RR
         return m_body.get();
     }
 
+    btDefaultMotionState* RigidBody::GetMotionState() const
+    {
+        return m_motionState.get();
+    }
+
     void RigidBody::SetAddedToWorld(bool _added)
     {
         m_addedToWorld = _added;
@@ -84,11 +114,32 @@ namespace RR
         return m_addedToWorld;
     }
 
-    void RigidBody::SetPosition(const vec3& _pos)
+    void RigidBody::SetMask(const int _mask)
+    {
+        if (m_addedToWorld)
+        {
+            Warn("[RIGIDBODY - MASK] Tried updating mask layer after adding to physics scene");
+            return;
+        }
+
+        m_mask = _mask;
+    }
+
+    int RigidBody::GetMask() const
+    {
+        return m_mask;
+    }
+
+    int RigidBody::GetGroup() const
+    {
+        return m_group;
+    }
+
+    void RigidBody::SetPosition(const vec3& _pos, bool _reset)
     {
         if (!m_body)
         {
-            Warn("[RIGIDBODY - SETTER] Tried updating RigidBody's position AFTER addition to physic scene");
+            Warn("[RIGIDBODY - SETTER] Tried updating RigidBody's position AFTER constructor failed");
             return;
         }
 
@@ -104,6 +155,13 @@ namespace RR
             m_body->getMotionState()->setWorldTransform(tr);
         }
         m_body->setWorldTransform(tr);
+
+        if (_reset)
+        {
+            m_body->setLinearVelocity({0.f,0.f,0.f});
+            m_body->setAngularVelocity({0.f,0.f,0.f});
+        }
+        m_body->activate(true);
     }
 
     vec3 RigidBody::GetPosition() const
@@ -112,7 +170,7 @@ namespace RR
         return vec3(pos.x(), pos.y(), pos.z());
     }
 
-    void RigidBody::SetRotation(const quat& _rot)
+    void RigidBody::SetRotation(const quat& _rot, bool _reset)
     {
         if (!m_body)
         {
@@ -132,7 +190,13 @@ namespace RR
         {
             m_body->getMotionState()->setWorldTransform(tr);
         }
-        m_body->setWorldTransform(tr);
+
+        if (_reset)
+        {
+            m_body->setLinearVelocity({0.f,0.f,0.f});
+            m_body->setAngularVelocity({0.f,0.f,0.f});
+        }
+        m_body->activate(true);
     }
 
     quat RigidBody::GetRotation() const

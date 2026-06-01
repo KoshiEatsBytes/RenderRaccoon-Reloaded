@@ -1,5 +1,7 @@
 
 #pragma once
+#include <memory>
+
 #include "Helpers/Types.h"
 
 class btCollisionShape;
@@ -15,7 +17,7 @@ namespace RR
         btCollisionShape* GetShape() const;
 
     protected:
-        btCollisionShape* m_shape = nullptr;
+        std::unique_ptr<btCollisionShape> m_shape;
     };
 
     // Derived colliders -----------------------------------------------------------------------------------------------

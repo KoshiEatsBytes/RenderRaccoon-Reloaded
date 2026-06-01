@@ -4,8 +4,10 @@
 
 #include "Helpers/Types.h"
 #include "Collider.h"
+#include <BulletCollision/BroadphaseCollision/btBroadphaseProxy.h>
 
 class btRigidBody;
+struct btDefaultMotionState;
 
 namespace RR
 {
@@ -32,14 +34,19 @@ namespace RR
 
         BodyType GetType() const;
         btRigidBody* GetBody() const;
+        btDefaultMotionState* GetMotionState() const;
 
         void SetAddedToWorld(bool _added);
         bool IsAddedToWorld() const;
 
-        void SetPosition(const vec3& _pos);
+        void SetMask(int _mask);
+        int GetMask() const;
+        int GetGroup() const;
+
+        void SetPosition(const vec3& _pos, bool _reset = false);
         vec3 GetPosition() const;
 
-        void SetRotation(const quat& _rot);
+        void SetRotation(const quat& _rot, bool _reset = false);
         quat GetRotation() const;
 
     private:
@@ -48,7 +55,11 @@ namespace RR
         float m_mass = 0.0f;
         float m_friction = 0.5f;
 
+        int m_group = btBroadphaseProxy::StaticFilter;
+        int m_mask = btBroadphaseProxy::AllFilter;
+
         std::unique_ptr<btRigidBody> m_body;
+        std::unique_ptr<btDefaultMotionState> m_motionState;
         std::shared_ptr<Collider> m_collider;
     };
 }

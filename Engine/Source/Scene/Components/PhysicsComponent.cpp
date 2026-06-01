@@ -2,7 +2,9 @@
 #include "PhysicsComponent.h"
 
 #include "Engine.h"
+#include "LinearMath/btDefaultMotionState.h"
 #include "Scene/GameObject.h"
+#include "Physics/RigidBody.h"
 
 namespace RR
 {
@@ -42,11 +44,15 @@ namespace RR
             return;
         }
 
-        // Only update if dynamic 
         if (m_rigidBody->GetType() == BodyType::DYNAMIC)
         {
             m_owner->SetPosition(m_rigidBody->GetPosition());
             m_owner->SetRotation(m_rigidBody->GetRotation());
+        }
+        // Reverse update for KINEMATIC
+        else if (m_rigidBody->GetType() == BodyType::KINEMATIC)
+        {
+            // todo implement
         }
     }
 }
