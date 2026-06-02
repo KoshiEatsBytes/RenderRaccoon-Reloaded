@@ -1,8 +1,11 @@
 
 #include "GameObject.h"
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 #include "Engine.h"
-#include "glm/gtc/matrix_transform.hpp"
 #include "Helpers/Printer.hpp"
 #include "Helpers/GLTFLib.hpp"
 #include "Physics/RigidBody.h"
@@ -97,10 +100,11 @@ namespace RR
     {
         if (!m_scene) return false;
 
-        if (m_physicsOwnership == PhysicsOwnership::STATIC)
+        const auto ownership = GetPhysicsOwnership();
+        if (ownership == PhysicsOwnership::STATIC || ownership == PhysicsOwnership::INHERITED)
         {
             Error("[GAME-OBJECT SET PARENT] Parenting discarded for '", m_name,
-                  "' — GO Contains STATIC RigidBody");
+                  "' — GO is a STATIC body or part of a physics body's hierarchy.");
             return false;
         }
 
@@ -175,7 +179,7 @@ namespace RR
 
     void GameObject::SetPosition(const vec3& _pos)
     {
-        switch (m_physicsOwnership)
+        switch (GetPhysicsOwnership())
         {
             case PhysicsOwnership::DYNAMIC:
                 Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
@@ -191,6 +195,12 @@ namespace RR
                 Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
                      "' — controlled by a character controller. ",
                      "Use PlayerControllerComponent::Teleport() instead.");
+                return;
+
+            case PhysicsOwnership::INHERITED:
+                Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
+                     "' — part of a physics body's hierarchy. "
+                     "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
                 return;
 
             default:
@@ -202,7 +212,7 @@ namespace RR
 
     void GameObject::SetWorldPosition(const vec3& _pos)
     {
-        switch (m_physicsOwnership)
+        switch (GetPhysicsOwnership())
         {
             case PhysicsOwnership::DYNAMIC:
                 Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
@@ -218,6 +228,12 @@ namespace RR
                 Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
                      "' — controlled by a character controller. ",
                      "Use PlayerControllerComponent::Teleport() instead.");
+                return;
+
+            case PhysicsOwnership::INHERITED:
+                Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
+                     "' — part of a physics body's hierarchy. "
+                     "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
                 return;
 
             default:
@@ -234,7 +250,7 @@ namespace RR
 
     void GameObject::SetRotation(const quat& _rot)
     {
-        switch (m_physicsOwnership)
+        switch (GetPhysicsOwnership())
         {
             case PhysicsOwnership::DYNAMIC:
                 Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
@@ -250,6 +266,12 @@ namespace RR
                 Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
                      "' — controlled by a character controller. ",
                      "Use PlayerControllerComponent::SetLookRotation() instead.");
+                return;
+
+            case PhysicsOwnership::INHERITED:
+                Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
+                     "' — part of a physics body's hierarchy. "
+                     "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
                 return;
 
             default:
@@ -271,7 +293,7 @@ namespace RR
 
     void GameObject::SetWorldRotation(const quat& _rot)
     {
-        switch (m_physicsOwnership)
+        switch (GetPhysicsOwnership())
         {
             case PhysicsOwnership::DYNAMIC:
                 Warn("[GAME-OBJECT - ROT] Discarded SetWorldRotation on '", m_name,
@@ -289,6 +311,12 @@ namespace RR
                      "Use PlayerControllerComponent::SetLookRotation() instead.");
                 return;
 
+            case PhysicsOwnership::INHERITED:
+                Warn("[GAME-OBJECT - ROS] Discarded SetWorldRotation on '", m_name,
+                     "' — part of a physics body's hierarchy. "
+                     "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
+                return;
+
             default:
                 break;
         }
@@ -303,7 +331,7 @@ namespace RR
 
     void GameObject::SetScale(const vec3& _scale)
     {
-        switch (m_physicsOwnership)
+        switch (GetPhysicsOwnership())
         {
             case PhysicsOwnership::DYNAMIC:
             case PhysicsOwnership::KINEMATIC:
@@ -317,6 +345,12 @@ namespace RR
                      "' — character controllers can't be scaled. Recreate the controller with a different capsule size.");
                 return;
 
+            case PhysicsOwnership::INHERITED:
+                Warn("[GAME-OBJECT - SCALE] Discarded SetScale on '", m_name,
+                     "' — part of a physics body's hierarchy. "
+                     "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
+                return;
+
             case PhysicsOwnership::NONE:
                 break;
         }
@@ -324,14 +358,14 @@ namespace RR
         m_scale = _scale;
     }
 
-    vec3 GameObject::GetWorldScale() const
+    vec3 GameObject::GetWorldLossyScale() const
     {
-        if (m_parent)
-        {
-            return m_parent->GetWorldScale() * m_scale;
-        }
-
-        return m_scale;
+        // Generates Lossy Scale, prevents heavy shearing
+        vec3 scale, translation, skew;
+        quat rotation;
+        vec4 perspective;
+        glm::decompose(GetWorldTransform(), scale, rotation, translation, skew, perspective);
+        return scale;
     }
 
     /**
@@ -370,7 +404,21 @@ namespace RR
         return GetLocalTransform();
     }
 
-    // PRIVATE ---------------------------------------------------------------------------------------------------------
+    // PROTECTED -------------------------------------------------------------------------------------------------------
+
+    PhysicsOwnership GameObject::GetPhysicsOwnership() const
+    {
+        if (m_physicsOwnership != PhysicsOwnership::NONE)
+        {
+            return m_physicsOwnership;
+        }
+        if (m_parentPhysicsOwnership != PhysicsOwnership::NONE)
+        {
+            return PhysicsOwnership::INHERITED;
+        }
+
+        return PhysicsOwnership::NONE;
+    }
 
     void GameObject::SetWorldPositionInternal(const vec3& _pos)
     {

@@ -16,7 +16,8 @@ namespace RR
         DYNAMIC,
         KINEMATIC,
         STATIC,
-        CHARACTER
+        CHARACTER,
+        INHERITED
     };
 
     class Scene;
@@ -66,7 +67,7 @@ namespace RR
 
         const vec3& GetScale() const;
         void SetScale(const vec3& _scale);
-        vec3 GetWorldScale() const;
+        vec3 GetWorldLossyScale() const;
 
         // Transform get/set
         mat4 GetLocalTransform() const;
@@ -75,6 +76,7 @@ namespace RR
     protected:
         GameObject();
 
+        PhysicsOwnership GetPhysicsOwnership() const;
         void SetWorldPositionInternal(const vec3& _pos);
         void SetWorldRotationInternal(const quat& _rot);
         void SetScaleInternal(const vec3& _scale);
@@ -89,6 +91,7 @@ namespace RR
         std::vector<std::unique_ptr<GameObject>> m_children;
         std::vector<std::unique_ptr<Component>> m_components;
         PhysicsOwnership m_physicsOwnership = PhysicsOwnership::NONE;
+        PhysicsOwnership m_parentPhysicsOwnership = PhysicsOwnership::NONE;
 
         // Object Transform Values
         vec3 m_position = vec3(0.0f);

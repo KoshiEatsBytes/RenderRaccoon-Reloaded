@@ -21,7 +21,12 @@ namespace RR
     }
 
     PhysicsComponent::~PhysicsComponent()
-    = default;
+    {
+        if (m_owner)
+        {
+            ClearInheritedPhysicsOwnership(m_owner);
+        }
+    }
 
     void PhysicsComponent::Init()
     {
@@ -41,15 +46,23 @@ namespace RR
         auto compound = std::make_unique<btCompoundShape>();
         std::vector<std::shared_ptr<Collider>> colliders;
 
+        auto ownership = PhysicsOwnership::NONE;
+        switch (m_type) {
+            case BodyType::DYNAMIC:   ownership = PhysicsOwnership::DYNAMIC;   break;
+            case BodyType::KINEMATIC: ownership = PhysicsOwnership::KINEMATIC; break;
+            case BodyType::STATIC:    ownership = PhysicsOwnership::STATIC;    break;
+        }
+
         // Goes through every child and checks if they have components, carry scale
         // UNIFORM WORLD SCALE ONLY!!!!
-        mat4 initial = glm::scale(mat4(1.0f), m_owner->GetWorldScale());
-        AddCollidersRecursive(m_owner, initial, *compound, colliders);
+        mat4 initial = glm::scale(mat4(1.0f), m_owner->GetWorldLossyScale());
+        AddCollidersRecursive(m_owner, initial, *compound, colliders, ownership);
 
         if (compound->getNumChildShapes() == 0)
         {
             Warn("[PHYSICS COMPONENT] Game-Object '", m_owner->GetName(),
-                "' Has a physics component but NO colliders in heirarchy");
+                "' Has a physics component but NO colliders in hierarchy");
+            ClearInheritedPhysicsOwnership(m_owner); 
             return;
         }
 
@@ -70,12 +83,7 @@ namespace RR
 
         if (m_rigidBody && m_rigidBody->GetBody())
         {
-            switch (m_type)
-            {
-                case BodyType::DYNAMIC:   m_owner->m_physicsOwnership = PhysicsOwnership::DYNAMIC;   break;
-                case BodyType::KINEMATIC: m_owner->m_physicsOwnership = PhysicsOwnership::KINEMATIC; break;
-                case BodyType::STATIC:    m_owner->m_physicsOwnership = PhysicsOwnership::STATIC;    break;
-            }
+            m_owner->m_physicsOwnership = ownership;
         }
     }
 
@@ -207,6 +215,9 @@ namespace RR
 
     void PhysicsComponent::Rebuild()
     {
+        // Clears children from physics ownership
+        ClearInheritedPhysicsOwnership(m_owner);
+
         if (m_rigidBody && m_rigidBody->IsAddedToWorld())
         {
             Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(m_rigidBody.get());
@@ -266,7 +277,7 @@ namespace RR
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void PhysicsComponent::AddCollidersRecursive(GameObject *_go, const mat4& _localToParent, btCompoundShape &_compound,
-        std::vector<std::shared_ptr<Collider>>& colliders)
+        std::vector<std::shared_ptr<Collider>>& colliders, PhysicsOwnership _ownership)
     {
         // add this current GO's collider if it has any
         // cc -> Collider Component
@@ -299,8 +310,10 @@ namespace RR
             if (!child->IsActive()) continue;
             if (child->GetComponent<PhysicsComponent>()) continue;
 
+            child->m_parentPhysicsOwnership = _ownership;
+
             mat4 childLocal = _localToParent * child->GetLocalTransform();
-            AddCollidersRecursive(child.get(), childLocal, _compound, colliders);
+            AddCollidersRecursive(child.get(), childLocal, _compound, colliders, _ownership);
         }
     }
 
@@ -323,5 +336,16 @@ namespace RR
         }
 
         return true;
+    }
+
+    void PhysicsComponent::ClearInheritedPhysicsOwnership(GameObject* _go)
+    {
+        for (auto& child : _go->GetChildren())
+        {
+            if (child->GetComponent<PhysicsComponent>()) continue;
+
+            child->m_parentPhysicsOwnership = PhysicsOwnership::NONE;
+            ClearInheritedPhysicsOwnership(child.get());
+        }
     }
 }

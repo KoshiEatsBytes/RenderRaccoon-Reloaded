@@ -5,6 +5,8 @@
 
 namespace RR
 {
+    enum class PhysicsOwnership : uint8_t;
+
     class PhysicsComponent : public Component
     {
     public:
@@ -39,10 +41,15 @@ namespace RR
         vec3 GetAngularVelocity() const;
 
     private:
-        static void AddCollidersRecursive(GameObject* _go, const mat4& _localToParent,
-                                          btCompoundShape& _compound, std::vector<std::shared_ptr<Collider>>& colliders);
+        static void AddCollidersRecursive(GameObject* _go,
+                                          const mat4& _localToParent,
+                                          btCompoundShape& _compound,
+                                          std::vector<std::shared_ptr<Collider>>& colliders,
+                                          PhysicsOwnership _ownership);
 
         static bool DecomposeTr(const mat4& _mat, vec3& _outPos, quat& _outRot, vec3& _outScale);
+
+        static void ClearInheritedPhysicsOwnership(GameObject* _go);
 
 
         BodyType m_type = BodyType::STATIC;
