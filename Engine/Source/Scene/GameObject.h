@@ -10,11 +10,21 @@
 
 namespace RR
 {
+    enum class PhysicsOwnership : uint8_t
+    {
+        NONE,
+        DYNAMIC,
+        KINEMATIC,
+        STATIC
+    };
+
     class Scene;
     class GameObject
     {
     public:
         friend class Scene;
+        friend class PhysicsComponent;
+
         virtual ~GameObject();
         virtual void Update(float _deltaTime);
 
@@ -64,6 +74,10 @@ namespace RR
         GameObject();
 
     private:
+        void SetWorldPositionFromPhysics(const vec3& _pos);
+        void SetWorldRotationFromPhysics(const quat& _rot);
+        void SetScaleFromPhysics(const vec3& _scale);
+
         bool m_alive = true;
         bool m_active = true;
         std::string m_name;
@@ -73,6 +87,7 @@ namespace RR
         // Hierarchy
         std::vector<std::unique_ptr<GameObject>> m_children;
         std::vector<std::unique_ptr<Component>> m_components;
+        PhysicsOwnership m_physicsOwnership = PhysicsOwnership::NONE;
 
         // Object Transform Values
         vec3 m_position = vec3(0.0f);

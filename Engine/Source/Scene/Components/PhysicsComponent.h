@@ -16,7 +16,27 @@ namespace RR
         void Init() override;
         void Update(float _deltaTime) override;
 
+        void Teleport(const vec3& _worldPos, bool _resetVelocity = true);
+        void SetRotation(const quat& _worldRot, bool _resetVelocity = true);
+
+        void ApplyForce(const vec3& _force, const vec3& _relativePos = vec3(0));
+        void ApplyImpulse(const vec3& _impulse, const vec3& _relativePos = vec3(0));
+
+        void SetDamping(float _linear, float _angular);
+        void SetLinearLock(const vec3& _factor);
+        void SetAngularLock(const vec3& _factor);
+
+        // EXPENSIVE
+        void SetScale(const vec3& _newScale);
+        void Rebuild();
+
         int GetExecutionOrder() const override;
+        std::shared_ptr<RigidBody> GetRigidBody() const;
+
+        void SetLinearVelocity(const vec3& _vec);
+        vec3 GetLinearVelocity() const;
+        void SetAngularVelocity(const vec3& _vec);
+        vec3 GetAngularVelocity() const;
 
     private:
         static void AddCollidersRecursive(GameObject* _go, const mat4& _localToParent,
@@ -25,9 +45,9 @@ namespace RR
         static bool DecomposeTr(const mat4& _mat, vec3& _outPos, quat& _outRot, vec3& _outScale);
 
 
-        BodyType m_type;
-        float m_mass;
-        float m_friction;
+        BodyType m_type = BodyType::STATIC;
+        float m_mass = 0.0f;
+        float m_friction = 0.5f;
         std::shared_ptr<RigidBody> m_rigidBody;
     };
 }

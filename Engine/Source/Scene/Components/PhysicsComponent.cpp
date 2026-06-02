@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "LinearMath/btDefaultMotionState.h"
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
+#include "BulletDynamics/Dynamics/btRigidBody.h"
 #include "Helpers/Printer.hpp"
 #include "Physics/BtConv.hpp"
 #include "Scene/GameObject.h"
@@ -24,6 +25,9 @@ namespace RR
 
     void PhysicsComponent::Init()
     {
+        // Resets ownership in case of rebuilt
+        m_owner->m_physicsOwnership = PhysicsOwnership::NONE;
+
         // Detect two physic components, thats no good!
         auto siblings = m_owner->GetComponents<PhysicsComponent>();
         if (siblings.size() > 1)
@@ -63,6 +67,16 @@ namespace RR
         m_rigidBody->SetPosition(m_owner->GetWorldPosition());
         m_rigidBody->SetRotation(m_owner->GetWorldRotation());
         Engine::GetInstance().GetPhysicsManager().AddRigidbody(m_rigidBody.get());
+
+        if (m_rigidBody && m_rigidBody->GetBody())
+        {
+            switch (m_type)
+            {
+                case BodyType::DYNAMIC:   m_owner->m_physicsOwnership = PhysicsOwnership::DYNAMIC;   break;
+                case BodyType::KINEMATIC: m_owner->m_physicsOwnership = PhysicsOwnership::KINEMATIC; break;
+                case BodyType::STATIC:    m_owner->m_physicsOwnership = PhysicsOwnership::STATIC;    break;
+            }
+        }
     }
 
     void PhysicsComponent::Update(float _deltaTime)
@@ -84,8 +98,8 @@ namespace RR
             case BodyType::DYNAMIC:
             {
                 // Physics to GO (world to local)
-                m_owner->SetWorldPosition(m_rigidBody->GetPosition());
-                m_owner->SetWorldRotation(m_rigidBody->GetRotation());
+                m_owner->SetWorldPositionFromPhysics(m_rigidBody->GetPosition());
+                m_owner->SetWorldRotationFromPhysics(m_rigidBody->GetRotation());
             }
             break;
 
@@ -107,9 +121,146 @@ namespace RR
         }
     }
 
+    void PhysicsComponent::Teleport(const vec3 &_worldPos, const bool _resetVelocity)
+    {
+        if (!m_rigidBody) return;
+
+        if (m_rigidBody->GetType() != BodyType::DYNAMIC)
+        {
+            Warn("[PHYSICS COMPONENT] Teleport ignored on '", m_owner->GetName(),
+             "' — only DYNAMIC bodies can be teleported via this method. "
+             "For KINEMATIC, set the GO transform directly.");
+            return;
+        }
+
+        // Update visual and physic scene
+        m_rigidBody->SetPosition(_worldPos, _resetVelocity);
+        m_owner->SetWorldPositionFromPhysics(_worldPos);
+    }
+
+    void PhysicsComponent::SetRotation(const quat& _worldRot, const bool _resetVelocity)
+    {
+        if (!m_rigidBody) return;
+
+        if (m_rigidBody->GetType() != BodyType::DYNAMIC)
+        {
+            Warn("[PHYSICS COMPONENT] SetRotation ignored on '", m_owner->GetName(),
+                 "' — only DYNAMIC bodies. For KINEMATIC, set the GO rotation directly.");
+            return;
+        }
+
+        m_rigidBody->SetRotation(_worldRot, _resetVelocity);
+        m_owner->SetWorldRotationFromPhysics(_worldRot);
+    }
+
+    void PhysicsComponent::ApplyForce(const vec3& _force, const vec3& _relativePos)
+    {
+        if (!m_rigidBody) return;
+
+        m_rigidBody->GetBody()->applyForce(BtConv::ToBt(_force), BtConv::ToBt(_relativePos));
+    }
+
+    void PhysicsComponent::ApplyImpulse(const vec3& _impulse, const vec3& _relativePos)
+    {
+        if (!m_rigidBody) return;
+
+        m_rigidBody->GetBody()->applyImpulse(BtConv::ToBt(_impulse), BtConv::ToBt(_relativePos));
+    }
+
+    void PhysicsComponent::SetDamping(float _linear, float _angular)
+    {
+        if (!m_rigidBody) return;
+
+        m_rigidBody->GetBody()->setDamping(_linear, _angular);
+    }
+
+    /**
+     * Constraints locks position - (0,1,0) = lock X and Z
+     *
+     * @param _factor Vec3 for each axis to lock
+     */
+    void PhysicsComponent::SetLinearLock(const vec3& _factor)
+    {
+        if (!m_rigidBody) return;
+
+        m_rigidBody->GetBody()->setLinearFactor(BtConv::ToBt(_factor));
+    }
+
+    /**
+     * Constraints locks rotation - (0,1,0) = only rotate around Y
+     *
+     * @param _factor Vec3 for each axis to lock
+     */
+    void PhysicsComponent::SetAngularLock(const vec3& _factor)
+    {
+        if (!m_rigidBody) return;
+
+        m_rigidBody->GetBody()->setAngularFactor(BtConv::ToBt(_factor));
+    }
+
+    void PhysicsComponent::SetScale(const vec3& _newScale)
+    {
+        // REBUILD body with scale baked it
+        m_owner->SetScaleFromPhysics(_newScale);
+        Rebuild();
+    }
+
+    void PhysicsComponent::Rebuild()
+    {
+        if (m_rigidBody && m_rigidBody->IsAddedToWorld())
+        {
+            Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(m_rigidBody.get());
+        }
+        m_rigidBody.reset();
+
+        // Re-runs init, very expensive.
+        Init();
+    }
+
     int PhysicsComponent::GetExecutionOrder() const
     {
         return -100;
+    }
+
+    std::shared_ptr<RigidBody> PhysicsComponent::GetRigidBody() const
+    {
+        return m_rigidBody;
+    }
+
+    void PhysicsComponent::SetLinearVelocity(const vec3& _vec)
+    {
+        if (m_type != BodyType::DYNAMIC)
+        {
+            Warn("[PHYSICS - SET LINEAR VELOCITY] Discarded SetLinearVelocity on '", m_owner->GetName(),
+                 "' — DYNAMIC ONLY current RigidBody STATIC or KINEMATIC");
+            return;
+        }
+
+        m_rigidBody->GetBody()->setLinearVelocity(BtConv::ToBt(_vec));
+    }
+
+    vec3 PhysicsComponent::GetLinearVelocity() const
+    {
+        if (!m_rigidBody) return vec3(0.0f);
+        return BtConv::FromBt(m_rigidBody->GetBody()->getLinearVelocity());
+    }
+
+    void PhysicsComponent::SetAngularVelocity(const vec3& _vec)
+    {
+        if (m_type != BodyType::DYNAMIC)
+        {
+            Warn("[PHYSICS - SET ANGULAR VELOCITY] Discarded SetAngularVelocity on '", m_owner->GetName(),
+                 "' — DYNAMIC ONLY current RigidBody STATIC or KINEMATIC");
+            return;
+        }
+
+        m_rigidBody->GetBody()->setAngularVelocity(BtConv::ToBt(_vec));
+    }
+
+    vec3 PhysicsComponent::GetAngularVelocity() const
+    {
+        if (!m_rigidBody) return vec3(0.0f);
+        return BtConv::FromBt(m_rigidBody->GetBody()->getAngularVelocity());
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

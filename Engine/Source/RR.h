@@ -30,3 +30,5 @@
 #include "Scene/Components/PlayerControllerComponent.h"
 #include "Scene/Components/LightComponent.h"
 #include "Scene/Components/AnimationComponent.h"
+#include "Scene/Components/PhysicsComponent.h"
+#include "Scene/Components/ColliderComponent.h"

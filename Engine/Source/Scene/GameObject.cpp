@@ -5,6 +5,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "Helpers/Printer.hpp"
 #include "Helpers/GLTFLib.hpp"
+#include "Physics/RigidBody.h"
+#include "Scene/Components/PhysicsComponent.h"
 
 namespace RR
 {
@@ -12,6 +14,7 @@ namespace RR
 
     GameObject::GameObject()
     = default;
+
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
@@ -94,6 +97,13 @@ namespace RR
     {
         if (!m_scene) return false;
 
+        if (m_physicsOwnership == PhysicsOwnership::STATIC)
+        {
+            Error("[GAME-OBJECT SET PARENT] Parenting discarded for '", m_name,
+                  "' — GO Contains STATIC RigidBody");
+            return false;
+        }
+
         return m_scene->SetParent(this, _parent);
     }
 
@@ -165,20 +175,44 @@ namespace RR
 
     void GameObject::SetPosition(const vec3& _pos)
     {
+        switch (m_physicsOwnership)
+        {
+            case PhysicsOwnership::DYNAMIC:
+                Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
+                     "' — DYNAMIC body owns its transform. Use PhysicsComponent::Teleport().");
+                return;
+
+            case PhysicsOwnership::STATIC:
+                Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
+                     "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
+                return;
+
+            default:
+                break;
+        }
+
         m_position = _pos;
     }
 
     void GameObject::SetWorldPosition(const vec3& _pos)
     {
-        if (m_parent)
+        switch (m_physicsOwnership)
         {
-            const mat4 inverseParent = glm::inverse(m_parent->GetWorldTransform());
-            m_position = vec3(inverseParent * vec4(_pos, 1.0f));
+            case PhysicsOwnership::DYNAMIC:
+                Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
+                     "' — DYNAMIC body owns its transform. Use PhysicsComponent::Teleport().");
+                return;
+
+            case PhysicsOwnership::STATIC:
+                Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
+                     "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
+                return;
+
+            default:
+                break;
         }
-        else
-        {
-            m_position = _pos;
-        }
+
+        SetWorldPositionFromPhysics(_pos);
     }
 
     quat GameObject::GetRotation() const
@@ -188,6 +222,22 @@ namespace RR
 
     void GameObject::SetRotation(const quat& _rot)
     {
+        switch (m_physicsOwnership)
+        {
+            case PhysicsOwnership::DYNAMIC:
+                Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
+                     "' — DYNAMIC body owns its transform. Use PhysicsComponent::SetRotation().");
+                return;
+
+            case PhysicsOwnership::STATIC:
+                Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
+                     "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
+                return;
+
+            default:
+                break;
+        }
+
         m_rotation = _rot;
     }
 
@@ -203,15 +253,23 @@ namespace RR
 
     void GameObject::SetWorldRotation(const quat& _rot)
     {
-        if (m_parent)
+        switch (m_physicsOwnership)
         {
-            quat inverseParent = glm::inverse(m_parent->GetWorldRotation());
-            m_rotation = inverseParent * _rot;
+            case PhysicsOwnership::DYNAMIC:
+                Warn("[GAME-OBJECT - ROT] Discarded SetWorldRotation on '", m_name,
+                     "' — DYNAMIC body owns its transform. Use PhysicsComponent::SetRotation().");
+                return;
+
+            case PhysicsOwnership::STATIC:
+                Warn("[GAME-OBJECT - ROT] Discarded SetWorldRotation on '", m_name,
+                     "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
+                return;
+
+            default:
+                break;
         }
-        else
-        {
-            m_rotation = _rot;
-        }
+
+        SetWorldRotationFromPhysics(_rot);
     }
 
     const vec3& GameObject::GetScale() const
@@ -221,6 +279,14 @@ namespace RR
 
     void GameObject::SetScale(const vec3& _scale)
     {
+        if (m_physicsOwnership != PhysicsOwnership::NONE)
+        {
+            Warn("[GAME-OBJECT - SCALE] Discarded SetScaleRotation on '", m_name,
+                     "' — Object has Rigidbody, for scale changes use PhysicsComponent::SetScale(), ",
+                     "BEWARE HIGH RESOURCE USAGE");
+            return;
+        }
+
         m_scale = _scale;
     }
 
@@ -268,5 +334,38 @@ namespace RR
         }
 
         return GetLocalTransform();
+    }
+
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    void GameObject::SetWorldPositionFromPhysics(const vec3& _pos)
+    {
+        if (m_parent)
+        {
+            const mat4 inverseParent = glm::inverse(m_parent->GetWorldTransform());
+            m_position = vec3(inverseParent * vec4(_pos, 1.0f));
+        }
+        else
+        {
+            m_position = _pos;
+        }
+    }
+
+    void GameObject::SetWorldRotationFromPhysics(const quat &_rot)
+    {
+        if (m_parent)
+        {
+            quat inverseParent = glm::inverse(m_parent->GetWorldRotation());
+            m_rotation = inverseParent * _rot;
+        }
+        else
+        {
+            m_rotation = _rot;
+        }
+    }
+
+    void GameObject::SetScaleFromPhysics(const vec3 &_scale)
+    {
+        m_scale = _scale;
     }
 }
