@@ -1,5 +1,6 @@
 
 #pragma once
+#include <functional>
 #include <memory>
 
 // bullet library fw dec
@@ -20,6 +21,7 @@ namespace RR
         ~PhysicsManager();
 
     public:
+        using StepCallBack = std::function<void()>;
         friend class Engine;
 
         // Delete copy
@@ -36,7 +38,11 @@ namespace RR
         void AddRigidbody(RigidBody* _body);
         void RemoveRigidBody(RigidBody* _body);
 
+        void RegisterPreStepCallback(const StepCallBack& _callback);
+        void RegisterPostStepCallback(const StepCallBack& _callback);
+
         btDiscreteDynamicsWorld* GetWorld() const;
+        float GetInterpolationAlpha() const;
 
     private:
         std::unique_ptr<btGhostPairCallback> m_ghostPairCallback;
@@ -45,5 +51,10 @@ namespace RR
         std::unique_ptr<btCollisionDispatcher> m_dispatcher;
         std::unique_ptr<btSequentialImpulseConstraintSolver> m_solver;
         std::unique_ptr<btDiscreteDynamicsWorld> m_world;
+
+        // Interpolation data for position at inconsistent framerate
+        float m_accumulator = 0.0f;
+        std::vector<StepCallBack> m_preStepCallbacks;
+        std::vector<StepCallBack> m_postStepCallbacks;
     };
 }

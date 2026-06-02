@@ -21,7 +21,6 @@ bool Game::Init()
     RR::Engine::GetInstance().SetScene(m_scene);
 
     auto player = m_scene->CreateObject<Player>("Player");
-    player->Init();
     m_scene->SetMainCamera(player);
 
 
@@ -83,6 +82,11 @@ bool Game::Init()
     return true;
 }
 
+void Game::PreUpdate(float _deltaTime)
+{
+    m_scene->PreUpdate(_deltaTime);
+}
+
 void Game::Update(float _deltaTime)
 {
     m_scene->Update(_deltaTime);
@@ -93,6 +97,11 @@ void Game::Update(float _deltaTime)
     {
         SetShouldClose(true);
     }
+}
+
+void Game::LateUpdate(float _deltaTime)
+{
+    m_scene->LateUpdate(_deltaTime);
 }
 
 void Game::Destroy()

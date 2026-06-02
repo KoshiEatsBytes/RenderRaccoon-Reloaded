@@ -17,6 +17,11 @@ namespace RR
         : m_height(_height), m_radius(_radius)
     {
         BuildGhostAndController(vec3(0.0f));
+
+        // Register this controller for stepCallBacks
+        auto& pm = Engine::GetInstance().GetPhysicsManager();
+        pm.RegisterPreStepCallback([this](){ RecordPositionBeforeStep(); });
+        pm.RegisterPostStepCallback([this](){ RecordPositionAfterStep(); });
     }
 
     KinematicCharacterController::~KinematicCharacterController()
@@ -67,6 +72,9 @@ namespace RR
 
         btTransform tr = m_ghost->getWorldTransform();
         tr.setOrigin(BtConv::ToBt(_pos));
+        m_currGhostPos = _pos;
+        m_prevGhostPos = _pos;
+
         m_ghost->setWorldTransform(tr);
         // wake up internal controller
         m_controller->warp(BtConv::ToBt(_pos));
@@ -75,6 +83,21 @@ namespace RR
     vec3 KinematicCharacterController::GetPosition() const
     {
         return BtConv::FromBt(m_ghost->getWorldTransform().getOrigin());
+    }
+
+    void KinematicCharacterController::RecordPositionBeforeStep()
+    {
+        m_prevGhostPos = m_currGhostPos;
+    }
+
+    void KinematicCharacterController::RecordPositionAfterStep()
+    {
+        m_currGhostPos = BtConv::FromBt(m_ghost->getWorldTransform().getOrigin());
+    }
+
+    vec3 KinematicCharacterController::GetInterpolatedPosition(const float _alpha) const
+    {
+        return glm::mix(m_prevGhostPos, m_currGhostPos, _alpha);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
@@ -93,6 +116,8 @@ namespace RR
         btTransform startTr;
         startTr.setIdentity();
         startTr.setOrigin(BtConv::ToBt(_startPos));
+        m_currGhostPos = _startPos;
+        m_prevGhostPos = _startPos;
 
         m_ghost = std::make_unique<btPairCachingGhostObject>();
         m_ghost->setWorldTransform(startTr);

@@ -16,7 +16,9 @@ namespace RR
         Scene();
         ~Scene();
 
-        void Update(float _deltaTime);
+        void PreUpdate(float _deltaTime);
+        void Update(float _deltaTime) const;
+        void LateUpdate(float _deltaTime) const;
         void Clear();
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
@@ -52,6 +54,7 @@ namespace RR
             obj->SetName(_name);
             SetParent(obj, _parent);
             obj->m_scene = this;
+            obj->Init();
             return obj;
         }
     };

@@ -26,6 +26,10 @@ namespace RR
         void SetPosition(const vec3& _pos);
         vec3 GetPosition() const;
 
+        void RecordPositionBeforeStep();
+        void RecordPositionAfterStep();
+        vec3 GetInterpolatedPosition(float _alpha) const;
+
     private:
         void BuildGhostAndController(const vec3& _startPos);
         void TearDown();
@@ -41,6 +45,10 @@ namespace RR
         // max step height and slop climb for Character Controller
         btScalar m_stepHeight = 0.35f;
         btScalar m_maxSlope = 50.0f;
+
+        // For camera interpolation (fps 60+)
+        vec3 m_prevGhostPos = vec3(0.0f);
+        vec3 m_currGhostPos = vec3(0.0f);
     };
 }
 

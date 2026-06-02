@@ -15,8 +15,10 @@ namespace RR
         virtual ~Component();
 
         virtual void Init();
-        virtual void Update(float _deltaTime) = 0;
-        virtual sizeT GetTypeID() const       = 0;
+        virtual void PreUpdate(float _deltaTime);
+        virtual void Update(float _deltaTime)       = 0;
+        virtual void LateUpdate(float _deltaTime);
+        virtual sizeT GetTypeID() const             = 0;
 
         virtual int GetExecutionOrder() const;
         GameObject* GetOwner() const;

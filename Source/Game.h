@@ -12,7 +12,9 @@ public:
     ~Game() override;
 
     bool Init()                         override;
+    void PreUpdate(float _deltaTime)    override;
     void Update(float _deltaTime)       override;
+    void LateUpdate(float _deltaTime)   override;
     void Destroy()                      override;
 
 private:

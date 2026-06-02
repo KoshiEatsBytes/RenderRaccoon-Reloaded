@@ -9,7 +9,7 @@ public:
     Player();
     ~Player() override;
 
-    void Init();
+    void Init() override;
     void Update(float _deltaTime) override;
 
 private:

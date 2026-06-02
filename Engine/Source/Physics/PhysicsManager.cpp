@@ -50,11 +50,20 @@ namespace RR
 
     void PhysicsManager::Update(float _deltaTime)
     {
-        // Set physics library to fixed timeframe
         constexpr btScalar fixedTimeStep = 1.0f / 60.0f;
-        constexpr int maxSubSteps = 4;
+        constexpr int maxStepsPerFrame = 4;
 
-        m_world->stepSimulation(_deltaTime, maxSubSteps, fixedTimeStep);
+        m_accumulator += _deltaTime;
+        m_accumulator = std::min(m_accumulator, maxStepsPerFrame * fixedTimeStep);
+
+        while (m_accumulator >= fixedTimeStep)
+        {
+            // Pre and post step callbacks to interpolate position of characters
+            for (auto& cb : m_preStepCallbacks)  cb();
+            m_world->stepSimulation(fixedTimeStep, 1, fixedTimeStep);
+            for (auto& cb : m_postStepCallbacks) cb();
+            m_accumulator -= fixedTimeStep;
+        }
     }
 
     void PhysicsManager::AddRigidbody(RigidBody* _body)
@@ -107,8 +116,25 @@ namespace RR
         }
     }
 
+    // Takes a function pointer to a subscriber
+    void PhysicsManager::RegisterPreStepCallback(const StepCallBack& _callback)
+    {
+        m_preStepCallbacks.push_back(_callback);
+    }
+
+    // Takes a function pointer to a subscriber
+    void PhysicsManager::RegisterPostStepCallback(const StepCallBack& _callback)
+    {
+        m_postStepCallbacks.push_back(_callback);
+    }
+
     btDiscreteDynamicsWorld* PhysicsManager::GetWorld() const
     {
         return m_world.get();
+    }
+
+    float PhysicsManager::GetInterpolationAlpha() const
+    {
+        return m_accumulator / (1.0f / 60.0f);
     }
 }

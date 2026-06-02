@@ -191,8 +191,12 @@ namespace RR
             float deltaTime = std::chrono::duration<float>(now - m_lastTimePoint).count();
             m_lastTimePoint = now;
 
-            // Update physics world then application
+            // Pre update before physics simulation
+            m_application->PreUpdate(deltaTime);
+
+            // Run physic simulation
             m_physicsManager.Update(deltaTime);
+
             m_application->Update(deltaTime);
 
             // Drawing
@@ -226,6 +230,9 @@ namespace RR
 
             // Mouse moved this frame
             m_inputManager.SetMousePositionChanged(false);
+
+            // Late Update before new frame
+            m_application->LateUpdate(deltaTime);
         }
     }
 

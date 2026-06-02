@@ -16,20 +16,41 @@ namespace RR
     Scene::~Scene()
     = default;
 
-    void Scene::Update(float _deltaTime)
+    void Scene::PreUpdate(float _deltaTime)
     {
-        // Update each GO, delete unalive ones
+        // Update each GO, delete un-alive ones
         for (auto it = m_objects.begin(); it != m_objects.end();)
         {
             if ((*it)->IsAlive())
             {
-                (*it)->Update(_deltaTime);
+                (*it)->PreUpdate(_deltaTime);
                 ++it;
             }
             else
             {
+                if (it->get() == m_mainCamera)
+                {
+                    m_mainCamera = nullptr;
+                }
+
                 it = m_objects.erase(it);
             }
+        }
+    }
+
+    void Scene::Update(float _deltaTime) const
+    {
+        for (const auto& obj: m_objects)
+        {
+            obj->Update(_deltaTime);
+        }
+    }
+
+    void Scene::LateUpdate(float _deltaTime) const
+    {
+        for (const auto& obj: m_objects)
+        {
+            obj->LateUpdate(_deltaTime);
         }
     }
 
@@ -45,12 +66,11 @@ namespace RR
         obj->SetName(_name);
         SetParent(obj, _parent);
         obj->m_scene = this;
+        obj->Init();
         return obj;
     }
 
     /**
-     * WARNING - HEAVY TO RUN METHOD.
-     *
      * @brief Iterates through all objects, recursively check if they have a light component
      *        if so, grab its color and world position
      * @return list of all lights
@@ -278,8 +298,6 @@ namespace RR
     {
         return m_mainCamera;
     }
-
-
 }
 
 

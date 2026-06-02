@@ -15,7 +15,9 @@ namespace RR
 
         // Derived class must implement
         virtual bool Init()                             = 0;
+        virtual void PreUpdate(float _deltaTime)        = 0;
         virtual void Update(float _deltaTime)           = 0;
+        virtual void LateUpdate(float _deltaTime)       = 0;
         virtual void Destroy()                          = 0;
 
         void SetShouldClose(const bool& val);

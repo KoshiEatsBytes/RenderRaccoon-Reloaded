@@ -29,7 +29,10 @@ namespace RR
         friend class PlayerControllerComponent;
 
         virtual ~GameObject();
+        virtual void Init();
+        virtual void PreUpdate(float _deltaTime);
         virtual void Update(float _deltaTime);
+        virtual void LateUpdate(float _deltaTime);
 
         void AddComponent(Component* _component);
         void MarkForDestroy();

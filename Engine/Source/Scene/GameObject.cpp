@@ -24,6 +24,36 @@ namespace RR
     GameObject::~GameObject()
     = default;
 
+    void GameObject::Init()
+    {
+    }
+
+    void GameObject::PreUpdate(const float _deltaTime)
+    {
+        if (!m_active) return;
+
+        // Run the pre-update of each component
+        for (const auto& component : m_components)
+        {
+            component->PreUpdate(_deltaTime);
+        }
+
+        // Update each child, or destroy marked
+        for (auto it = m_children.begin(); it != m_children.end();)
+        {
+            if ((*it)->IsAlive())
+            {
+                (*it)->PreUpdate(_deltaTime);
+                ++it;
+            }
+            else
+            {
+                // Erase it from list, ptr gets freed when out of scope.
+                it = m_children.erase(it);
+            }
+        }
+    }
+
     void GameObject::Update(const float _deltaTime)
     {
         if (!m_active) return;
@@ -34,19 +64,25 @@ namespace RR
             component->Update(_deltaTime);
         }
 
-        // Update each child, or destroy marked
-        for (auto it = m_children.begin(); it != m_children.end();)
+        for (const auto& child: m_children)
         {
-            if ((*it)->IsAlive())
-            {
-                (*it)->Update(_deltaTime);
-                ++it;
-            }
-            else
-            {
-                // Erase it from list, ptr gets freed when out of scope.
-                it = m_children.erase(it);
-            }
+            child->Update(_deltaTime);
+        }
+    }
+
+    void GameObject::LateUpdate(const float _deltaTime)
+    {
+        if (!m_active) return;
+
+        // run late-update on each component
+        for (const auto& component : m_components)
+        {
+            component->LateUpdate(_deltaTime);
+        }
+
+        for (const auto& child: m_children)
+        {
+            child->LateUpdate(_deltaTime);
         }
     }
 
@@ -312,7 +348,7 @@ namespace RR
                 return;
 
             case PhysicsOwnership::INHERITED:
-                Warn("[GAME-OBJECT - ROS] Discarded SetWorldRotation on '", m_name,
+                Warn("[GAME-OBJECT - ROT] Discarded SetWorldRotation on '", m_name,
                      "' — part of a physics body's hierarchy. "
                      "Compound layout is baked at Init. Use PhysicsComponent::Rebuild() to refresh.");
                 return;

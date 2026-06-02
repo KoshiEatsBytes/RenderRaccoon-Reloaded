@@ -16,6 +16,14 @@ namespace RR
     {
     }
 
+    void Component::PreUpdate(float _deltaTime)
+    {
+    }
+
+    void Component::LateUpdate(float _deltaTime)
+    {
+    }
+
     int Component::GetExecutionOrder() const
     {
         return 0;

@@ -99,8 +99,14 @@ namespace RR
 
         m_kinematicController->SetWalkVelocity(move * m_moveSpeed, _deltaTime);
 
+        // Offset for the camera
         vec3 eyeOffset(0.0f, m_capsuleHeight * 0.5f + m_capsuleRadius * 0.5f, 0.0f);
-        m_owner->SetWorldPositionInternal(m_kinematicController->GetPosition() + eyeOffset);
+
+        // Finds alpha to calculate interpolated position before physics output the next simulated frame
+        float alpha = Engine::GetInstance().GetPhysicsManager().GetInterpolationAlpha();
+        vec3 smoothPos = m_kinematicController->GetInterpolatedPosition(alpha);
+
+        m_owner->SetWorldPositionInternal(smoothPos + eyeOffset);
     }
 
     void PlayerControllerComponent::Teleport(const vec3& _worldPos)
