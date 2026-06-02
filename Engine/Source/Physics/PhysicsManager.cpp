@@ -5,6 +5,7 @@
 #include "PhysicsManager.h"
 
 #include "RigidBody.h"
+#include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "Helpers/Printer.hpp"
 #include "Helpers/Types.h"
 
@@ -26,6 +27,11 @@ namespace RR
         m_dispatcher        = std::make_unique<btCollisionDispatcher>(m_collisionConfig.get());
         m_solver            = std::make_unique<btSequentialImpulseConstraintSolver>();
 
+        // Silences warning for non dynamic-dynamic collisions
+        m_dispatcher->setDispatcherFlags(
+            m_dispatcher->getDispatcherFlags()
+            | btCollisionDispatcher::CD_STATIC_STATIC_REPORTED);
+
         // Create collision world with bullet components
         m_world = std::make_unique<btDiscreteDynamicsWorld>(
             m_dispatcher.get(),
@@ -33,6 +39,9 @@ namespace RR
             m_solver.get(),
             m_collisionConfig.get()
             );
+
+        m_ghostPairCallback = std::make_unique<btGhostPairCallback>();
+        m_world->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(m_ghostPairCallback.get());
 
         // Set earth's gravity as default
         m_world->setGravity(btVec3(0.f, -9.81f, 0.f));

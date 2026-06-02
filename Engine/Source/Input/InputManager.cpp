@@ -82,4 +82,14 @@ namespace RR
     {
         return m_mousePosCurrent;
     }
+
+    void InputManager::SetMousePositionChanged(bool _changed)
+    {
+        m_mousePosChanged = _changed;
+    }
+
+    bool InputManager::GetMousePositionChanged() const
+    {
+        return m_mousePosChanged;
+    }
 }

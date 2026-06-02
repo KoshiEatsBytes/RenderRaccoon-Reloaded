@@ -109,6 +109,11 @@ namespace RR
         BuildBindings();
     }
 
+    bool AnimationComponent::IsPlaying() const
+    {
+        return m_isPlaying;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void AnimationComponent::BuildBindings()

@@ -35,14 +35,16 @@ namespace RR
         void SetMousePositionCurrent(const vec2& _pos);
         const vec2& GetMousePositionCurrent() const;
 
+        void SetMousePositionChanged(bool _changed);
+        bool GetMousePositionChanged() const;
+
     private:
         std::array<bool, 384> m_keys = {false};
         std::array<bool, 16> m_mouseKeys = {false};
 
+        bool m_mousePosChanged = false;
         vec2 m_mousePosOld = vec2(0.0f);
         vec2 m_mousePosCurrent = vec2(0.0f);
-
-
     };
 }
 

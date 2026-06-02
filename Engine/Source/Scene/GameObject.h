@@ -15,7 +15,8 @@ namespace RR
         NONE,
         DYNAMIC,
         KINEMATIC,
-        STATIC
+        STATIC,
+        CHARACTER
     };
 
     class Scene;
@@ -24,6 +25,7 @@ namespace RR
     public:
         friend class Scene;
         friend class PhysicsComponent;
+        friend class PlayerControllerComponent;
 
         virtual ~GameObject();
         virtual void Update(float _deltaTime);
@@ -73,10 +75,9 @@ namespace RR
     protected:
         GameObject();
 
-    private:
-        void SetWorldPositionFromPhysics(const vec3& _pos);
-        void SetWorldRotationFromPhysics(const quat& _rot);
-        void SetScaleFromPhysics(const vec3& _scale);
+        void SetWorldPositionInternal(const vec3& _pos);
+        void SetWorldRotationInternal(const quat& _rot);
+        void SetScaleInternal(const vec3& _scale);
 
         bool m_alive = true;
         bool m_active = true;

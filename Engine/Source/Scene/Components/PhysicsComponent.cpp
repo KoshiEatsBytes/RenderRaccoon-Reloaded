@@ -98,8 +98,8 @@ namespace RR
             case BodyType::DYNAMIC:
             {
                 // Physics to GO (world to local)
-                m_owner->SetWorldPositionFromPhysics(m_rigidBody->GetPosition());
-                m_owner->SetWorldRotationFromPhysics(m_rigidBody->GetRotation());
+                m_owner->SetWorldPositionInternal(m_rigidBody->GetPosition());
+                m_owner->SetWorldRotationInternal(m_rigidBody->GetRotation());
             }
             break;
 
@@ -135,7 +135,7 @@ namespace RR
 
         // Update visual and physic scene
         m_rigidBody->SetPosition(_worldPos, _resetVelocity);
-        m_owner->SetWorldPositionFromPhysics(_worldPos);
+        m_owner->SetWorldPositionInternal(_worldPos);
     }
 
     void PhysicsComponent::SetRotation(const quat& _worldRot, const bool _resetVelocity)
@@ -150,7 +150,7 @@ namespace RR
         }
 
         m_rigidBody->SetRotation(_worldRot, _resetVelocity);
-        m_owner->SetWorldRotationFromPhysics(_worldRot);
+        m_owner->SetWorldRotationInternal(_worldRot);
     }
 
     void PhysicsComponent::ApplyForce(const vec3& _force, const vec3& _relativePos)
@@ -201,7 +201,7 @@ namespace RR
     void PhysicsComponent::SetScale(const vec3& _newScale)
     {
         // REBUILD body with scale baked it
-        m_owner->SetScaleFromPhysics(_newScale);
+        m_owner->SetScaleInternal(_newScale);
         Rebuild();
     }
 

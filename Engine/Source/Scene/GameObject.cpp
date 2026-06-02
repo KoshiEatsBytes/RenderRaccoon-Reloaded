@@ -187,6 +187,12 @@ namespace RR
                      "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
                 return;
 
+            case PhysicsOwnership::CHARACTER:
+                Warn("[GAME-OBJECT - POS] Discarded SetPosition on '", m_name,
+                     "' — controlled by a character controller. ",
+                     "Use PlayerControllerComponent::Teleport() instead.");
+                return;
+
             default:
                 break;
         }
@@ -208,11 +214,17 @@ namespace RR
                      "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
                 return;
 
+            case PhysicsOwnership::CHARACTER:
+                Warn("[GAME-OBJECT - POS] Discarded SetWorldPosition on '", m_name,
+                     "' — controlled by a character controller. ",
+                     "Use PlayerControllerComponent::Teleport() instead.");
+                return;
+
             default:
                 break;
         }
 
-        SetWorldPositionFromPhysics(_pos);
+        SetWorldPositionInternal(_pos);
     }
 
     quat GameObject::GetRotation() const
@@ -232,6 +244,12 @@ namespace RR
             case PhysicsOwnership::STATIC:
                 Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
                      "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
+                return;
+
+            case PhysicsOwnership::CHARACTER:
+                Warn("[GAME-OBJECT - ROT] Discarded SetRotation on '", m_name,
+                     "' — controlled by a character controller. ",
+                     "Use PlayerControllerComponent::SetLookRotation() instead.");
                 return;
 
             default:
@@ -265,11 +283,17 @@ namespace RR
                      "' — STATIC body cannot move. Use KINEMATIC or PhysicsComponent::Rebuild().");
                 return;
 
+            case PhysicsOwnership::CHARACTER:
+                Warn("[GAME-OBJECT - ROT] Discarded SetWorldRotation on '", m_name,
+                     "' — controlled by a character controller. ",
+                     "Use PlayerControllerComponent::SetLookRotation() instead.");
+                return;
+
             default:
                 break;
         }
 
-        SetWorldRotationFromPhysics(_rot);
+        SetWorldRotationInternal(_rot);
     }
 
     const vec3& GameObject::GetScale() const
@@ -279,12 +303,22 @@ namespace RR
 
     void GameObject::SetScale(const vec3& _scale)
     {
-        if (m_physicsOwnership != PhysicsOwnership::NONE)
+        switch (m_physicsOwnership)
         {
-            Warn("[GAME-OBJECT - SCALE] Discarded SetScaleRotation on '", m_name,
-                     "' — Object has Rigidbody, for scale changes use PhysicsComponent::SetScale(), ",
-                     "BEWARE HIGH RESOURCE USAGE");
-            return;
+            case PhysicsOwnership::DYNAMIC:
+            case PhysicsOwnership::KINEMATIC:
+            case PhysicsOwnership::STATIC:
+                Warn("[GAME-OBJECT - SCALE] Discarded SetScale on '", m_name,
+                     "' — Object has Rigidbody. Use PhysicsComponent::SetScale() (EXPENSIVE — rebuilds the body).");
+                return;
+
+            case PhysicsOwnership::CHARACTER:
+                Warn("[GAME-OBJECT - SCALE] Discarded SetScale on '", m_name,
+                     "' — character controllers can't be scaled. Recreate the controller with a different capsule size.");
+                return;
+
+            case PhysicsOwnership::NONE:
+                break;
         }
 
         m_scale = _scale;
@@ -338,7 +372,7 @@ namespace RR
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
-    void GameObject::SetWorldPositionFromPhysics(const vec3& _pos)
+    void GameObject::SetWorldPositionInternal(const vec3& _pos)
     {
         if (m_parent)
         {
@@ -351,7 +385,7 @@ namespace RR
         }
     }
 
-    void GameObject::SetWorldRotationFromPhysics(const quat &_rot)
+    void GameObject::SetWorldRotationInternal(const quat &_rot)
     {
         if (m_parent)
         {
@@ -364,7 +398,7 @@ namespace RR
         }
     }
 
-    void GameObject::SetScaleFromPhysics(const vec3 &_scale)
+    void GameObject::SetScaleInternal(const vec3 &_scale)
     {
         m_scale = _scale;
     }

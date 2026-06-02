@@ -8,6 +8,7 @@ class btDefaultCollisionConfiguration;
 class btCollisionDispatcher;
 class btSequentialImpulseConstraintSolver;
 class btDiscreteDynamicsWorld;
+class btGhostPairCallback;
 
 namespace RR
 {
@@ -38,6 +39,7 @@ namespace RR
         btDiscreteDynamicsWorld* GetWorld() const;
 
     private:
+        std::unique_ptr<btGhostPairCallback> m_ghostPairCallback;
         std::unique_ptr<btBroadphaseInterface> m_broadphase;
         std::unique_ptr<btDefaultCollisionConfiguration> m_collisionConfig;
         std::unique_ptr<btCollisionDispatcher> m_dispatcher;

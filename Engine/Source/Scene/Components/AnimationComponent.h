@@ -20,6 +20,8 @@ namespace RR
         void RegisterClip(const std::string& _name, const std::shared_ptr<AnimationClip>& _clip);
         void SetClip(AnimationClip* _clip);
 
+        bool IsPlaying() const;
+
     private:
         void BuildBindings();
 

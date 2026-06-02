@@ -74,6 +74,8 @@ set(PROJECT_SOURCE_FILES
         Source/Physics/BtConv.hpp
         Source/Scene/Components/ColliderComponent.cpp
         Source/Scene/Components/ColliderComponent.h
+        Source/Physics/KinematicCharacterController.cpp
+        Source/Physics/KinematicCharacterController.h
 )
 
 # Compose application structure

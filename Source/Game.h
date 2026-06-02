@@ -3,6 +3,8 @@
 #include <RR.h>
 #include <memory>
 
+#include "Player.h"
+
 class Game : public RR::Application
 {
 public:

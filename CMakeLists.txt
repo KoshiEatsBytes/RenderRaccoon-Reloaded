@@ -12,6 +12,8 @@ set(PROJECT_SOURCE_FILES
         Source/Game.h
         Source/TestObject.cpp
         Source/TestObject.h
+        Source/Player.cpp
+        Source/Player.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

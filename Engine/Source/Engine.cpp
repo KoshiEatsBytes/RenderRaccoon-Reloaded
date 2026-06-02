@@ -79,6 +79,8 @@ namespace RR
 
         const vec2 currentPos = {static_cast<float>(xPos), static_cast<float>(yPos)};
         inputManager.SetMousePositionCurrent(currentPos);
+
+        inputManager.SetMousePositionChanged(true);
     }
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
@@ -124,6 +126,8 @@ namespace RR
         glfwSetKeyCallback(m_window, KeyCallBack);
         glfwSetMouseButtonCallback(m_window, MouseButtonCallBack);
         glfwSetCursorPosCallback(m_window, CursorPositionCallBack);
+        // sticks cursor so application
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glfwMakeContextCurrent(m_window);
 
@@ -220,8 +224,8 @@ namespace RR
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);
             glfwSwapBuffers(m_window);
 
-            // Update mouse pos
-            m_inputManager.SetMousePositionOld(m_inputManager.GetMousePositionCurrent());
+            // Mouse moved this frame
+            m_inputManager.SetMousePositionChanged(false);
         }
     }
 

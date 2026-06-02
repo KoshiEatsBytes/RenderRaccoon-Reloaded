@@ -10,7 +10,12 @@
 #include "Helpers/Types.h"
 #include "Input/InputManager.h"
 #include "FileSystem/FileSystem.h"
+
+// Physics
 #include "Physics/PhysicsManager.h"
+#include "Physics/Collider.h"
+#include "Physics/RigidBody.h"
+#include "Physics/KinematicCharacterController.h"
 
 // Graphics
 #include "Graphics/ShaderProgram.h"
