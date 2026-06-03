@@ -199,7 +199,7 @@ namespace RR
             {
                 result.push_back(this);
             }
-            
+
             for (auto& child : m_children)
             {
                 if (child->GetName() == _name)
@@ -481,6 +481,26 @@ namespace RR
     }
 
     // PROTECTED -------------------------------------------------------------------------------------------------------
+
+    const TypeInfo& GameObject::StaticType()
+    {
+        static constexpr TypeInfo info {"GameObject", nullptr};
+        return info;
+    }
+
+    bool GameObject::IsA(const TypeInfo &_target) const
+    {
+        for (const TypeInfo* t = &GetType(); t != nullptr; t = t->base)
+        {
+            if (t == &_target) return true;
+        }
+        return false;
+    }
+
+    const TypeInfo& GameObject::GetType() const
+    {
+        return StaticType();
+    }
 
     PhysicsOwnership GameObject::GetPhysicsOwnership() const
     {

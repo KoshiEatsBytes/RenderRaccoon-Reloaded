@@ -103,11 +103,9 @@ namespace RR
             {
                 for (auto& obj : m_objects)
                 {
-                    // Use dynamic cast as it retruns true if conversion
-                    // is successfull
-                    if (T* typed = dynamic_cast<T*>(obj.get()))
+                    if (obj->IsA<T>())
                     {
-                        return typed;
+                        return static_cast<T*>(obj.get());;
                     }
                 }
                 return nullptr;
@@ -133,9 +131,9 @@ namespace RR
             {
                 for (auto& obj : m_objects)
                 {
-                    if (T* typed = dynamic_cast<T*>(obj.get()))
+                    if (obj->IsA<T>())
                     {
-                        result.push_back(typed);
+                        result.push_back(static_cast<T*>(obj.get()));
                     }
                 }
 

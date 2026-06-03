@@ -8,6 +8,7 @@
 #include "Application.h"
 #include "Engine.h"
 #include "Helpers/Types.h"
+#include "Helpers/TypeInfo.h"
 #include "Input/InputManager.h"
 #include "FileSystem/FileSystem.h"
 

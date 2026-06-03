@@ -6,6 +6,7 @@
 class Player : public RR::GameObject
 {
 public:
+    GAMEOBJECT(Player, RR::GameObject)
     Player();
     ~Player() override;
 

@@ -6,6 +6,7 @@
 
 #include "Helpers/Concepts.h"
 #include "Helpers/Types.h"
+#include "Helpers/TypeInfo.h"
 #include "Component.h"
 
 namespace RR
@@ -80,6 +81,11 @@ namespace RR
     protected:
         GameObject();
 
+        // custom RTTI system
+        static const TypeInfo& StaticType();
+        bool IsA(const TypeInfo& _target) const;
+        virtual const TypeInfo& GetType() const;
+
         PhysicsOwnership GetPhysicsOwnership() const;
         void SetWorldPositionInternal(const vec3& _pos);
         void SetWorldRotationInternal(const quat& _rot);
@@ -104,6 +110,8 @@ namespace RR
         vec3 m_scale    = vec3(1.0f);
 
     private:
+
+
         void FindObjectsByName(const std::string& _name, std::vector<GameObject*>& _result);
 
     public:
@@ -153,18 +161,15 @@ namespace RR
         template<GameObjectType T>
         T* FindObjectByType(bool _searchDescendants = false)
         {
-            if (T* typed = dynamic_cast<T*>(this))
-            {
-                return typed;
-            }
+            if (IsA<T>()) return static_cast<T*>(this);
 
             if (!_searchDescendants)
             {
                 for (auto& child : m_children)
                 {
-                    if (T* res = dynamic_cast<T*>(child.get()))
+                    if (child->IsA<T>())
                     {
-                        return res;
+                        return static_cast<T*>(child.get());
                     }
                 }
 
@@ -193,16 +198,16 @@ namespace RR
             }
             else
             {
-                if (T* typed = dynamic_cast<T*>(this))
+                if (IsA<T>())
                 {
-                    result.push_back(typed);
+                    result.push_back(this);
                 }
 
                 for (auto& child : m_children)
                 {
-                    if (T* res = dynamic_cast<T*>(child.get()))
+                    if (child->IsA<T>())
                     {
-                        result.push_back(res);
+                        result.push_back(child.get());
                     }
                 }
             }
@@ -215,15 +220,21 @@ namespace RR
         template<GameObjectType T>
         void FindObjectsByType(std::vector<T*>& _result)
         {
-            if (T* typed = dynamic_cast<T*>(this))
+            if (IsA<T>())
             {
-                _result.push_back(typed);
+                _result.push_back(this);
             }
 
             for (auto& child : m_children)
             {
                 child->FindObjectsByType<T>(_result);
             }
+        }
+
+        template<GameObjectType T>
+        bool IsA() const
+        {
+            return IsA(T::StaticType());
         }
     };
 }

@@ -76,6 +76,7 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/Components/ColliderComponent.h
         Source/Physics/KinematicCharacterController.cpp
         Source/Physics/KinematicCharacterController.h
+        Source/Helpers/TypeInfo.h
 )
 
 # Compose application structure
