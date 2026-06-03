@@ -8,7 +8,7 @@ int main()
     Game* game = new Game{};
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.SetApp(game);
+    //engine.SetApp(game);
 
     if (engine.Init(1920, 1080, "RenderRaccoon"))
     {

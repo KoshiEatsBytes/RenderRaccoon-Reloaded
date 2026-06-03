@@ -3,7 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include "Engine.h"
-#include "Application.h"
+#include "SceneManager.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
 #include "Scene/Components/CameraComponent.h"
@@ -93,12 +93,12 @@ namespace RR
 
     bool Engine::Init(const int& _width, const int& _height, const std::string& _name)
     {
-        if (!m_application)
-        {
-            // No valid application
-            Warn("[INITIALIZATION] Tried initializing invalid application");
-            return false;
-        }
+        //if (!m_application)
+        //{
+        //    // No valid application
+        //    Warn("[INITIALIZATION] Tried initializing invalid application");
+        //    return false;
+        //}
 
         // Initializes window
         if (!glfwInit())
@@ -152,26 +152,26 @@ namespace RR
             return false;
         }
 
-        if (m_application->Init())
-        {
-            Success("[INITIALIZATION] Application Initialized Correctly.");
-            return true;
-        }
+        //if (m_application->Init())
+        //{
+        //    Success("[INITIALIZATION] Application Initialized Correctly.");
+        //    return true;
+        //}
 
         // If init fails terminate engine and log to console
-        Error("[INITIALIZATION] Failed to initialize application, terminating.");
-        InfoLog("This is not a fault with the engine module but with application: '", typeid(*m_application).name(), "'");
+        //Error("[INITIALIZATION] Failed to initialize application, terminating.");
+        //InfoLog("This is not a fault with the engine module but with application: '", typeid(*m_application).name(), "'");
         glfwTerminate();
         return false;
     }
 
     void Engine::Launch()
     {
-        if (!m_application)
-        {
-            Warn("Tried launching invalid application");
-            return;
-        }
+        //if (!m_application)
+        //{
+        //    Warn("Tried launching invalid application");
+        //    return;
+        //}
 
         // Get last time point before application start to compute dt
         m_lastTimePoint = std::chrono::steady_clock::now();
@@ -181,8 +181,8 @@ namespace RR
         std::vector<LightData> lights;
 
         // Main application loop
-        while (!m_application->GetShouldClose() &&
-               !glfwWindowShouldClose(m_window))
+        while (!glfwWindowShouldClose(m_window) &&
+               !m_shouldClose)
         {
             glfwPollEvents();
 
@@ -192,12 +192,12 @@ namespace RR
             m_lastTimePoint = now;
 
             // Pre update before physics simulation
-            m_application->PreUpdate(deltaTime);
+            //m_application->PreUpdate(deltaTime);
 
             // Run physic simulation
             m_physicsManager.Update(deltaTime);
 
-            m_application->Update(deltaTime);
+            //m_application->Update(deltaTime);
 
             // Drawing
             m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -222,7 +222,7 @@ namespace RR
                     }
                 }
 
-                lights = m_currentScene->CollectLights();
+                lights = m_currentScene->GetLights();
             }
 
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);
@@ -232,40 +232,40 @@ namespace RR
             m_inputManager.SetMousePositionChanged(false);
 
             // Late Update before new frame
-            m_application->LateUpdate(deltaTime);
+            //m_application->LateUpdate(deltaTime);
         }
     }
 
     void Engine::Destroy()
     {
-        if (m_application)
-        {
-            m_application->Destroy();
-            m_application.reset();
+        //if (m_application)
+        //{
+        //    //m_application->Destroy();
+        //    m_application.reset();
 
-            // Clean-up glfw
-            glfwTerminate();
-            m_window = nullptr;
+        //    // Clean-up glfw
+        //    glfwTerminate();
+        //    m_window = nullptr;
 
-            Log("Closing down, bye bye!");
+        //    Log("Closing down, bye bye!");
 
-            return;
-        }
+        //    return;
+        //}
 
         Warn("Tried destroying invalid application");
     }
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------
 
-    void Engine::SetApp(Application* _app)
-    {
-        m_application.reset(_app);
-    }
-
-    Application* Engine::GetApp() const
-    {
-        return m_application.get();
-    }
+    //void Engine::SetApp(SceneManager* _app)
+    //{
+    //    m_application.reset(_app);
+    //}
+//
+    //SceneManager* Engine::GetApp() const
+    //{
+    //    return m_application.get();
+    //}
 
     void Engine::SetScene(Scene* _scene)
     {
@@ -275,6 +275,16 @@ namespace RR
     Scene* Engine::GetScene() const
     {
         return m_currentScene.get();
+    }
+
+    void Engine::SetShouldClose(bool _close)
+    {
+        m_shouldClose = _close;
+    }
+
+    bool Engine::GetShouldClose() const
+    {
+        return m_shouldClose;
     }
 
     InputManager& Engine::GetInputManager()
@@ -306,4 +316,9 @@ namespace RR
     {
         return m_physicsManager;
     }
+
+    //ApplicationData& Engine::GetAppData()
+    //{
+    //    return m_appData;
+    //}
 }

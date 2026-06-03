@@ -14,6 +14,10 @@ namespace RR
     Scene::Scene()
     = default;
 
+    Scene::Scene(const std::string& _sceneName) : m_name(_sceneName)
+    {
+    }
+
     Scene::~Scene()
     {
         for (auto& pending : m_spawnQueue)
@@ -23,58 +27,19 @@ namespace RR
         m_spawnQueue.clear();
     }
 
-    void Scene::PreUpdateInternal(float _deltaTime)
-    {
-        // Set Scene as started for creating objects
-        if (!m_sceneStarted) m_sceneStarted = true;
-
-        for (const auto& obj: m_objects)
-        {
-            obj->PreUpdate(_deltaTime);
-        }
-    }
-
-    void Scene::UpdateInternal(float _deltaTime) const
-    {
-        for (const auto& obj: m_objects)
-        {
-            obj->Update(_deltaTime);
-        }
-    }
-
-    void Scene::LateUpdateInternal(float _deltaTime)
-    {
-        for (const auto& obj: m_objects)
-        {
-            obj->LateUpdate(_deltaTime);
-        }
-
-        FlushPendingChanges();
-    }
-
     void Scene::Clear()
     {
         for (auto& pending : m_spawnQueue)
         {
             delete pending.object;
         }
+
         m_spawnQueue.clear();
         m_destroyQueue.clear();
         m_objects.clear();
         m_sceneStarted = false;
-    }
-
-    void Scene::EnqueueDestroy(GameObject* _object)
-    {
-        m_destroyQueue.push_back(_object);
-    }
-
-    void Scene::EnqueueSpawn(GameObject* _object, GameObject* _parent)
-    {
-        m_spawnQueue.push_back({
-            _object,
-            _parent
-        });
+        m_mainCamera = nullptr;
+        m_appData = nullptr;
     }
 
     GameObject* Scene::CreateObject(const std::string& _name, GameObject* _parent)
@@ -127,7 +92,7 @@ namespace RR
         return nullptr;
     }
 
-    std::vector<GameObject*> Scene::FindObjectsByName(const std::string& _name, bool _searchDescendants)
+    std::vector<GameObject*> Scene::FindObjectsByName(const std::string& _name, bool _searchDescendants) const
     {
         std::vector<GameObject*> result {};
 
@@ -152,21 +117,17 @@ namespace RR
         return result;
     }
 
-    /**
-     * @brief Iterates through all objects, recursively check if they have a light component
-     *        if so, grab its color and world position
-     * @return list of all lights
-     */
-    std::vector<LightData> Scene::CollectLights()
+    void Scene::EnqueueDestroy(GameObject* _object)
     {
-        std::vector<LightData> lights;
+        m_destroyQueue.push_back(_object);
+    }
 
-        for (auto& obj : m_objects)
-        {
-            CollectLightsRecursive(obj.get(), lights);
-        }
-
-        return lights;
+    void Scene::EnqueueSpawn(GameObject* _object, GameObject* _parent)
+    {
+        m_spawnQueue.push_back({
+            _object,
+            _parent
+        });
     }
 
     /**
@@ -360,7 +321,58 @@ namespace RR
         return m_mainCamera;
     }
 
+    /**
+     * @brief Iterates through all objects, recursively check if they have a light component
+     *        if so, grab its color and world position
+     * @return list of all lights
+     */
+    std::vector<LightData> Scene::GetLights() const
+    {
+        std::vector<LightData> lights;
+
+        for (auto& obj : m_objects)
+        {
+            CollectLightsRecursive(obj.get(), lights);
+        }
+
+        return lights;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    void Scene::PreUpdateInternal(float _deltaTime)
+    {
+        // Set Scene as started for creating objects
+        if (!m_sceneStarted) m_sceneStarted = true;
+
+        for (const auto& obj: m_objects)
+        {
+            obj->PreUpdate(_deltaTime);
+        }
+
+        PreUpdate(_deltaTime);
+    }
+
+    void Scene::UpdateInternal(float _deltaTime)
+    {
+        for (const auto& obj: m_objects)
+        {
+            obj->Update(_deltaTime);
+        }
+
+        Update(_deltaTime);
+    }
+
+    void Scene::LateUpdateInternal(float _deltaTime)
+    {
+        for (const auto& obj: m_objects)
+        {
+            obj->LateUpdate(_deltaTime);
+        }
+
+        LateUpdate(_deltaTime);
+        FlushPendingChanges();
+    }
 
     void Scene::CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out)
     {
@@ -440,6 +452,24 @@ namespace RR
             object->m_scene = this;
             object->Init();
         }
+    }
+
+    bool Scene::OnLoad(ApplicationData* _appData)
+    {
+        if (!_appData)
+        {
+            Warn("[SCENE - LOADING] No Application Data pointer was provided for scene '", m_name, "'");
+        }
+
+        m_appData = _appData;
+        m_sceneStarted = false;
+        return Init();
+    }
+
+    void Scene::OnDestroy()
+    {
+        Destroy();
+        Clear();
     }
 }
 

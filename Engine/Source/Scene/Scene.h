@@ -6,6 +6,7 @@
 
 #include "Helpers/Concepts.h"
 #include "Helpers/Common.h"
+#include "Helpers/ApplicationData.h"
 #include "GameObject.h"
 
 namespace RR
@@ -22,41 +23,52 @@ namespace RR
     class Scene
     {
     public:
+        friend class SceneManager;
+
         Scene();
+        Scene(const std::string& _sceneName);
         virtual ~Scene();
 
-        // virtual bool Init()                         = 0;
-        // virtual void PreUpdate(float _deltaTime)    = 0;
-        // virtual void Update(float _deltaTime)       = 0;
-        // virtual void LateUpdate(float _deltaTime)   = 0;
-        // virtual void Destroy()                      = 0;
-
-        void PreUpdateInternal(float _deltaTime);
-        void UpdateInternal(float _deltaTime) const;
-        void LateUpdateInternal(float _deltaTime);
         void Clear();
+
+        GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
+        GameObject* FindObjectByName(const std::string& _name, bool _searchDescendants = false);
+        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false) const;
 
         void EnqueueDestroy(GameObject* _object);
         void EnqueueSpawn(GameObject* _object, GameObject* _parent);
-
-        GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
-
-        GameObject* FindObjectByName(const std::string& _name, bool _searchDescendants = false);
-        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false);
-
-        std::vector<LightData> CollectLights();
 
         // Get/Sets
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
         GameObject* GetMainCamera() const;
+        std::vector<LightData> GetLights() const;
+
+    protected:
+        // Scene hooks
+        virtual bool Init()                         = 0;
+        virtual void PreUpdate(float _deltaTime)    = 0;
+        virtual void Update(float _deltaTime)       = 0;
+        virtual void LateUpdate(float _deltaTime)   = 0;
+        virtual void Destroy()                      = 0;
+
+        std::string m_name = "noName";
+        ApplicationData* m_appData = nullptr;
 
     private:
+        // internal hooks
+        void PreUpdateInternal(float _deltaTime);
+        void UpdateInternal(float _deltaTime);
+        void LateUpdateInternal(float _deltaTime);
+
         void FlushPendingChanges();
         void ProcessDestroyQueue();
         void ProcessSpawnQueue();
 
-        void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);
+        bool OnLoad(ApplicationData* _appData);
+        void OnDestroy();
+
+        static void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);
 
         std::vector<std::unique_ptr<GameObject>> m_objects;
         GameObject* m_mainCamera = nullptr;
@@ -96,6 +108,12 @@ namespace RR
             return obj;
         }
 
+        /**
+         * @brief Returns pointer to the object of the type requested, nullptr if not found
+         * @tparam T Type of the object to retrieve
+         * @param _searchDescendants Expands search to children of children
+         * @return ptr to the GO of that type
+         */
         template<GameObjectType T>
         T* FindObjectByType(bool _searchDescendants = false)
         {
@@ -122,6 +140,12 @@ namespace RR
             return nullptr;
         }
 
+        /**
+         * @brief Retruns vector of pointers to GO of the type quested
+         * @tparam T Type of the GO to search
+         * @param _searchDescendants Expands search to children of children
+         * @return vector of ptr of the GOs
+         */
         template<GameObjectType T>
         std::vector<T*> FindObjectsByType(bool _searchDescendants = false)
         {

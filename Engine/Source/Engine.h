@@ -10,6 +10,8 @@
 #include "Scene/Scene.h"
 #include "FileSystem/FileSystem.h"
 #include "Physics/PhysicsManager.h"
+#include "Helpers/ApplicationData.h"
+#include "SceneManager.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -17,9 +19,6 @@ struct GLFWwindow;
 
 namespace RR
 {
-    // fw dec for application
-    class Application;
-
     class Engine
     {
         Engine();
@@ -55,11 +54,14 @@ namespace RR
         void Destroy();
 
         // Get/Sets
-        void SetApp(Application* _app);
-        Application* GetApp() const;
+        //void SetApp(SceneManager* _app);
+        //SceneManager* GetApp() const;
 
         void SetScene(Scene* _scene);
         Scene* GetScene() const;
+
+        void SetShouldClose(bool _close);
+        bool GetShouldClose() const;
 
         InputManager& GetInputManager();
         GraphicsAPI& GetGraphicsAPI();
@@ -67,12 +69,14 @@ namespace RR
         FileSystem& GetFileSystem();
         TextureManager& GetTextureManager();
         PhysicsManager& GetPhysicsManager();
+        ApplicationData& GetAppData();
 
     private:
-        std::unique_ptr<Application> m_application;
+        //std::unique_ptr<Scene> m_application;
         std::chrono::steady_clock::time_point m_lastTimePoint;
         std::unique_ptr<Scene> m_currentScene;
 
+        bool m_shouldClose = false;
         GLFWwindow* m_window = nullptr;
         InputManager m_inputManager;
         GraphicsAPI m_graphicsAPI;
@@ -80,6 +84,7 @@ namespace RR
         FileSystem m_fileSystem;
         TextureManager m_textureManager;
         PhysicsManager m_physicsManager;
+        //ApplicationData m_appData;
     };
 }
 

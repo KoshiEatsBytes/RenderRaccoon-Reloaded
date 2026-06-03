@@ -21,14 +21,15 @@ set(PROJECT_SOURCE_FILES
         Source/RR.h
         Source/Engine.h
         Source/Engine.cpp
-        Source/Application.h
-        Source/Application.cpp
+        Source/SceneManager.h
+        Source/SceneManager.cpp
         Source/Helpers/Concepts.h
         Source/Helpers/Types.h
         Source/Helpers/Common.h
         Source/Helpers/Printer.hpp
         Source/Helpers/GLTFLib.hpp
         Source/Helpers/Implementations.cpp
+        Source/Helpers/ApplicationData.h
         Source/Input/InputManager.cpp
         Source/Input/InputManager.h
         Source/Graphics/ShaderProgram.h
@@ -77,6 +78,7 @@ set(PROJECT_SOURCE_FILES
         Source/Physics/KinematicCharacterController.cpp
         Source/Physics/KinematicCharacterController.h
         Source/Helpers/TypeInfo.h
+        Source/ISubSystem.h
 )
 
 # Compose application structure

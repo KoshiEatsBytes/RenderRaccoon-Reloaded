@@ -13,4 +13,12 @@ namespace RR
     class Component;
     template<typename T>
     concept ComponentType = std::is_base_of_v<Component, T>;
+
+    class Scene;
+    template<typename T>
+    concept SceneType = std::is_base_of_v<Scene, T>;
+
+    class ISubSystem;
+    template<typename T>
+    concept SubSystemType = std::is_base_of_v<ISubSystem, T>;
 }
