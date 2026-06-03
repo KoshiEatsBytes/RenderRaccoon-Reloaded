@@ -46,7 +46,8 @@ namespace RR
         bool SetParent(GameObject* _parent);
         GameObject* GetParent() const;
 
-        GameObject* GetChildByName(const std::string& _name);
+        GameObject* FindObjectByName(const std::string& _name, bool _searchDescendants = false);
+        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false);
         const std::vector<std::unique_ptr<GameObject>>& GetChildren() const;
 
         Scene* GetScene() const;
@@ -102,6 +103,9 @@ namespace RR
         quat m_rotation = quat(1.0f, 0.0f, 0.0f, 0.0f);
         vec3 m_scale    = vec3(1.0f);
 
+    private:
+        void FindObjectsByName(const std::string& _name, std::vector<GameObject*>& _result);
+
     public:
         // Templates ---------------------------------------------------------------------------------------------------
 
@@ -111,7 +115,7 @@ namespace RR
          * @return Pointer to the componet
          */
         template<ComponentType T>
-        T* GetComponent()
+        T* FindComponentByType()
         {
             sizeT typeID = Component::StaticTypeID<T>();
 
@@ -132,7 +136,7 @@ namespace RR
          * @return vector of pointers to the componet
          */
         template<ComponentType T>
-        std::vector<T*> GetComponents()
+        std::vector<T*> FindComponentsByType()
         {
             std::vector<T*> result;
             sizeT typeID = Component::StaticTypeID<T>();
@@ -145,6 +149,99 @@ namespace RR
             }
             return result;
         }
+
+        template<GameObjectType T>
+        T* FindObjectByType(bool _searchDescendants = false)
+        {
+            if (T* typed = dynamic_cast<T*>(this))
+            {
+                return typed;
+            }
+
+            if (!_searchDescendants)
+            {
+                for (auto& child : m_children)
+                {
+                    if (T* res = dynamic_cast<T*>(child.get()))
+                    {
+                        return res;
+                    }
+                }
+
+                return nullptr;
+            }
+
+            for (auto& child : m_children)
+            {
+                if (T* res = child->FindObjectByType<T>(true))
+                {
+                    return res;
+                }
+            }
+
+            return nullptr;
+        }
+
+        template<GameObjectType T>
+        std::vector<T*> FindObjectsByType(bool _searchDescendants = false)
+        {
+            std::vector<T*> result {};
+
+            if (_searchDescendants)
+            {
+                FindObjectsByType<T>(result);
+            }
+            else
+            {
+                if (T* typed = dynamic_cast<T*>(this))
+                {
+                    result.push_back(typed);
+                }
+
+                for (auto& child : m_children)
+                {
+                    if (T* res = dynamic_cast<T*>(child.get()))
+                    {
+                        result.push_back(res);
+                    }
+                }
+            }
+
+            return result;
+        }
+
+    private:
+
+        template<GameObjectType T>
+        void FindObjectsByType(std::vector<T*>& _result)
+        {
+            if (T* typed = dynamic_cast<T*>(this))
+            {
+                _result.push_back(typed);
+            }
+
+            for (auto& child : m_children)
+            {
+                child->FindObjectsByType<T>(_result);
+            }
+        }
     };
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

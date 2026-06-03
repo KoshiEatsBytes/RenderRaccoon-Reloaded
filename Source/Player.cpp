@@ -22,21 +22,21 @@ void Player::Init()
     gun->SetPosition(vec3(0.75f, -0.5f, -0.75f));
     gun->SetScale(vec3(-1.0f, 1.0f, 1.0f));
 
-    if (auto anim = gun->GetComponent<RR::AnimationComponent>())
+    if (auto anim = gun->FindComponentByType<RR::AnimationComponent>())
     {
-        if (auto bullet = gun->GetChildByName("bullet_33"))
+        if (auto bullet = gun->FindObjectByName("bullet_33", true))
         {
             bullet->SetActive(false);
         }
 
-        if (auto flash = gun->GetChildByName("BOOM_35"))
+        if (auto flash = gun->FindObjectByName("BOOM_35", true))
         {
             flash->SetActive(false);
         }
 
         anim->Play("shoot", false);
     }
-    m_animationComp = gun->GetComponent<RR::AnimationComponent>();
+    m_animationComp = gun->FindComponentByType<RR::AnimationComponent>();
 }
 
 void Player::Update(float _deltaTime)

@@ -34,7 +34,7 @@ namespace RR
         m_owner->m_physicsOwnership = PhysicsOwnership::NONE;
 
         // Detect two physic components, thats no good!
-        auto siblings = m_owner->GetComponents<PhysicsComponent>();
+        auto siblings = m_owner->FindComponentsByType<PhysicsComponent>();
         if (siblings.size() > 1)
         {
             Error("[PHYSICS COMPONENT] Multiple PhysicsComponents on '",
@@ -293,7 +293,7 @@ namespace RR
     {
         // add this current GO's collider if it has any
         // cc -> Collider Component
-        auto components = _go->GetComponents<ColliderComponent>();
+        auto components = _go->FindComponentsByType<ColliderComponent>();
         if (!components.empty())
         {
             vec3 pos, scale;
@@ -320,7 +320,7 @@ namespace RR
         for (auto& child : _go->GetChildren())
         {
             if (!child->IsActive()) continue;
-            if (child->GetComponent<PhysicsComponent>()) continue;
+            if (child->FindComponentByType<PhysicsComponent>()) continue;
 
             child->m_parentPhysicsOwnership = _ownership;
 
@@ -354,7 +354,7 @@ namespace RR
     {
         for (auto& child : _go->GetChildren())
         {
-            if (child->GetComponent<PhysicsComponent>()) continue;
+            if (child->FindComponentByType<PhysicsComponent>()) continue;
 
             child->m_parentPhysicsOwnership = PhysicsOwnership::NONE;
             ClearInheritedPhysicsOwnership(child.get());

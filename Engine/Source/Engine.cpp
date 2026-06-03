@@ -214,7 +214,7 @@ namespace RR
                 if (auto camObj = m_currentScene->GetMainCamera())
                 {
                     // logic for matrices
-                    if (auto camComponent = camObj->GetComponent<CameraComponent>())
+                    if (auto camComponent = camObj->FindComponentByType<CameraComponent>())
                     {
                         camData.viewMatrix = camComponent->GetViewMatrix();
                         camData.projMatrix = camComponent->GetProjectionMatrix(aspect);

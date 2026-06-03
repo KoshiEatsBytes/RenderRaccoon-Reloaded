@@ -84,12 +84,12 @@ bool Game::Init()
 
 void Game::PreUpdate(float _deltaTime)
 {
-    m_scene->PreUpdate(_deltaTime);
+    m_scene->PreUpdateInternal(_deltaTime);
 }
 
 void Game::Update(float _deltaTime)
 {
-    m_scene->Update(_deltaTime);
+    m_scene->UpdateInternal(_deltaTime);
 
     auto& input = RR::Engine::GetInstance().GetInputManager();
 
@@ -101,7 +101,7 @@ void Game::Update(float _deltaTime)
 
 void Game::LateUpdate(float _deltaTime)
 {
-    m_scene->LateUpdate(_deltaTime);
+    m_scene->LateUpdateInternal(_deltaTime);
 }
 
 void Game::Destroy()

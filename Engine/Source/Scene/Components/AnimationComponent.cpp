@@ -129,7 +129,7 @@ namespace RR
         for (sizeT i = 0; i < m_clip->tracks.size(); i++)
         {
             auto& track = m_clip->tracks[i];
-            auto targetObject = m_owner->GetChildByName(track.targetName);
+            auto targetObject = m_owner->FindObjectByName(track.targetName, true);
 
             // if the clips target object is valid, bind object to clip
             if (targetObject)

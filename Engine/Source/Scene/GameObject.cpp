@@ -154,24 +154,62 @@ namespace RR
         return m_parent;
     }
 
-    GameObject* GameObject::GetChildByName(const std::string& _name)
+    GameObject* GameObject::FindObjectByName(const std::string& _name, bool _searchDescendants)
     {
         if (m_name == _name)
         {
             return this;
         }
 
-        // not the most efficent, recursively iterates trough children of children to find
-        // GO with specified name
+        if (!_searchDescendants)
+        {
+            for (auto& child : m_children)
+            {
+                if (child->GetName() == _name)
+                {
+                    return child.get();
+                }
+            }
+
+            return nullptr;
+        }
+
         for (auto& child : m_children)
         {
-            if (auto res = child->GetChildByName(_name))
+            if (auto res = child->FindObjectByName(_name, true))
             {
                 return res;
             }
         }
 
         return nullptr;
+    }
+
+    std::vector<GameObject*> GameObject::FindObjectsByName(const std::string& _name, bool _searchDescendants)
+    {
+        std::vector<GameObject*> result;
+
+        if (_searchDescendants)
+        {
+            FindObjectsByName(_name, result);
+        }
+        else
+        {
+            if (m_name == _name)
+            {
+                result.push_back(this);
+            }
+            
+            for (auto& child : m_children)
+            {
+                if (child->GetName() == _name)
+                {
+                    result.push_back(child.get());
+                }
+            }
+        }
+
+        return result;
     }
 
     const std::vector<std::unique_ptr<GameObject>>& GameObject::GetChildren() const
@@ -487,5 +525,21 @@ namespace RR
     void GameObject::SetScaleInternal(const vec3 &_scale)
     {
         m_scale = _scale;
+    }
+
+    // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    // Made private to prevent involuntary injection
+    void GameObject::FindObjectsByName(const std::string &_name, std::vector<GameObject*>& _result)
+    {
+        if (m_name == _name)
+        {
+            _result.push_back(this);
+        }
+
+        for (auto& child : m_children)
+        {
+            child->FindObjectsByName(_name, _result);
+        }
     }
 }

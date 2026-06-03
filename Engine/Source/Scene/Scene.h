@@ -23,17 +23,26 @@ namespace RR
     {
     public:
         Scene();
-        ~Scene();
+        virtual ~Scene();
 
-        void PreUpdate(float _deltaTime);
-        void Update(float _deltaTime) const;
-        void LateUpdate(float _deltaTime);
+        // virtual bool Init()                         = 0;
+        // virtual void PreUpdate(float _deltaTime)    = 0;
+        // virtual void Update(float _deltaTime)       = 0;
+        // virtual void LateUpdate(float _deltaTime)   = 0;
+        // virtual void Destroy()                      = 0;
+
+        void PreUpdateInternal(float _deltaTime);
+        void UpdateInternal(float _deltaTime) const;
+        void LateUpdateInternal(float _deltaTime);
         void Clear();
 
         void EnqueueDestroy(GameObject* _object);
         void EnqueueSpawn(GameObject* _object, GameObject* _parent);
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
+
+        GameObject* FindObjectByName(const std::string& _name, bool _searchDescendants = false);
+        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false);
 
         std::vector<LightData> CollectLights();
 
@@ -85,6 +94,60 @@ namespace RR
             obj->Init();
 
             return obj;
+        }
+
+        template<GameObjectType T>
+        T* FindObjectByType(bool _searchDescendants = false)
+        {
+            if (!_searchDescendants)
+            {
+                for (auto& obj : m_objects)
+                {
+                    // Use dynamic cast as it retruns true if conversion
+                    // is successfull
+                    if (T* typed = dynamic_cast<T*>(obj.get()))
+                    {
+                        return typed;
+                    }
+                }
+                return nullptr;
+            }
+
+            for (auto& obj : m_objects)
+            {
+                if (T* res = obj->FindObjectByType<T>(true))
+                {
+                    return res;
+                }
+            }
+
+            return nullptr;
+        }
+
+        template<GameObjectType T>
+        std::vector<T*> FindObjectsByType(bool _searchDescendants = false)
+        {
+            std::vector<T*> result {};
+
+            if (!_searchDescendants)
+            {
+                for (auto& obj : m_objects)
+                {
+                    if (T* typed = dynamic_cast<T*>(obj.get()))
+                    {
+                        result.push_back(typed);
+                    }
+                }
+
+                return result;
+            }
+
+            for (auto& obj : m_objects)
+            {
+                obj->FindObjectsByType<T>(result);
+            }
+
+            return result;
         }
     };
 }

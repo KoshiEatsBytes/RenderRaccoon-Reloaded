@@ -23,7 +23,7 @@ namespace RR
         m_spawnQueue.clear();
     }
 
-    void Scene::PreUpdate(float _deltaTime)
+    void Scene::PreUpdateInternal(float _deltaTime)
     {
         // Set Scene as started for creating objects
         if (!m_sceneStarted) m_sceneStarted = true;
@@ -34,7 +34,7 @@ namespace RR
         }
     }
 
-    void Scene::Update(float _deltaTime) const
+    void Scene::UpdateInternal(float _deltaTime) const
     {
         for (const auto& obj: m_objects)
         {
@@ -42,7 +42,7 @@ namespace RR
         }
     }
 
-    void Scene::LateUpdate(float _deltaTime)
+    void Scene::LateUpdateInternal(float _deltaTime)
     {
         for (const auto& obj: m_objects)
         {
@@ -94,6 +94,62 @@ namespace RR
         obj->Init();
 
         return obj;
+    }
+
+    GameObject* Scene::FindObjectByName(const std::string& _name, bool _searchDescendants)
+    {
+        if (!_searchDescendants)
+        {
+            // If no need to iterate through the childrens, use flat find_if search
+            auto it = std::ranges::find_if(m_objects,
+            [&_name](const std::unique_ptr<GameObject>& _ptr)
+            {
+                return _ptr->GetName() == _name;
+            });
+
+            if (it != m_objects.end())
+            {
+                return it->get();
+            }
+
+            return nullptr;
+        }
+
+        // For children iteration follow same model as in GO
+        for (auto& obj : m_objects)
+        {
+            if (auto res = obj->FindObjectByName(_name, true))
+            {
+                return res;
+            }
+        }
+
+        return nullptr;
+    }
+
+    std::vector<GameObject*> Scene::FindObjectsByName(const std::string& _name, bool _searchDescendants)
+    {
+        std::vector<GameObject*> result {};
+
+        if (!_searchDescendants)
+        {
+            for (auto& obj : m_objects)
+            {
+                if (obj->GetName() == _name)
+                {
+                    result.push_back(obj.get());
+                }
+            }
+
+            return result;
+        }
+
+        for (auto& obj : m_objects)
+        {
+            obj->FindObjectsByName(_name, result);
+        }
+
+        return result;
     }
 
     /**
@@ -309,7 +365,7 @@ namespace RR
     void Scene::CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out)
     {
         // check if it has a light component
-        if (const auto light = _obj->GetComponent<LightComponent>())
+        if (const auto light = _obj->FindComponentByType<LightComponent>())
         {
             // save light source to light vec
             LightData lData;
