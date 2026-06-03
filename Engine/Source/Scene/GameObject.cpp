@@ -38,19 +38,9 @@ namespace RR
             component->PreUpdate(_deltaTime);
         }
 
-        // Update each child, or destroy marked
-        for (auto it = m_children.begin(); it != m_children.end();)
+        for (const auto& child: m_children)
         {
-            if ((*it)->IsAlive())
-            {
-                (*it)->PreUpdate(_deltaTime);
-                ++it;
-            }
-            else
-            {
-                // Erase it from list, ptr gets freed when out of scope.
-                it = m_children.erase(it);
-            }
+            child->PreUpdate(_deltaTime);
         }
     }
 
@@ -112,7 +102,11 @@ namespace RR
 
     void GameObject::MarkForDestroy()
     {
-        m_alive = false;
+        if (m_alive)
+        {
+            m_alive = false;
+            m_scene->EnqueueDestroy(this);
+        }
     }
 
     GameObject* GameObject::LoadGLTF(const std::string& _path)

@@ -10,6 +10,15 @@
 
 namespace RR
 {
+    /**
+     * Container for game-objects spawned mid-frame
+     */
+    struct PendingSpawn
+    {
+        GameObject* object = nullptr;
+        GameObject* parent = nullptr;
+    };
+
     class Scene
     {
     public:
@@ -18,8 +27,11 @@ namespace RR
 
         void PreUpdate(float _deltaTime);
         void Update(float _deltaTime) const;
-        void LateUpdate(float _deltaTime) const;
+        void LateUpdate(float _deltaTime);
         void Clear();
+
+        void EnqueueDestroy(GameObject* _object);
+        void EnqueueSpawn(GameObject* _object, GameObject* _parent);
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
 
@@ -31,10 +43,19 @@ namespace RR
         GameObject* GetMainCamera() const;
 
     private:
+        void FlushPendingChanges();
+        void ProcessDestroyQueue();
+        void ProcessSpawnQueue();
+
         void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);
 
         std::vector<std::unique_ptr<GameObject>> m_objects;
         GameObject* m_mainCamera = nullptr;
+
+        // Deferred queue vectors
+        bool m_sceneStarted = false;
+        std::vector<PendingSpawn>  m_spawnQueue;
+        std::vector<GameObject*>   m_destroyQueue;
 
     public:
         // Templates ---------------------------------------------------------------------------------------------------
@@ -50,11 +71,19 @@ namespace RR
         T* CreateObject(const std::string& _name, GameObject* _parent = nullptr)
         {
             auto obj = new T();
-
             obj->SetName(_name);
+
+            // If scene has started defer init and parenting
+            if (m_sceneStarted)
+            {
+                EnqueueSpawn(obj, _parent);
+                return obj;
+            }
+
             SetParent(obj, _parent);
             obj->m_scene = this;
             obj->Init();
+
             return obj;
         }
     };

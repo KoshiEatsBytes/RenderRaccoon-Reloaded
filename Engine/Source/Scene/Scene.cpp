@@ -2,6 +2,7 @@
 #include "Scene.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "Components/LightComponent.h"
 #include "Helpers/Printer.hpp"
@@ -14,27 +15,22 @@ namespace RR
     = default;
 
     Scene::~Scene()
-    = default;
+    {
+        for (auto& pending : m_spawnQueue)
+        {
+            delete pending.object;
+        }
+        m_spawnQueue.clear();
+    }
 
     void Scene::PreUpdate(float _deltaTime)
     {
-        // Update each GO, delete un-alive ones
-        for (auto it = m_objects.begin(); it != m_objects.end();)
-        {
-            if ((*it)->IsAlive())
-            {
-                (*it)->PreUpdate(_deltaTime);
-                ++it;
-            }
-            else
-            {
-                if (it->get() == m_mainCamera)
-                {
-                    m_mainCamera = nullptr;
-                }
+        // Set Scene as started for creating objects
+        if (!m_sceneStarted) m_sceneStarted = true;
 
-                it = m_objects.erase(it);
-            }
+        for (const auto& obj: m_objects)
+        {
+            obj->PreUpdate(_deltaTime);
         }
     }
 
@@ -46,27 +42,57 @@ namespace RR
         }
     }
 
-    void Scene::LateUpdate(float _deltaTime) const
+    void Scene::LateUpdate(float _deltaTime)
     {
         for (const auto& obj: m_objects)
         {
             obj->LateUpdate(_deltaTime);
         }
+
+        FlushPendingChanges();
     }
 
     void Scene::Clear()
     {
+        for (auto& pending : m_spawnQueue)
+        {
+            delete pending.object;
+        }
+        m_spawnQueue.clear();
+        m_destroyQueue.clear();
         m_objects.clear();
+        m_sceneStarted = false;
+    }
+
+    void Scene::EnqueueDestroy(GameObject* _object)
+    {
+        m_destroyQueue.push_back(_object);
+    }
+
+    void Scene::EnqueueSpawn(GameObject* _object, GameObject* _parent)
+    {
+        m_spawnQueue.push_back({
+            _object,
+            _parent
+        });
     }
 
     GameObject* Scene::CreateObject(const std::string& _name, GameObject* _parent)
     {
         auto obj = new GameObject();
-
         obj->SetName(_name);
+
+        // If scene has started defer init and parenting
+        if (m_sceneStarted)
+        {
+            EnqueueSpawn(obj, _parent);
+            return obj;
+        }
+
         SetParent(obj, _parent);
         obj->m_scene = this;
         obj->Init();
+
         return obj;
     }
 
@@ -266,6 +292,18 @@ namespace RR
         return result;
     }
 
+    // GETTER / SETTERS ------------------------------------------------------------------------------------------------
+
+    void Scene::SetMainCamera(GameObject* _camera)
+    {
+        m_mainCamera = _camera;
+    }
+
+    GameObject* Scene::GetMainCamera() const
+    {
+        return m_mainCamera;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void Scene::CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out)
@@ -287,16 +325,65 @@ namespace RR
         }
     }
 
-    // GETTER / SETTERS ------------------------------------------------------------------------------------------------
-
-    void Scene::SetMainCamera(GameObject* _camera)
+    void Scene::FlushPendingChanges()
     {
-        m_mainCamera = _camera;
+        ProcessDestroyQueue();
+        ProcessSpawnQueue();
     }
 
-    GameObject* Scene::GetMainCamera() const
+    void Scene::ProcessDestroyQueue()
     {
-        return m_mainCamera;
+        auto queue = std::exchange(m_destroyQueue, {});
+        if (queue.empty()) return;
+
+        std::unordered_set<GameObject*> toDestroy(queue.begin(), queue.end());
+        toDestroy.erase(nullptr);
+
+        // Find objects with NO queued ancestor
+        std::vector<GameObject*> roots;
+        for (GameObject* obj : toDestroy)
+        {
+            bool ancestorQueued = false;
+            for (GameObject* parent = obj->GetParent(); parent; parent = parent->GetParent())
+            {
+                if (toDestroy.contains(parent)) { ancestorQueued = true; break; }
+            }
+            if (!ancestorQueued) roots.push_back(obj);
+        }
+
+        // Erase only roots. They're mutually non-ancestral, so erasing one never frees another.
+        for (GameObject* obj : roots)
+        {
+            if (obj == m_mainCamera) m_mainCamera = nullptr;
+
+            if (auto* parent = obj->GetParent())
+            {
+                auto& children = parent->m_children;
+                auto it = std::ranges::find_if(children,
+                    [obj](const auto& p){ return p.get() == obj; });
+                if (it != children.end()) children.erase(it);
+            }
+            else
+            {
+                auto it = std::ranges::find_if(m_objects,
+                    [obj](const auto& p){ return p.get() == obj; });
+                if (it != m_objects.end()) m_objects.erase(it);
+            }
+        }
+    }
+
+    void Scene::ProcessSpawnQueue()
+    {
+        // Process pending objects and creates them in the scene, then init
+        for (auto& pending : std::exchange(m_spawnQueue, {}))
+        {
+            GameObject* object = pending.object;
+            GameObject* parent = pending.parent;
+
+            SetParent(object, parent);
+            object->m_scene = this;
+            object->Init();
+        }
     }
 }
 
