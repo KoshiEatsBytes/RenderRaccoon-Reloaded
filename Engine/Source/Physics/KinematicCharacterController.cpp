@@ -26,12 +26,13 @@ namespace RR
 
     KinematicCharacterController::~KinematicCharacterController()
     {
-        TearDown();
+        RemoveFromWorld();
     }
 
-    void KinematicCharacterController::SetWalkVelocity(const vec3 &_velocity, float _duration)
+    void KinematicCharacterController::SetWalkVelocity(const vec3 &_velocity) const
     {
-        m_controller->setVelocityForTimeInterval(BtConv::ToBt(_velocity), _duration);
+        //m_controller->setVelocityForTimeInterval(BtConv::ToBt(_velocity), _duration);
+        m_controller->setWalkDirection(BtConv::ToBt(_velocity * PhysicsManager::FixedTimeStep));
     }
 
     void KinematicCharacterController::Jump(const vec3& _direction)
@@ -57,13 +58,49 @@ namespace RR
     void KinematicCharacterController::Resize(float _radius, float _height)
     {
         vec3 currentPos = m_ghost ? GetPosition() : vec3(0.0f);
+        bool inWorld = m_inWorld;
 
-        TearDown();
+        RemoveFromWorld();
 
         m_radius = _radius;
         m_height = _height;
 
         BuildGhostAndController(currentPos);
+
+        if (!inWorld) RemoveFromWorld();
+    }
+
+    void KinematicCharacterController::AddToWorld()
+    {
+        if (m_inWorld) return;
+        if (!m_ghost || !m_controller) return;
+
+        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
+
+        world->addCollisionObject(m_ghost.get(),
+            btBroadphaseProxy::CharacterFilter,
+            btBroadphaseProxy::AllFilter & ~btBroadphaseProxy::SensorTrigger);
+        world->addAction(m_controller.get());
+
+        m_inWorld = true;
+    }
+
+    void KinematicCharacterController::RemoveFromWorld()
+    {
+        if (!m_inWorld) return;
+
+        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
+
+        if (m_controller)
+        {
+            world->removeAction(m_controller.get());
+        }
+        if (m_ghost)
+        {
+            world->removeCollisionObject(m_ghost.get());
+        }
+
+        m_inWorld = false;
     }
 
     void KinematicCharacterController::SetPosition(const vec3& _pos)
@@ -128,26 +165,6 @@ namespace RR
         m_controller->setGravity(world->getGravity());
         m_controller->setMaxSlope(btRadians(m_maxSlope));
 
-        // Add character controller to the world
-        world->addCollisionObject(
-            m_ghost.get(),
-            btBroadphaseProxy::CharacterFilter,
-            btBroadphaseProxy::AllFilter & ~btBroadphaseProxy::SensorTrigger
-            );
-        world->addAction(m_controller.get());
-    }
-
-    void KinematicCharacterController::TearDown()
-    {
-        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
-
-        if (m_controller)
-        {
-            world->removeAction(m_controller.get());
-        }
-        if (m_ghost)
-        {
-            world->removeCollisionObject(m_ghost.get());
-        }
+        AddToWorld();
     }
 }

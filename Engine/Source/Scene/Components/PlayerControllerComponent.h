@@ -16,7 +16,9 @@ namespace RR
         ~PlayerControllerComponent() override;
 
         void Init() override;
+        void PreUpdate(float _deltaTime) override;
         void Update(float _deltaTime) override;
+        void LateUpdate(float _deltaTime) override;
 
         void Teleport(const vec3& _worldPos);
         void SetLookRotation(float _yawDegrees, float _pitchDegrees);
@@ -26,6 +28,10 @@ namespace RR
         void SetMouseSensitivity(float _sens);
         float GetMoveSpeed() const;
         float GetMouseSensitivity() const;
+
+    protected:
+        void OnEnable() override;
+        void OnDisable() override;
 
     private:
         std::unique_ptr<KinematicCharacterController> m_kinematicController;

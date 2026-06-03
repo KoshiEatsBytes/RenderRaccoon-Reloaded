@@ -29,84 +29,60 @@ namespace RR
         m_owner->m_physicsOwnership = PhysicsOwnership::CHARACTER;
     }
 
-    void PlayerControllerComponent::Update(float _deltaTime)
+    void PlayerControllerComponent::PreUpdate(float _deltaTime)
     {
-        auto& inputManager = Engine::GetInstance().GetInputManager();
-        auto rotation = m_owner->GetRotation();
+        auto& input = Engine::GetInstance().GetInputManager();
 
-        // rotate around Y axis for horizontal movement and around X for vertical
-        if (inputManager.GetMousePositionChanged())
+        // Mouse look → yaw/pitch → camera rotation
+        if (input.GetMousePositionChanged())
         {
-            const auto& oldPos = inputManager.GetMousePositionOld();
-            const auto& currPos = inputManager.GetMousePositionCurrent();
-
+            const auto& oldPos  = input.GetMousePositionOld();
+            const auto& currPos = input.GetMousePositionCurrent();
             float deltaX = currPos.x - oldPos.x;
             float deltaY = currPos.y - oldPos.y;
 
-            // horizontal rot
-            float yDeltaAngle = -deltaX * m_sensitivity * _deltaTime;
-            m_yRot += yDeltaAngle;
-            m_yRot = std::fmod(m_yRot, 360.0f);
+            m_yRot += -deltaX * m_sensitivity * _deltaTime;
+            m_yRot  = std::fmod(m_yRot, 360.0f);
+
+            m_xRot += -deltaY * m_sensitivity * _deltaTime;
+            m_xRot  = std::clamp(m_xRot, m_verticalRotConstraints.x, m_verticalRotConstraints.y);
+
             quat yRot = glm::angleAxis(glm::radians(m_yRot), vec3(0.0f, 1.0f, 0.0f));
-
-            // vertical rot
-            float xDeltaAngle = -deltaY * m_sensitivity * _deltaTime;
-            m_xRot += xDeltaAngle;
-            m_xRot = std::clamp(m_xRot, m_verticalRotConstraints.x, m_verticalRotConstraints.y);
             quat xRot = glm::angleAxis(glm::radians(m_xRot), vec3(1.0f, 0.0f, 0.0f));
-
-            rotation = glm::normalize(yRot * xRot);
-
-            // set rot to owner GO
-            m_owner->SetWorldRotationInternal(rotation);
+            m_owner->SetWorldRotationInternal(glm::normalize(yRot * xRot));
         }
 
-        // forward along z axis, right x
+        // Movement intent (yaw-only) walk velocity, fed to physics this step
         quat yawOnly = glm::angleAxis(glm::radians(m_yRot), vec3(0.0f, 1.0f, 0.0f));
         vec3 forward = yawOnly * vec3(0.0f, 0.0f, -1.0f);
         vec3 right   = yawOnly * vec3(1.0f, 0.0f, 0.0f);
-        vec3 move    {0.0f};
+        vec3 move{0.0f};
 
-        // Left/Right
-        if (inputManager.IsKeyPressed(GLFW_KEY_A))
-        {
-            move -= right;
-        }
-        if (inputManager.IsKeyPressed(GLFW_KEY_D))
-        {
-            move += right;
-        }
-        // Up/Down
-        if (inputManager.IsKeyPressed(GLFW_KEY_W))
-        {
-            move += forward;
-        }
-        if (inputManager.IsKeyPressed(GLFW_KEY_S))
-        {
-            move -= forward;
-        }
+        if (input.IsKeyPressed(GLFW_KEY_A)) move -= right;
+        if (input.IsKeyPressed(GLFW_KEY_D)) move += right;
+        if (input.IsKeyPressed(GLFW_KEY_W)) move += forward;
+        if (input.IsKeyPressed(GLFW_KEY_S)) move -= forward;
 
-        if (inputManager.IsKeyPressed(GLFW_KEY_SPACE))
-        {
+        if (input.IsKeyPressed(GLFW_KEY_SPACE))
             m_kinematicController->Jump(m_jumpTrajectory);
-        }
 
-        // check if move vector has any input applied
-        if (glm::dot(move, move) > 0)
-        {
+        if (glm::dot(move, move) > 0.0f)
             move = glm::normalize(move);
-        }
 
-        m_kinematicController->SetWalkVelocity(move * m_moveSpeed, _deltaTime);
+        m_kinematicController->SetWalkVelocity(move * m_moveSpeed);
+    }
 
-        // Offset for the camera
+    void PlayerControllerComponent::Update(float _deltaTime)
+    {
         vec3 eyeOffset(0.0f, m_capsuleHeight * 0.5f + m_capsuleRadius * 0.5f, 0.0f);
-
-        // Finds alpha to calculate interpolated position before physics output the next simulated frame
         float alpha = Engine::GetInstance().GetPhysicsManager().GetInterpolationAlpha();
         vec3 smoothPos = m_kinematicController->GetInterpolatedPosition(alpha);
-
         m_owner->SetWorldPositionInternal(smoothPos + eyeOffset);
+    }
+
+    void PlayerControllerComponent::LateUpdate(float _deltaTime)
+    {
+        Component::LateUpdate(_deltaTime);
     }
 
     void PlayerControllerComponent::Teleport(const vec3& _worldPos)
@@ -144,5 +120,17 @@ namespace RR
     float PlayerControllerComponent::GetMouseSensitivity() const
     {
         return m_sensitivity;
+    }
+
+    // PROTECTED -------------------------------------------------------------------------------------------------------
+
+    void PlayerControllerComponent::OnEnable()
+    {
+        if (m_kinematicController) m_kinematicController->AddToWorld();
+    }
+
+    void PlayerControllerComponent::OnDisable()
+    {
+        if (m_kinematicController) m_kinematicController->RemoveFromWorld();
     }
 }

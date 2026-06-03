@@ -31,11 +31,12 @@ namespace RR
     void GameObject::PreUpdate(const float _deltaTime)
     {
         if (!m_active) return;
+        if (!m_ticked) m_ticked = true;
 
         // Run the pre-update of each component
         for (const auto& component : m_components)
         {
-            component->PreUpdate(_deltaTime);
+            if (component->IsEnabled()) component->PreUpdate(_deltaTime);
         }
 
         for (const auto& child: m_children)
@@ -51,7 +52,7 @@ namespace RR
         // Update each component
         for (const auto& component : m_components)
         {
-            component->Update(_deltaTime);
+            if (component->IsEnabled()) component->Update(_deltaTime);
         }
 
         for (const auto& child: m_children)
@@ -67,7 +68,7 @@ namespace RR
         // run late-update on each component
         for (const auto& component : m_components)
         {
-            component->LateUpdate(_deltaTime);
+            if (component->IsEnabled()) component->LateUpdate(_deltaTime);
         }
 
         for (const auto& child: m_children)
@@ -82,9 +83,16 @@ namespace RR
      */
     void GameObject::AddComponent(Component* _component)
     {
+        if (m_ticked)
+        {
+            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding component at RunTime to GO: '", m_name, "' Discarding.");
+            delete _component;
+            return;
+        }
+
         if (!_component)
         {
-            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding INVALID component to GO: '", m_name, "'");
+            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding INVALID component to GO: '", m_name, "' Discarding.");
             return;
         }
 

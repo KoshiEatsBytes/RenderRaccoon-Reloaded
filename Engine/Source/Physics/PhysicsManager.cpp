@@ -50,19 +50,18 @@ namespace RR
 
     void PhysicsManager::Update(float _deltaTime)
     {
-        constexpr btScalar fixedTimeStep = 1.0f / 60.0f;
         constexpr int maxStepsPerFrame = 4;
 
         m_accumulator += _deltaTime;
-        m_accumulator = std::min(m_accumulator, maxStepsPerFrame * fixedTimeStep);
+        m_accumulator = std::min(m_accumulator, maxStepsPerFrame * FixedTimeStep);
 
-        while (m_accumulator >= fixedTimeStep)
+        while (m_accumulator >= FixedTimeStep)
         {
             // Pre and post step callbacks to interpolate position of characters
             for (auto& cb : m_preStepCallbacks)  cb();
-            m_world->stepSimulation(fixedTimeStep, 1, fixedTimeStep);
+            m_world->stepSimulation(FixedTimeStep, 1, FixedTimeStep);
             for (auto& cb : m_postStepCallbacks) cb();
-            m_accumulator -= fixedTimeStep;
+            m_accumulator -= FixedTimeStep;
         }
     }
 
@@ -135,6 +134,6 @@ namespace RR
 
     float PhysicsManager::GetInterpolationAlpha() const
     {
-        return m_accumulator / (1.0f / 60.0f);
+        return m_accumulator / FixedTimeStep;
     }
 }

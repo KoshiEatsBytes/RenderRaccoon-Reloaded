@@ -84,6 +84,7 @@ namespace RR
         void SetWorldRotationInternal(const quat& _rot);
         void SetScaleInternal(const vec3& _scale);
 
+        bool m_ticked = false;
         bool m_alive = true;
         bool m_active = true;
         std::string m_name;

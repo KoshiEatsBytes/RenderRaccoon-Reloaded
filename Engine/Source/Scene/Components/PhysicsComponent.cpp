@@ -62,7 +62,7 @@ namespace RR
         {
             Warn("[PHYSICS COMPONENT] Game-Object '", m_owner->GetName(),
                 "' Has a physics component but NO colliders in hierarchy");
-            ClearInheritedPhysicsOwnership(m_owner); 
+            ClearInheritedPhysicsOwnership(m_owner);
             return;
         }
 
@@ -272,6 +272,18 @@ namespace RR
     {
         if (!m_rigidBody) return vec3(0.0f);
         return BtConv::FromBt(m_rigidBody->GetBody()->getAngularVelocity());
+    }
+
+    // PROTECTED -------------------------------------------------------------------------------------------------------
+
+    void PhysicsComponent::OnEnable()
+    {
+        if (m_rigidBody) Engine::GetInstance().GetPhysicsManager().AddRigidbody(m_rigidBody.get());
+    }
+
+    void PhysicsComponent::OnDisable()
+    {
+        if (m_rigidBody) Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(m_rigidBody.get());
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

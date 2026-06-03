@@ -34,6 +34,35 @@ namespace RR
         return m_owner;
     }
 
+    void Component::SetEnabled(bool _enabled)
+    {
+        if (m_enabled == _enabled) return;
+
+        m_enabled = _enabled;
+
+        if (_enabled)
+        {
+            OnEnable();
+        }
+        else
+        {
+            OnDisable();
+        }
+    }
+
+    bool Component::IsEnabled() const
+    {
+        return m_enabled;
+    }
+
+    void Component::OnEnable()
+    {
+    }
+
+    void Component::OnDisable()
+    {
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     // Init component ID

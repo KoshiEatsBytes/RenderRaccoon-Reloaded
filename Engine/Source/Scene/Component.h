@@ -23,7 +23,14 @@ namespace RR
         virtual int GetExecutionOrder() const;
         GameObject* GetOwner() const;
 
+        void SetEnabled(bool _enabled);
+        bool IsEnabled() const;
+
     protected:
+        virtual void OnEnable();
+        virtual void OnDisable();
+
+        bool m_enabled = true;
         // for handling the owner
         GameObject* m_owner = nullptr;
 

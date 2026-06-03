@@ -37,8 +37,13 @@ namespace RR
 
         void SetLinearVelocity(const vec3& _vec);
         vec3 GetLinearVelocity() const;
+
         void SetAngularVelocity(const vec3& _vec);
         vec3 GetAngularVelocity() const;
+
+    protected:
+        void OnEnable() override;
+        void OnDisable() override;
 
     private:
         static void AddCollidersRecursive(GameObject* _go,

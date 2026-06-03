@@ -44,6 +44,9 @@ namespace RR
         btDiscreteDynamicsWorld* GetWorld() const;
         float GetInterpolationAlpha() const;
 
+        // Constant time step
+        static constexpr float FixedTimeStep = 1.0f / 60.0f;
+
     private:
         std::unique_ptr<btGhostPairCallback> m_ghostPairCallback;
         std::unique_ptr<btBroadphaseInterface> m_broadphase;
