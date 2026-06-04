@@ -7,7 +7,6 @@
 #include "RigidBody.h"
 #include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "Helpers/Printer.hpp"
-#include "Helpers/Types.h"
 
 namespace RR
 {
@@ -58,9 +57,16 @@ namespace RR
         while (m_accumulator >= FixedTimeStep)
         {
             // Pre and post step callbacks to interpolate position of characters
-            for (auto& cb : m_preStepCallbacks)  cb();
+            for (auto& entry : m_preStepCallbacks) {
+                entry.callBack();
+            }
+
             m_world->stepSimulation(FixedTimeStep, 1, FixedTimeStep);
-            for (auto& cb : m_postStepCallbacks) cb();
+
+            for (auto& entry : m_postStepCallbacks) {
+                entry.callBack();
+            }
+
             m_accumulator -= FixedTimeStep;
         }
     }
@@ -115,16 +121,48 @@ namespace RR
         }
     }
 
-    // Takes a function pointer to a subscriber
-    void PhysicsManager::RegisterPreStepCallback(const StepCallBack& _callback)
+    // Subscribes pre step register callback
+    PhysicsManager::CallbackHandle PhysicsManager::RegisterPreStepCallback(const StepCallBack &_callback)
     {
-        m_preStepCallbacks.push_back(_callback);
+        CallbackHandle handle = m_nextHandle++;
+        m_preStepCallbacks.push_back({ handle, _callback });
+        return handle;
     }
 
-    // Takes a function pointer to a subscriber
-    void PhysicsManager::RegisterPostStepCallback(const StepCallBack& _callback)
+    // Subscribes post step register callback
+    PhysicsManager::CallbackHandle PhysicsManager::RegisterPostStepCallback(const StepCallBack &_callback)
     {
-        m_postStepCallbacks.push_back(_callback);
+        CallbackHandle handle = m_nextHandle++;
+        m_postStepCallbacks.push_back({ handle, _callback });
+        return handle;
+    }
+
+    void PhysicsManager::UnregisterPreStepCallback(CallbackHandle _handle)
+    {
+        auto it = std::ranges::find_if(m_preStepCallbacks,
+        [_handle](const CallBackEntry& e)
+        {
+            return e.handle == _handle;
+        });
+
+        if (it != m_preStepCallbacks.end())
+        {
+            m_preStepCallbacks.erase(it);
+        }
+    }
+
+    void PhysicsManager::UnregisterPostStepCallback(CallbackHandle _handle)
+    {
+        auto it = std::ranges::find_if(m_postStepCallbacks,
+        [_handle](const CallBackEntry& e)
+        {
+            return e.handle == _handle;
+        });
+
+        if (it != m_postStepCallbacks.end())
+        {
+            m_postStepCallbacks.erase(it);
+        }
     }
 
     btDiscreteDynamicsWorld* PhysicsManager::GetWorld() const

@@ -18,12 +18,14 @@ namespace RR
         BuildGhostAndController(vec3(0.0f));
 
         // Register this controller for stepCallBacks
-        m_physicsManager.RegisterPreStepCallback([this](){ RecordPositionBeforeStep(); });
-        m_physicsManager.RegisterPostStepCallback([this](){ RecordPositionAfterStep(); });
+        m_preStepHandle  = m_physicsManager.RegisterPreStepCallback ([this](){ RecordPositionBeforeStep(); });
+        m_postStepHandle = m_physicsManager.RegisterPostStepCallback([this](){ RecordPositionAfterStep();  });
     }
 
     KinematicCharacterController::~KinematicCharacterController()
     {
+        m_physicsManager.UnregisterPreStepCallback(m_preStepHandle);
+        m_physicsManager.UnregisterPostStepCallback(m_postStepHandle);
         RemoveFromWorld();
     }
 

@@ -4,7 +4,6 @@
 
 #include "Helpers/Types.h"
 
-
 class btPairCachingGhostObject;
 class btKinematicCharacterController;
 class btCapsuleShape;
@@ -54,6 +53,10 @@ namespace RR
         // For camera interpolation (fps 60+)
         vec3 m_prevGhostPos = vec3(0.0f);
         vec3 m_currGhostPos = vec3(0.0f);
+
+        // For stepcallbacks register
+        sizeT m_preStepHandle  = 0;
+        sizeT m_postStepHandle = 0;
     };
 }
 

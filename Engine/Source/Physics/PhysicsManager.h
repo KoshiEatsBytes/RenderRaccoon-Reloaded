@@ -17,13 +17,13 @@ namespace RR
     class RigidBody;
     class PhysicsManager
     {
-    // TO REMOVE!!!!
     public:
         PhysicsManager();
         ~PhysicsManager();
 
-    public:
-        using StepCallBack = std::function<void()>;
+        using StepCallBack   = std::function<void()>;
+        using CallbackHandle = std::size_t;
+        static constexpr CallbackHandle InvalidCallbackHandle = 0;
         friend class Scene;
 
         // Delete copy
@@ -40,8 +40,10 @@ namespace RR
         void AddRigidbody(RigidBody* _body);
         void RemoveRigidBody(RigidBody* _body);
 
-        void RegisterPreStepCallback(const StepCallBack& _callback);
-        void RegisterPostStepCallback(const StepCallBack& _callback);
+        CallbackHandle RegisterPreStepCallback(const StepCallBack& _callback);
+        CallbackHandle RegisterPostStepCallback(const StepCallBack& _callback);
+        void UnregisterPreStepCallback(CallbackHandle _handle);
+        void UnregisterPostStepCallback(CallbackHandle _handle);
 
         btDiscreteDynamicsWorld* GetWorld() const;
         float GetInterpolationAlpha() const;
@@ -59,7 +61,15 @@ namespace RR
 
         // Interpolation data for position at inconsistent framerate
         float m_accumulator = 0.0f;
-        std::vector<StepCallBack> m_preStepCallbacks;
-        std::vector<StepCallBack> m_postStepCallbacks;
+
+        // Data for callback entries
+        struct CallBackEntry
+        {
+            CallbackHandle  handle;
+            StepCallBack    callBack;
+        };
+        std::vector<CallBackEntry> m_preStepCallbacks;
+        std::vector<CallBackEntry> m_postStepCallbacks;
+        CallbackHandle m_nextHandle = 1;
     };
 }
