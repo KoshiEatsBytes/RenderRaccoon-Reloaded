@@ -90,7 +90,7 @@ namespace RR
         return nullptr;
     }
 
-    std::vector<GameObject*> Scene::FindObjectsByName(const std::string& _name, bool _searchDescendants) const
+    std::vector<GameObject*> Scene::FindObjectsByName(const std::string& _name, bool _searchDescendants)
     {
         std::vector<GameObject*> result {};
 

@@ -10,6 +10,7 @@ namespace RR
     };
 }
 
+
 #define GAMEOBJECT(ClassName, BaseClass)                                  \
     static const RR::TypeInfo& StaticType()                               \
     {                                                                     \
@@ -18,4 +19,17 @@ namespace RR
         return info;                                                      \
     }                                                                     \
     const RR::TypeInfo& GetType() const override { return StaticType(); }
+
+
+#define SUBSYSTEM(ClassName, BaseClass)                                   \
+    static const RR::TypeInfo& StaticType()                               \
+    {                                                                     \
+        static const RR::TypeInfo info{ #ClassName,                       \
+                                        &BaseClass::StaticType() };       \
+        return info;                                                      \
+    }                                                                     \
+    const RR::TypeInfo& GetType() const override { return StaticType(); }
+
+
+
 

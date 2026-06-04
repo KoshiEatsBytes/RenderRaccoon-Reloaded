@@ -32,7 +32,7 @@ namespace RR
 
         GameObject* CreateObject(const std::string& _name, GameObject* _parent = nullptr);
         GameObject* FindObjectByName(const std::string& _name, bool _searchDescendants = false);
-        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false) const;
+        std::vector<GameObject*> FindObjectsByName(const std::string& _name, bool _searchDescendants = false);
 
         void EnqueueDestroy(GameObject* _object);
         void EnqueueSpawn(GameObject* _object, GameObject* _parent);

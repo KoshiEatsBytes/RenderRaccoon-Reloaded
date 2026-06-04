@@ -1,7 +1,5 @@
 
 #include "ApplicationManager.h"
-
-#include "../../Source/Game.h"
 #include "ISubSystem.h"
 
 
@@ -62,9 +60,6 @@ namespace RR
 
         // Erase nullptrs
         std::erase_if(m_subSystems, [](const auto& ptr) { return !ptr; });
-
-        // Default scene
-        RequestSceneLoad<Game>();
 
         return true;
     }

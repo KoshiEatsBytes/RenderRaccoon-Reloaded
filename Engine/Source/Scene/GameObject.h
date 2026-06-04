@@ -110,8 +110,6 @@ namespace RR
         vec3 m_scale    = vec3(1.0f);
 
     private:
-
-
         void FindObjectsByName(const std::string& _name, std::vector<GameObject*>& _result);
 
     public:
@@ -215,6 +213,13 @@ namespace RR
             return result;
         }
 
+    protected:
+        template<GameObjectType T>
+        bool IsA() const
+        {
+            return IsA(T::StaticType());
+        }
+
     private:
 
         template<GameObjectType T>
@@ -229,12 +234,6 @@ namespace RR
             {
                 child->FindObjectsByType<T>(_result);
             }
-        }
-
-        template<GameObjectType T>
-        bool IsA() const
-        {
-            return IsA(T::StaticType());
         }
     };
 }

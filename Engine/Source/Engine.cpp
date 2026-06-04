@@ -190,9 +190,9 @@ namespace RR
             glfwGetWindowSize(m_window, &width, &height);
             float aspect = static_cast<float>(width) / static_cast<float>(height);
 
-            if (const auto appManager = m_appManager.GetActiveScene())
+            if (const auto scene = m_appManager.GetActiveScene())
             {
-                if (const auto camObj = appManager->GetMainCamera())
+                if (const auto camObj = scene->GetMainCamera())
                 {
                     // logic for matrices
                     if (auto camComponent = camObj->FindComponentByType<CameraComponent>())
@@ -203,7 +203,7 @@ namespace RR
                     }
                 }
 
-                lights = appManager->GetLights();
+                lights = scene->GetLights();
             }
 
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);

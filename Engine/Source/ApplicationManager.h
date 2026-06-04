@@ -4,11 +4,11 @@
 
 #include "Helpers/Printer.hpp"
 #include "Scene/Scene.h"
+#include "ISubSystem.h"
 
 namespace RR
 {
     class Engine;
-    class ISubSystem;
     class ApplicationManager
     {
         ApplicationManager();
@@ -53,15 +53,10 @@ namespace RR
         void RequestSceneLoad()
         {
             // This lambda represents what will happen LATER
-            m_pendingScene = [this]() -> std::unique_ptr<Scene>
+            m_pendingScene = []() -> std::unique_ptr<Scene>
             {
                 return std::make_unique<T>();
             };
-
-            if (!m_pastInitialization)
-            {
-                LoadPendingScene();
-            }
         }
 
         /**
@@ -86,11 +81,22 @@ namespace RR
             m_subSystems.push_back(std::make_unique<T>());
         }
 
-        // WIP
+        /**
+         * @brief Returns a subsystem
+         * @tparam T Type of the subsystem you're tring to retrieve
+         * @return ptr to the subsystem, nullptr if not found
+         */
         template <SubSystemType T>
         T* GetSubSystem()
         {
-            // TODO:: IMPLEMENT SIMPLE RTTI (SAME AS COMPONENTS) FOR SUBSYSTEMS
+            for (auto& SubSys : m_subSystems)
+            {
+                if (SubSys->IsA<T>())
+                {
+                    return static_cast<T*>(SubSys.get());
+                }
+            }
+
             return nullptr;
         }
     };
