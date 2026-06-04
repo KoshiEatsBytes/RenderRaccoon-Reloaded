@@ -48,7 +48,7 @@ bool Game::Init()
     //suzanneObj->SetPosition(vec3(-2.0f, 0.0f, -5.0f));
 
     //auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Tardis/Tardis Exterior.gltf");
-    auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf");
+    auto suzanneObj = RR::CGLTFLib::LoadGLTF("Models/Suzanne/Suzanne.gltf", this);
     suzanneObj->SetPosition(vec3(0.0f, 0.0f, -5.0f));
 
     auto light = CreateObject("Light");
@@ -72,6 +72,8 @@ bool Game::Init()
     auto boxCollider = std::make_shared<RR::BoxCollider>(vec3(1.0f));
     boxObj->AddComponent(new RR::ColliderComponent(boxCollider));
     boxObj->AddComponent(new RR::PhysicsComponent(RR::BodyType::DYNAMIC, 5.0f, 0.5f));
+
+    RR::Success("Init scene complete!");
 
     return true;
 }

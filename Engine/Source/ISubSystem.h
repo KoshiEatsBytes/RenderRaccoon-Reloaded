@@ -1,18 +1,18 @@
 
 #pragma once
-#include "Engine.h"
-#include "Helpers/ApplicationData.h"
 
 namespace RR
 {
-    class SceneManager;
+    class ApplicationData;
+    class ApplicationManager;
     class ISubSystem
     {
-    protected:
-        friend class SceneManager;
+    public:
+        friend class ApplicationManager;
+        virtual ~ISubSystem() = default;
 
-        ISubSystem() : m_appData(Engine::GetInstance().GetAppData()) {}
-        virtual ~ISubSystem()                                       = 0;
+    protected:
+        ISubSystem();
 
         virtual bool Init()                                         = 0;
         virtual void PreUpdate(float _deltaTime)                    = 0;

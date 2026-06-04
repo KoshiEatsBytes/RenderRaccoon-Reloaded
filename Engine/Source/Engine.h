@@ -1,17 +1,15 @@
 
 #pragma once
-#include <memory>
 #include <chrono>
 
+#include "ApplicationManager.h"
 #include "Input/InputManager.h"
 #include "Graphics/GraphicsAPI.h"
 #include "Graphics/Texture.h"
 #include "Render/RenderQueue.h"
-#include "Scene/Scene.h"
 #include "FileSystem/FileSystem.h"
 #include "Physics/PhysicsManager.h"
 #include "Helpers/ApplicationData.h"
-#include "SceneManager.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -53,16 +51,11 @@ namespace RR
         void Launch();
         void Destroy();
 
-        // Get/Sets
-        //void SetApp(SceneManager* _app);
-        //SceneManager* GetApp() const;
-
-        void SetScene(Scene* _scene);
-        Scene* GetScene() const;
-
         void SetShouldClose(bool _close);
         bool GetShouldClose() const;
 
+        Scene* GetScene() const;
+        ApplicationManager& GetAppManager();
         InputManager& GetInputManager();
         GraphicsAPI& GetGraphicsAPI();
         RenderQueue& GetRenderQueue();
@@ -72,19 +65,19 @@ namespace RR
         ApplicationData& GetAppData();
 
     private:
-        //std::unique_ptr<Scene> m_application;
         std::chrono::steady_clock::time_point m_lastTimePoint;
-        std::unique_ptr<Scene> m_currentScene;
 
         bool m_shouldClose = false;
         GLFWwindow* m_window = nullptr;
+
+        ApplicationManager m_appManager;
         InputManager m_inputManager;
         GraphicsAPI m_graphicsAPI;
         RenderQueue m_renderQueue;
         FileSystem m_fileSystem;
         TextureManager m_textureManager;
         PhysicsManager m_physicsManager;
-        //ApplicationData m_appData;
+        ApplicationData m_appData;
     };
 }
 

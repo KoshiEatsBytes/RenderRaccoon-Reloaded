@@ -88,10 +88,9 @@ namespace RR
             }
         }
 
-        static GameObject* LoadGLTF(const std::string& _path)
+        static GameObject* LoadGLTF(const std::string& _path, Scene* _scene)
         {
             auto& fileSys = Engine::GetInstance().GetFileSystem();
-            auto* scene = Engine::GetInstance().GetScene();
 
             // Load file as text
             auto contents = fileSys.LoadAssetFileText(_path);
@@ -130,7 +129,7 @@ namespace RR
             }
 
             std::string modelName = "CGLTFLoadedModel" + std::to_string(m_resultIndex);
-            auto resultObject = scene->CreateObject(modelName);
+            auto resultObject = _scene->CreateObject(modelName);
             m_resultIndex++;
 
             // GLTF files can have scenes, for now only grab scene no. 1 (index 0)

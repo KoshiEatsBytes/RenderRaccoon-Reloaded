@@ -5,7 +5,7 @@
 #include "Helpers/Printer.hpp"
 
 // Engine
-#include "SceneManager.h"
+#include "ApplicationManager.h"
 #include "Engine.h"
 #include "Helpers/Types.h"
 #include "Helpers/TypeInfo.h"

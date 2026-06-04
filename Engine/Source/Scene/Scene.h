@@ -6,7 +6,6 @@
 
 #include "Helpers/Concepts.h"
 #include "Helpers/Common.h"
-#include "Helpers/ApplicationData.h"
 #include "GameObject.h"
 
 namespace RR
@@ -20,12 +19,12 @@ namespace RR
         GameObject* parent = nullptr;
     };
 
+    class ApplicationData;
     class Scene
     {
     public:
-        friend class SceneManager;
+        friend class ApplicationManager;
 
-        Scene();
         Scene(const std::string& _sceneName);
         virtual ~Scene();
 
@@ -53,7 +52,7 @@ namespace RR
         virtual void Destroy()                      = 0;
 
         std::string m_name = "noName";
-        ApplicationData* m_appData = nullptr;
+        ApplicationData& m_appData;
 
     private:
         // internal hooks
@@ -65,7 +64,7 @@ namespace RR
         void ProcessDestroyQueue();
         void ProcessSpawnQueue();
 
-        bool OnLoad(ApplicationData* _appData);
+        bool OnLoad();
         void OnDestroy();
 
         static void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);

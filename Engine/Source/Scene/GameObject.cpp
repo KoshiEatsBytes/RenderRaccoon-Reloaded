@@ -117,9 +117,9 @@ namespace RR
         }
     }
 
-    GameObject* GameObject::LoadGLTF(const std::string& _path)
+    GameObject* GameObject::LoadGLTF(const std::string& _path) const
     {
-        return CGLTFLib::LoadGLTF(_path);
+        return CGLTFLib::LoadGLTF(_path, m_scene);
     }
 
     // GETTER / SETTERS ------------------------------------------------------------------------------------------------

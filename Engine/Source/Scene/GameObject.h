@@ -38,7 +38,7 @@ namespace RR
         void AddComponent(Component* _component);
         void MarkForDestroy();
 
-        static GameObject* LoadGLTF(const std::string& _path);
+        GameObject* LoadGLTF(const std::string& _path) const;
 
         // getters/setters
         const std::string& GetName() const;

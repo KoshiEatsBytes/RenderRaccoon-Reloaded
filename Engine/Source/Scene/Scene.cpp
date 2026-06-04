@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <unordered_set>
 
+#include "Engine.h"
 #include "Components/LightComponent.h"
 #include "Helpers/Printer.hpp"
 
@@ -11,10 +12,8 @@ namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    Scene::Scene()
-    = default;
-
-    Scene::Scene(const std::string& _sceneName) : m_name(_sceneName)
+    Scene::Scene(const std::string& _sceneName)
+        : m_name(_sceneName), m_appData(Engine::GetInstance().GetAppData())
     {
     }
 
@@ -39,7 +38,6 @@ namespace RR
         m_objects.clear();
         m_sceneStarted = false;
         m_mainCamera = nullptr;
-        m_appData = nullptr;
     }
 
     GameObject* Scene::CreateObject(const std::string& _name, GameObject* _parent)
@@ -454,14 +452,8 @@ namespace RR
         }
     }
 
-    bool Scene::OnLoad(ApplicationData* _appData)
+    bool Scene::OnLoad()
     {
-        if (!_appData)
-        {
-            Warn("[SCENE - LOADING] No Application Data pointer was provided for scene '", m_name, "'");
-        }
-
-        m_appData = _appData;
         m_sceneStarted = false;
         return Init();
     }
