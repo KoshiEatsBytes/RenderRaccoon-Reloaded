@@ -3,6 +3,7 @@
 #include "Game.h"
 
 #include "Benchmark.h"
+#include "MultiPitBenchmark.h"
 #include "../Engine/Source/Helpers/GLTFLib.hpp"
 #include "TestObject.h"
 #include "GLFW/glfw3.h"

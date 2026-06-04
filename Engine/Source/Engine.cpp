@@ -131,7 +131,7 @@ namespace RR
         // Enable physics library multithreading
         m_btScheduler = btCreateDefaultTaskScheduler();
         btSetTaskScheduler(m_btScheduler);
-        m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
+        m_btScheduler->setNumThreads(8);//static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
         Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
 
         if (glewInit() != GLEW_OK)

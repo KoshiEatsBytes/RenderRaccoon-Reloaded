@@ -18,6 +18,8 @@ set(PROJECT_SOURCE_FILES
         Source/TestSubSystem.h
         Source/Benchmark.cpp
         Source/Benchmark.h
+        Source/MultiPitBenchmark.cpp
+        Source/MultiPitBenchmark.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
