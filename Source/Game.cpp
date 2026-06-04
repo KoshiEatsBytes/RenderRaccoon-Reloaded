@@ -2,6 +2,7 @@
 
 #include "Game.h"
 
+#include "Benchmark.h"
 #include "../Engine/Source/Helpers/GLTFLib.hpp"
 #include "TestObject.h"
 #include "GLFW/glfw3.h"
@@ -91,6 +92,9 @@ void Game::Update(float _deltaTime)
     {
         RR::Engine::GetInstance().SetShouldClose(true);
     }
+
+    if (input.IsKeyPressed(GLFW_KEY_2))
+        RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<Benchmark>();
 }
 
 void Game::LateUpdate(float _deltaTime)

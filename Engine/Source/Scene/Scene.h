@@ -101,6 +101,7 @@ namespace RR
             // If scene has started defer init and parenting
             if (m_sceneStarted)
             {
+                obj->m_scene = this;
                 EnqueueSpawn(obj, _parent);
                 return obj;
             }
