@@ -429,7 +429,7 @@ namespace RR
             if (!ancestorQueued) roots.push_back(obj);
         }
 
-        // Erase only roots. They're mutually non-ancestral, so erasing one never frees another.
+        // Erase only roots
         for (GameObject* obj : roots)
         {
             if (obj == m_mainCamera) m_mainCamera = nullptr;

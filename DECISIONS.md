@@ -1,8 +1,8 @@
 # RenderRaccoon-Reloaded — Architecture Decisions
 
 A living record of the engine's key design decisions: *what* was chosen, *why*, and the
-gotchas/limitations attached to each. Intended as a reference for future work and for the
-dissertation. The code is the source of truth; this captures the reasoning the code can't.
+gotchas/limitations attached to each. Intended as a reference for future work. 
+The code is the source of truth; this captures the reasoning the code can't.
 
 ---
 

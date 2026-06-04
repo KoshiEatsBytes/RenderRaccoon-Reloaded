@@ -32,7 +32,7 @@ set(PROJECT_SOURCE_FILES
         Source/Helpers/Common.h
         Source/Helpers/Printer.hpp
         Source/Helpers/GLTFLib.hpp
-        Source/Helpers/Implementations.cpp
+        Source/Helpers/Implementations/Implementations.cpp
         Source/Helpers/ApplicationData.h
         Source/Input/InputManager.cpp
         Source/Input/InputManager.h
@@ -131,6 +131,27 @@ foreach(BT_TARGET LinearMath BulletCollision BulletDynamics)
     target_link_libraries(${BT_TARGET} PUBLIC OpenMP::OpenMP_CXX)
 endforeach()
 
+# Include mini-audio library
+add_library(miniaudio STATIC "${CMAKE_CURRENT_SOURCE_DIR}/Source/Helpers/Implementations/miniaudio_impl.c")
+
+target_include_directories(miniaudio PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/miniaudio")
+
+if (WIN32)
+    target_link_libraries(miniaudio PUBLIC winmm ole32)
+elseif (UNIX AND NOT APPLE)
+    target_link_libraries(miniaudio PUBLIC dl pthread m)
+elseif(APPLE)
+    find_library(COREAUDIO_FRAMEWORK CoreAudio)
+    find_library(AUDIOTOOLBOX_FRAMEWORK AudioToolbox)
+    find_library(AUDIOUNIT_FRAMEWORK AudioUnit)
+    find_library(COREFOUNDATION_FRAMEWORK CoreFoundation)
+    target_link_libraries(miniaudio PUBLIC
+            ${COREAUDIO_FRAMEWORK}
+            ${AUDIOUNIT_FRAMEWORK}
+            ${AUDIOTOOLBOX_FRAMEWORK}
+            ${COREFOUNDATION_FRAMEWORK}
+    )
+endif()
 
 # link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -140,6 +161,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         BulletDynamics
         BulletCollision
         LinearMath
+        miniaudio
 )
 
 # Copies assets over at build
