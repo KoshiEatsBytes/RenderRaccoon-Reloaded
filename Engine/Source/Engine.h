@@ -13,6 +13,7 @@
 // fw dc to allow window to be available
 // as part of the singleton
 struct GLFWwindow;
+class btITaskScheduler;
 
 namespace RR
 {
@@ -68,6 +69,7 @@ namespace RR
 
         bool m_shouldClose = false;
         GLFWwindow* m_window = nullptr;
+        btITaskScheduler* m_btScheduler = nullptr;
 
         ApplicationManager m_appManager;
         InputManager m_inputManager;

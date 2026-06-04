@@ -3,13 +3,13 @@
 #include <functional>
 #include <memory>
 
-// bullet library fw dec
-class btBroadphaseInterface;
-class btDefaultCollisionConfiguration;
-class btCollisionDispatcher;
-class btSequentialImpulseConstraintSolver;
-class btDiscreteDynamicsWorld;
 class btGhostPairCallback;
+class btDbvtBroadphase;
+class btDefaultCollisionConfiguration;
+class btCollisionDispatcherMt;
+class btConstraintSolverPoolMt;
+class btSequentialImpulseConstraintSolverMt;
+class btDiscreteDynamicsWorldMt;
 
 namespace RR
 {
@@ -45,7 +45,7 @@ namespace RR
         void UnregisterPreStepCallback(CallbackHandle _handle);
         void UnregisterPostStepCallback(CallbackHandle _handle);
 
-        btDiscreteDynamicsWorld* GetWorld() const;
+        btDiscreteDynamicsWorldMt* GetWorld() const;
         float GetInterpolationAlpha() const;
 
         // Constant time step
@@ -53,11 +53,14 @@ namespace RR
 
     private:
         std::unique_ptr<btGhostPairCallback> m_ghostPairCallback;
-        std::unique_ptr<btBroadphaseInterface> m_broadphase;
+
+        // bt physics world config
+        std::unique_ptr<btDbvtBroadphase> m_broadphase;
         std::unique_ptr<btDefaultCollisionConfiguration> m_collisionConfig;
-        std::unique_ptr<btCollisionDispatcher> m_dispatcher;
-        std::unique_ptr<btSequentialImpulseConstraintSolver> m_solver;
-        std::unique_ptr<btDiscreteDynamicsWorld> m_world;
+        std::unique_ptr<btCollisionDispatcherMt> m_dispatcher;
+        std::unique_ptr<btConstraintSolverPoolMt> m_solverPool;
+        std::unique_ptr<btSequentialImpulseConstraintSolverMt> m_solverMT;
+        std::unique_ptr<btDiscreteDynamicsWorldMt> m_world;
 
         // Interpolation data for position at inconsistent framerate
         float m_accumulator = 0.0f;

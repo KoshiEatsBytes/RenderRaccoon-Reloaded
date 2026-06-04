@@ -9,7 +9,7 @@ bool Benchmark::Init()
 {
     m_material = RR::Material::Load("Materials/Brick.json");
     m_boxMesh  = RR::Mesh::CreateBox(vec3(1.0f));
-    
+
     auto camera = CreateObject("Camera");
     camera->AddComponent(new RR::CameraComponent());
     camera->SetPosition(vec3(0.0f, 36.0f, 30.0f));

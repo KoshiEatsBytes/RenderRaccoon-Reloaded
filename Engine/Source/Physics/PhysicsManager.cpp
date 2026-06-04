@@ -1,10 +1,14 @@
 
-#include <btBulletDynamicsCommon.h>
-#include <btBulletCollisionCommon.h>
+#include <BulletCollision/CollisionDispatch/btCollisionDispatcherMt.h>
+#include <BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h>
+#include <BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolverMt.h>
+#include <BulletDynamics/ConstraintSolver/btConstraintSolver.h>
+#include <LinearMath/btThreads.h>
 
 #include "PhysicsManager.h"
-
 #include "RigidBody.h"
+#include "BulletCollision/BroadphaseCollision/btDbvtBroadphase.h"
+#include "BulletCollision/CollisionDispatch/btDefaultCollisionConfiguration.h"
 #include "BulletCollision/CollisionDispatch/btGhostObject.h"
 #include "Helpers/Printer.hpp"
 
@@ -23,19 +27,20 @@ namespace RR
         // Init bullet components
         m_broadphase        = std::make_unique<btDbvtBroadphase>();
         m_collisionConfig   = std::make_unique<btDefaultCollisionConfiguration>();
-        m_dispatcher        = std::make_unique<btCollisionDispatcher>(m_collisionConfig.get());
-        m_solver            = std::make_unique<btSequentialImpulseConstraintSolver>();
+        m_dispatcher        = std::make_unique<btCollisionDispatcherMt>(m_collisionConfig.get());
+        m_solverPool        = std::make_unique<btConstraintSolverPoolMt>(BT_MAX_THREAD_COUNT);
+        m_solverMT          = std::make_unique<btSequentialImpulseConstraintSolverMt>();
 
         // Silences warning for non dynamic-dynamic collisions
-        m_dispatcher->setDispatcherFlags(
-            m_dispatcher->getDispatcherFlags()
+        m_dispatcher->setDispatcherFlags(m_dispatcher->getDispatcherFlags()
             | btCollisionDispatcher::CD_STATIC_STATIC_REPORTED);
 
         // Create collision world with bullet components
-        m_world = std::make_unique<btDiscreteDynamicsWorld>(
+        m_world = std::make_unique<btDiscreteDynamicsWorldMt>(
             m_dispatcher.get(),
             m_broadphase.get(),
-            m_solver.get(),
+            m_solverPool.get(),
+            m_solverMT.get(),
             m_collisionConfig.get()
             );
 
@@ -165,7 +170,7 @@ namespace RR
         }
     }
 
-    btDiscreteDynamicsWorld* PhysicsManager::GetWorld() const
+    btDiscreteDynamicsWorldMt* PhysicsManager::GetWorld() const
     {
         return m_world.get();
     }

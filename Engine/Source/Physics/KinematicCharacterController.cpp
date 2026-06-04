@@ -6,6 +6,7 @@
 #include "KinematicCharacterController.h"
 #include "BtConv.hpp"
 #include "PhysicsManager.h"
+#include "BulletDynamics/Dynamics/btDiscreteDynamicsWorldMt.h"
 
 
 namespace RR

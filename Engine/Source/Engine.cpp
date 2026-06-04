@@ -1,6 +1,7 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <LinearMath/btThreads.h>
 
 #include "Engine.h"
 #include "ApplicationManager.h"
@@ -17,7 +18,12 @@ namespace RR
     = default;
 
     Engine::~Engine()
-    = default;
+    {
+        if (m_btScheduler != nullptr)
+        {
+            delete m_btScheduler;
+        }
+    }
 
     /**
      * @brief Updates input manager with keyboard inputs
@@ -121,6 +127,12 @@ namespace RR
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glfwMakeContextCurrent(m_window);
+
+        // Enable physics library multithreading
+        m_btScheduler = btCreateDefaultTaskScheduler();
+        btSetTaskScheduler(m_btScheduler);
+        m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
+        Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
 
         if (glewInit() != GLEW_OK)
         {

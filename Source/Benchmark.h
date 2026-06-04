@@ -25,5 +25,5 @@ private:
     float m_fpsTimer   = 0.0f;
     int   m_frameCount = 0;
     int   m_boxCount   = 0;
-    static constexpr int kMaxBoxes = 500;
+    static constexpr int kMaxBoxes = 1000;
 };
