@@ -21,6 +21,5 @@ namespace RR
 
     private:
         vec3 m_color = vec3(1.0f); // default white
-
     };
 }

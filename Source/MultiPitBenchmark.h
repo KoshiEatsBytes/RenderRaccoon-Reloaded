@@ -29,8 +29,7 @@ private:
     int   m_frameCount = 0;
     int   m_boxCount   = 0;
 
-    // === THE KNOB: rebuild with 1, 2, 3, 4… and compare ===
-    static constexpr int   kPitsPerSide = 4;     // 1 = single pile (control), 2 = 4 pits, 3 = 9, 4 = 16
-    static constexpr int   kTotalBoxes  = 1000;  // held constant across all runs
+    static constexpr int   kPitsPerSide = 4;
+    static constexpr int   kTotalBoxes  = 1000;
     static constexpr float kWallHeight  = 8.0f;
 };

@@ -10,6 +10,9 @@ namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
+    MeshComponent::MeshComponent()
+    = default;
+
     MeshComponent::MeshComponent(const std::shared_ptr<Material>& _material, const std::shared_ptr<Mesh>& _mesh)
         : m_material(_material), m_mesh(_mesh)
     {
@@ -34,5 +37,17 @@ namespace RR
         command.modelMatrix = GetOwner()->GetWorldTransform();
         
         Engine::GetInstance().GetRenderQueue().Submit(command);
+    }
+
+    // Get/Sets --------------------------------------------------------------------------------------------------------
+
+    void MeshComponent::SetMaterial(const std::shared_ptr<Material>& _material)
+    {
+        m_material = _material;
+    }
+
+    void MeshComponent::SetMesh(const std::shared_ptr<Mesh>& _mesh)
+    {
+        m_mesh = _mesh;
     }
 }

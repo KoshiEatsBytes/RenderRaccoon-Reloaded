@@ -13,6 +13,11 @@ namespace RR
     PlayerControllerComponent::PlayerControllerComponent()
     = default;
 
+    PlayerControllerComponent::PlayerControllerComponent(const float _capsuleHeight, const float _capsuleRadius)
+        : m_capsuleHeight(_capsuleHeight), m_capsuleRadius(_capsuleRadius)
+    {
+    }
+
     PlayerControllerComponent::~PlayerControllerComponent()
     {
         if (m_owner) m_owner->m_physicsOwnership = PhysicsOwnership::NONE;
@@ -114,6 +119,11 @@ namespace RR
         m_sensitivity = _sens;
     }
 
+    void PlayerControllerComponent::SetJumpTrajectory(const vec3& _trajectory)
+    {
+        m_jumpTrajectory = _trajectory;
+    }
+
     float PlayerControllerComponent::GetMoveSpeed() const
     {
         return m_moveSpeed;
@@ -122,6 +132,11 @@ namespace RR
     float PlayerControllerComponent::GetMouseSensitivity() const
     {
         return m_sensitivity;
+    }
+
+    vec3 PlayerControllerComponent::GetJumpTrajectory() const
+    {
+        return m_jumpTrajectory;
     }
 
     // PROTECTED -------------------------------------------------------------------------------------------------------

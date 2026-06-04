@@ -14,14 +14,15 @@ namespace RR
     public:
         COMPONENT(ColliderComponent)
 
+        ColliderComponent();
         ColliderComponent(const std::shared_ptr<Collider>& _col);
         ~ColliderComponent() override;
 
         void Init() override;
         void Update(float _deltaTime) override;
 
-        Collider* GetCollider() const;
-        std::shared_ptr<Collider> GetColliderShared() const;
+        void SetCollider(const std::shared_ptr<Collider>& _col);
+        std::shared_ptr<Collider> GetCollider() const;
 
     private:
         std::shared_ptr<Collider> m_collider;

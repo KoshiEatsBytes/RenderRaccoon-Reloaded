@@ -2,6 +2,7 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <vector>
 
 class btGhostPairCallback;
 class btDbvtBroadphase;
@@ -24,7 +25,6 @@ namespace RR
         using StepCallBack   = std::function<void()>;
         using CallbackHandle = std::size_t;
         static constexpr CallbackHandle InvalidCallbackHandle = 0;
-        friend class Scene;
 
         // Delete copy
         PhysicsManager(const PhysicsManager&) = delete;

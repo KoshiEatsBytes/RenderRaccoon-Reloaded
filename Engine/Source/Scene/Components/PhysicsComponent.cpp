@@ -16,6 +16,9 @@ namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
+    PhysicsComponent::PhysicsComponent()
+    = default;
+
     PhysicsComponent::PhysicsComponent(BodyType _type, float _mass, float _friction)
         : m_type(_type), m_mass(_mass), m_friction(_friction)
     {
@@ -276,6 +279,47 @@ namespace RR
         return BtConv::FromBt(m_rigidBody->GetBody()->getAngularVelocity());
     }
 
+    void PhysicsComponent::SetParameters(BodyType _type, float _mass, float _friction)
+    {
+        m_type = _type;
+        m_mass = _mass;
+        m_friction = _friction;
+        Rebuild();
+    }
+
+    void PhysicsComponent::SetType(BodyType _type)
+    {
+        m_type = _type;
+        Rebuild();
+    }
+
+    void PhysicsComponent::SetMass(float _mass)
+    {
+        m_mass = _mass;
+        Rebuild();
+    }
+
+    void PhysicsComponent::SetFriction(float _friction)
+    {
+        m_friction = _friction;
+        Rebuild();
+    }
+
+    BodyType PhysicsComponent::GetType() const
+    {
+        return m_type;
+    }
+
+    float PhysicsComponent::GetMass() const
+    {
+        return m_mass;
+    }
+
+    float PhysicsComponent::GetFriction() const
+    {
+        return m_friction;
+    }
+
     // PROTECTED -------------------------------------------------------------------------------------------------------
 
     void PhysicsComponent::OnEnable()
@@ -308,7 +352,7 @@ namespace RR
                     auto shape = cc->GetCollider()->GetShape();
                     shape->setLocalScaling(BtConv::ToBt(scale));
                     _compound.addChildShape(BtConv::ToBtTransform(pos, rot), shape);
-                    colliders.push_back(cc->GetColliderShared());
+                    colliders.push_back(cc->GetCollider());
                 }
             }
             else

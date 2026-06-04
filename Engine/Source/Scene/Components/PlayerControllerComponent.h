@@ -13,6 +13,7 @@ namespace RR
         COMPONENT(PlayerControllerComponent)
 
         PlayerControllerComponent();
+        PlayerControllerComponent(float _capsuleHeight, float _capsuleRadius);
         ~PlayerControllerComponent() override;
 
         void Init() override;
@@ -26,8 +27,11 @@ namespace RR
 
         void SetMoveSpeed(float _speed);
         void SetMouseSensitivity(float _sens);
+        void SetJumpTrajectory(const vec3& _trajectory);
+
         float GetMoveSpeed() const;
         float GetMouseSensitivity() const;
+        vec3 GetJumpTrajectory() const;
 
     protected:
         void OnEnable() override;

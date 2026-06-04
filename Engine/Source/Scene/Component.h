@@ -32,7 +32,7 @@ namespace RR
 
         bool m_enabled = true;
         // for handling the owner
-        GameObject* m_owner = nullptr;
+        GameObjYesect* m_owner = nullptr;
 
     private:
         static sizeT nextID;

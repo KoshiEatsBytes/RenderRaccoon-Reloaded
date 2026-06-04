@@ -7,7 +7,6 @@
 #include "ApplicationManager.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
-#include "Physics/PhysicsManager.h"
 #include "Scene/Components/CameraComponent.h"
 
 namespace RR

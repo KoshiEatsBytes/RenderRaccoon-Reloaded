@@ -19,6 +19,15 @@ namespace RR
         mat4 GetViewMatrix() const;
         mat4 GetProjectionMatrix(float _aspect) const;
 
+        void SetParameters(float _fov, float _nearPlane, float _farPlane);
+        void SetFOV(float _fov);
+        void SetNearPlane(float _nearPlane);
+        void SetFarPlane(float _farPlane);
+
+        float GetFov() const;
+        float GetNearPlane() const;
+        float GetFarPlane() const;
+
     private:
         float m_fov = 60.0f;
         float m_nearPlane = 0.1f;

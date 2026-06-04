@@ -23,6 +23,8 @@ namespace RR
     {
     }
 
+    // Get/Sets --------------------------------------------------------------------------------------------------------
+
     mat4 CameraComponent::GetViewMatrix() const
     {
         mat4 mat = mat4(1.0f);
@@ -44,5 +46,42 @@ namespace RR
     {
         // calculate projection matrix
         return glm::perspective(glm::radians(m_fov), _aspect, m_nearPlane, m_farPlane);
+    }
+
+    void CameraComponent::SetParameters(const float _fov, const float _nearPlane, const float _farPlane)
+    {
+        m_fov = _fov;
+        m_nearPlane = _nearPlane;
+        m_farPlane = _farPlane;
+    }
+
+    void CameraComponent::SetFOV(float _fov)
+    {
+        m_fov = _fov;
+    }
+
+    void CameraComponent::SetNearPlane(float _nearPlane)
+    {
+        m_nearPlane = _nearPlane;
+    }
+
+    void CameraComponent::SetFarPlane(float _farPlane)
+    {
+        m_farPlane = _farPlane;
+    }
+
+    float CameraComponent::GetFov() const
+    {
+        return m_fov;
+    }
+
+    float CameraComponent::GetNearPlane() const
+    {
+        return m_nearPlane;
+    }
+
+    float CameraComponent::GetFarPlane() const
+    {
+        return m_farPlane;
     }
 }

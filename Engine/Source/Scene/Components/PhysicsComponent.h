@@ -12,7 +12,8 @@ namespace RR
     public:
         COMPONENT(PhysicsComponent)
 
-        PhysicsComponent(BodyType _type, float _mass = 1.0f, float _friction = 0.5f);
+        PhysicsComponent();
+        PhysicsComponent(BodyType _type, float _mass = 0.0f, float _friction = 0.5f);
         ~PhysicsComponent() override;
 
         void Init() override;
@@ -40,6 +41,15 @@ namespace RR
 
         void SetAngularVelocity(const vec3& _vec);
         vec3 GetAngularVelocity() const;
+
+        void SetParameters(BodyType _type, float _mass, float _friction);
+        void SetType(BodyType _type);
+        void SetMass(float _mass);
+        void SetFriction(float _friction);
+
+        BodyType GetType() const;
+        float GetMass() const;
+        float GetFriction() const;
 
     protected:
         void OnEnable() override;
