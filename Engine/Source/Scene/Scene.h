@@ -8,6 +8,7 @@
 #include "Helpers/Common.h"
 #include "GameObject.h"
 
+
 namespace RR
 {
     /**
@@ -19,6 +20,7 @@ namespace RR
         GameObject* parent = nullptr;
     };
 
+    class PhysicsManager;
     class ApplicationData;
     class Scene
     {
@@ -41,6 +43,7 @@ namespace RR
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
         GameObject* GetMainCamera() const;
+        PhysicsManager* GetPhysicsManager() const;
         std::vector<LightData> GetLights() const;
 
     protected:
@@ -59,6 +62,7 @@ namespace RR
         void PreUpdateInternal(float _deltaTime);
         void UpdateInternal(float _deltaTime);
         void LateUpdateInternal(float _deltaTime);
+        void UpdatePhysicsInternal(float _deltaTime) const;
 
         void FlushPendingChanges();
         void ProcessDestroyQueue();
@@ -69,6 +73,7 @@ namespace RR
 
         static void CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out);
 
+        std::unique_ptr<PhysicsManager> m_physicsManager;
         std::vector<std::unique_ptr<GameObject>> m_objects;
         GameObject* m_mainCamera = nullptr;
 

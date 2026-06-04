@@ -7,6 +7,7 @@
 #include "Engine.h"
 #include "Components/LightComponent.h"
 #include "Helpers/Printer.hpp"
+#include "Physics/PhysicsManager.h"
 
 namespace RR
 {
@@ -319,6 +320,11 @@ namespace RR
         return m_mainCamera;
     }
 
+    PhysicsManager* Scene::GetPhysicsManager() const
+    {
+        return m_physicsManager.get();
+    }
+
     /**
      * @brief Iterates through all objects, recursively check if they have a light component
      *        if so, grab its color and world position
@@ -370,6 +376,11 @@ namespace RR
 
         LateUpdate(_deltaTime);
         FlushPendingChanges();
+    }
+
+    void Scene::UpdatePhysicsInternal(float _deltaTime) const
+    {
+        if (m_physicsManager) m_physicsManager->Update(_deltaTime);
     }
 
     void Scene::CollectLightsRecursive(GameObject* _obj, std::vector<LightData>& _out)
@@ -454,6 +465,14 @@ namespace RR
 
     bool Scene::OnLoad()
     {
+        m_physicsManager = std::make_unique<PhysicsManager>();
+
+        if (!m_physicsManager->Init())
+        {
+            Error("[PHYSICS - INITIALIZATION] Failed to initialize RR Physics Engine");
+            return false;
+        }
+
         m_sceneStarted = false;
         return Init();
     }

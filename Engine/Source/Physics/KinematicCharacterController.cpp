@@ -4,24 +4,22 @@
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 #include "KinematicCharacterController.h"
-
 #include "BtConv.hpp"
-#include "Engine.h"
+#include "PhysicsManager.h"
 
 
 namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    KinematicCharacterController::KinematicCharacterController(float _radius, float _height)
-        : m_height(_height), m_radius(_radius)
+    KinematicCharacterController::KinematicCharacterController(PhysicsManager& _pm, float _radius, float _height)
+        : m_physicsManager(_pm), m_height(_height), m_radius(_radius)
     {
         BuildGhostAndController(vec3(0.0f));
 
         // Register this controller for stepCallBacks
-        auto& pm = Engine::GetInstance().GetPhysicsManager();
-        pm.RegisterPreStepCallback([this](){ RecordPositionBeforeStep(); });
-        pm.RegisterPostStepCallback([this](){ RecordPositionAfterStep(); });
+        m_physicsManager.RegisterPreStepCallback([this](){ RecordPositionBeforeStep(); });
+        m_physicsManager.RegisterPostStepCallback([this](){ RecordPositionAfterStep(); });
     }
 
     KinematicCharacterController::~KinematicCharacterController()
@@ -75,7 +73,7 @@ namespace RR
         if (m_inWorld) return;
         if (!m_ghost || !m_controller) return;
 
-        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
+        auto world = m_physicsManager.GetWorld();
 
         world->addCollisionObject(m_ghost.get(),
             btBroadphaseProxy::CharacterFilter,
@@ -89,7 +87,7 @@ namespace RR
     {
         if (!m_inWorld) return;
 
-        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
+        auto world = m_physicsManager.GetWorld();
 
         if (m_controller)
         {
@@ -141,7 +139,7 @@ namespace RR
 
     void KinematicCharacterController::BuildGhostAndController(const vec3& _startPos)
     {
-        auto world = Engine::GetInstance().GetPhysicsManager().GetWorld();
+        auto world = m_physicsManager.GetWorld();
 
         // frees pointer if not already free
         m_controller.reset();

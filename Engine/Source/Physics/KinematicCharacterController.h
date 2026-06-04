@@ -4,6 +4,7 @@
 
 #include "Helpers/Types.h"
 
+
 class btPairCachingGhostObject;
 class btKinematicCharacterController;
 class btCapsuleShape;
@@ -11,10 +12,11 @@ class btGhostPairCallback;
 
 namespace RR
 {
+    class PhysicsManager;
     class KinematicCharacterController
     {
     public:
-        KinematicCharacterController(float _radius, float _height);
+        KinematicCharacterController(PhysicsManager& _pm, float _radius, float _height);
         ~KinematicCharacterController();
 
         void SetWalkVelocity(const vec3& _velocity) const;
@@ -35,6 +37,7 @@ namespace RR
     private:
         void BuildGhostAndController(const vec3& _startPos);
 
+        PhysicsManager& m_physicsManager;
         std::unique_ptr<btCapsuleShape> m_capsule;
         std::unique_ptr<btPairCachingGhostObject> m_ghost;
         std::unique_ptr<btKinematicCharacterController> m_controller;

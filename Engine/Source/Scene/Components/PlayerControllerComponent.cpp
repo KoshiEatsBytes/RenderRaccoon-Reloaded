@@ -4,6 +4,7 @@
 #include "Engine.h"
 #include "GLFW/glfw3.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include "Physics/PhysicsManager.h"
 
 namespace RR
 {
@@ -21,7 +22,8 @@ namespace RR
     {
         Component::Init();
 
-        m_kinematicController = std::make_unique<KinematicCharacterController>(m_capsuleRadius, m_capsuleHeight);
+        m_kinematicController = std::make_unique<KinematicCharacterController>(
+            *m_owner->m_scene->GetPhysicsManager(), m_capsuleRadius, m_capsuleHeight);
 
         // Inherits from the GO just at start
         m_kinematicController->SetPosition(m_owner->GetWorldPosition());
@@ -75,7 +77,7 @@ namespace RR
     void PlayerControllerComponent::Update(float _deltaTime)
     {
         vec3 eyeOffset(0.0f, m_capsuleHeight * 0.5f + m_capsuleRadius * 0.5f, 0.0f);
-        float alpha = Engine::GetInstance().GetPhysicsManager().GetInterpolationAlpha();
+        float alpha = m_owner->m_scene->GetPhysicsManager()->GetInterpolationAlpha();
         vec3 smoothPos = m_kinematicController->GetInterpolatedPosition(alpha);
         m_owner->SetWorldPositionInternal(smoothPos + eyeOffset);
     }

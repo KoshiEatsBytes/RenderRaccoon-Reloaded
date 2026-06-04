@@ -8,7 +8,6 @@
 #include "Graphics/Texture.h"
 #include "Render/RenderQueue.h"
 #include "FileSystem/FileSystem.h"
-#include "Physics/PhysicsManager.h"
 #include "Helpers/ApplicationData.h"
 
 // fw dc to allow window to be available
@@ -55,13 +54,13 @@ namespace RR
         bool GetShouldClose() const;
 
         Scene* GetScene() const;
+        //PhysicsManager* GetPhysicsManager() const;
         ApplicationManager& GetAppManager();
         InputManager& GetInputManager();
         GraphicsAPI& GetGraphicsAPI();
         RenderQueue& GetRenderQueue();
         FileSystem& GetFileSystem();
         TextureManager& GetTextureManager();
-        PhysicsManager& GetPhysicsManager();
         ApplicationData& GetAppData();
 
     private:
@@ -76,7 +75,6 @@ namespace RR
         RenderQueue m_renderQueue;
         FileSystem m_fileSystem;
         TextureManager m_textureManager;
-        PhysicsManager m_physicsManager;
         ApplicationData m_appData;
     };
 }

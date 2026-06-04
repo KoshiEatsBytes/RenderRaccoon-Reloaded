@@ -33,7 +33,7 @@ namespace RR
         void Rebuild();
 
         int GetExecutionOrder() const override;
-        std::shared_ptr<RigidBody> GetRigidBody() const;
+        std::weak_ptr<RigidBody> GetRigidBody() const;
 
         void SetLinearVelocity(const vec3& _vec);
         vec3 GetLinearVelocity() const;

@@ -6,6 +6,7 @@
 #include "ApplicationManager.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
+#include "Physics/PhysicsManager.h"
 #include "Scene/Components/CameraComponent.h"
 
 namespace RR
@@ -135,13 +136,6 @@ namespace RR
             return false;
         }
 
-        if (!m_physicsManager.Init())
-        {
-            Error("[INITIALIZATION] Failed to initialize RR Physics Engine");
-            glfwTerminate();
-            return false;
-        }
-
         if (!m_appManager.Init())
         {
             Error("[INITIALIZATION] Failed to initialize RR Application Manager");
@@ -172,11 +166,9 @@ namespace RR
             float deltaTime = std::chrono::duration<float>(now - m_lastTimePoint).count();
             m_lastTimePoint = now;
 
-            // Pre update before physics simulation
             m_appManager.PreUpdate(deltaTime);
-
-            // Run physic simulation
-            m_physicsManager.Update(deltaTime);
+            // Physics step
+            m_appManager.PhysicsUpdate(deltaTime);
 
             m_appManager.Update(deltaTime);
 
@@ -245,6 +237,12 @@ namespace RR
         return m_appManager.GetActiveScene();
     }
 
+    // Re-Enable if needed in the future
+    // PhysicsManager* Engine::GetPhysicsManager() const
+    // {
+    //     return m_appManager.GetActiveScene()->GetPhysicsManager();
+    // }
+
     ApplicationManager& Engine::GetAppManager()
     {
         return m_appManager;
@@ -273,11 +271,6 @@ namespace RR
     TextureManager & Engine::GetTextureManager()
     {
         return m_textureManager;
-    }
-
-    PhysicsManager& Engine::GetPhysicsManager()
-    {
-        return m_physicsManager;
     }
 
     ApplicationData& Engine::GetAppData()

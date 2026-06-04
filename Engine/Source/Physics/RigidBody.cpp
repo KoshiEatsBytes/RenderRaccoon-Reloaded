@@ -5,6 +5,7 @@
 #include "RigidBody.h"
 
 #include "Engine.h"
+#include "PhysicsManager.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Components/ColliderComponent.h"
 #include "Scene/Components/PhysicsComponent.h"
@@ -13,11 +14,11 @@ namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    RigidBody::RigidBody(
+    RigidBody::RigidBody(PhysicsManager& _pm,
         std::unique_ptr<btCompoundShape> _compound,
         std::vector<std::shared_ptr<Collider>> _colliders,
         BodyType _type, float _mass, float _friction)
-            : m_type(_type), m_mass(_mass), m_friction(_friction),
+            : m_physicsManager(_pm), m_type(_type), m_mass(_mass), m_friction(_friction),
               m_colliders(std::move(_colliders)), m_compound(std::move(_compound))
     {
         if (!m_compound || m_compound->getNumChildShapes() == 0)
@@ -79,7 +80,7 @@ namespace RR
     {
         if (m_addedToWorld)
         {
-            Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(this);
+            m_physicsManager.RemoveRigidBody(this);
         }
 
         m_body.reset();

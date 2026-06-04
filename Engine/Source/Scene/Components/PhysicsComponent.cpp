@@ -8,6 +8,7 @@
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 #include "Helpers/Printer.hpp"
 #include "Physics/BtConv.hpp"
+#include "Physics/PhysicsManager.h"
 #include "Scene/GameObject.h"
 #include "Physics/RigidBody.h"
 
@@ -68,6 +69,7 @@ namespace RR
 
         // Build rigidbody with the compound
         m_rigidBody = std::make_shared<RigidBody>(
+            *m_owner->m_scene->GetPhysicsManager(),
             std::move(compound),
             std::move(colliders),
             m_type,
@@ -79,7 +81,7 @@ namespace RR
         // Push world pos into body
         m_rigidBody->SetPosition(m_owner->GetWorldPosition());
         m_rigidBody->SetRotation(m_owner->GetWorldRotation());
-        Engine::GetInstance().GetPhysicsManager().AddRigidbody(m_rigidBody.get());
+        m_owner->m_scene->GetPhysicsManager()->AddRigidbody(m_rigidBody.get());
 
         if (m_rigidBody && m_rigidBody->GetBody())
         {
@@ -220,7 +222,7 @@ namespace RR
 
         if (m_rigidBody && m_rigidBody->IsAddedToWorld())
         {
-            Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(m_rigidBody.get());
+            m_owner->m_scene->GetPhysicsManager()->RemoveRigidBody(m_rigidBody.get());
         }
         m_rigidBody.reset();
 
@@ -233,7 +235,7 @@ namespace RR
         return -100;
     }
 
-    std::shared_ptr<RigidBody> PhysicsComponent::GetRigidBody() const
+    std::weak_ptr<RigidBody> PhysicsComponent::GetRigidBody() const
     {
         return m_rigidBody;
     }
@@ -278,12 +280,12 @@ namespace RR
 
     void PhysicsComponent::OnEnable()
     {
-        if (m_rigidBody) Engine::GetInstance().GetPhysicsManager().AddRigidbody(m_rigidBody.get());
+        if (m_rigidBody) m_owner->m_scene->GetPhysicsManager()->AddRigidbody(m_rigidBody.get());
     }
 
     void PhysicsComponent::OnDisable()
     {
-        if (m_rigidBody) Engine::GetInstance().GetPhysicsManager().RemoveRigidBody(m_rigidBody.get());
+        if (m_rigidBody) m_owner->m_scene->GetPhysicsManager()->RemoveRigidBody(m_rigidBody.get());
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

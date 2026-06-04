@@ -1,6 +1,7 @@
 
 #include "ApplicationManager.h"
 #include "ISubSystem.h"
+#include "Physics/PhysicsManager.h"
 
 
 namespace RR
@@ -74,8 +75,16 @@ namespace RR
         if (m_activeScene) m_activeScene->PreUpdateInternal(_deltaTime);
     }
 
+    void ApplicationManager::PhysicsUpdate(float _deltaTime) const
+    {
+        if (m_activeScene) m_activeScene->UpdatePhysicsInternal(_deltaTime);
+    }
+
     void ApplicationManager::Update(float _deltaTime) const
     {
+        // Update physics BEFORE update
+        if (m_activeScene) m_activeScene->UpdatePhysicsInternal(_deltaTime);
+
         for (auto& subSystem : m_subSystems)
         {
             subSystem->Update(_deltaTime);

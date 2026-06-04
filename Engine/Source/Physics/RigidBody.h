@@ -12,6 +12,7 @@ struct btDefaultMotionState;
 
 namespace RR
 {
+    class PhysicsManager;
     class GameObject;
     /**
      * Three main rigidbody behaviors
@@ -30,7 +31,7 @@ namespace RR
     class RigidBody
     {
     public:
-        RigidBody(
+        RigidBody(PhysicsManager& _pm,
             std::unique_ptr<btCompoundShape> _compound,
             std::vector<std::shared_ptr<Collider>> _colliders,
             BodyType _type, float _mass, float _friction);
@@ -54,6 +55,7 @@ namespace RR
         quat GetRotation() const;
 
     private:
+        PhysicsManager& m_physicsManager;
         BodyType m_type = BodyType::STATIC;
         bool m_addedToWorld = false;
         float m_mass = 0.0f;

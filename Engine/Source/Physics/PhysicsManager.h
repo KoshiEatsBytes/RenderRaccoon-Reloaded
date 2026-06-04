@@ -13,16 +13,18 @@ class btGhostPairCallback;
 
 namespace RR
 {
+    class Scene;
     class RigidBody;
-
     class PhysicsManager
     {
+    // TO REMOVE!!!!
+    public:
         PhysicsManager();
         ~PhysicsManager();
 
     public:
         using StepCallBack = std::function<void()>;
-        friend class Engine;
+        friend class Scene;
 
         // Delete copy
         PhysicsManager(const PhysicsManager&) = delete;
