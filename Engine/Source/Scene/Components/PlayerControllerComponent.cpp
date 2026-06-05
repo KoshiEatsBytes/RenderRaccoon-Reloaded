@@ -70,8 +70,18 @@ namespace RR
         if (input.IsKeyPressed(GLFW_KEY_W)) move += forward;
         if (input.IsKeyPressed(GLFW_KEY_S)) move -= forward;
 
-        if (input.IsKeyPressed(GLFW_KEY_SPACE))
-            m_kinematicController->Jump(m_jumpTrajectory);
+        if (input.IsKeyPressed(GLFW_KEY_SPACE) && !m_midJump)
+        {
+            if (m_kinematicController->IsOnGround())
+            {
+                m_kinematicController->Jump(m_jumpTrajectory);
+                m_midJump = true;
+            }
+        }
+        else
+        {
+            m_midJump = false;
+        }
 
         if (glm::dot(move, move) > 0.0f)
             move = glm::normalize(move);
@@ -131,6 +141,11 @@ namespace RR
             return m_kinematicController->IsOnGround();
         }
         return false;
+    }
+
+    bool PlayerControllerComponent::IsMidJump() const
+    {
+        return m_midJump;
     }
 
     float PlayerControllerComponent::GetMoveSpeed() const

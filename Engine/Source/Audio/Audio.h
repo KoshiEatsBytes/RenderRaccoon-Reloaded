@@ -11,15 +11,15 @@ namespace RR
         Audio();
         ~Audio();
 
-        void Play(bool _loop = false) const;
-        void Stop() const;
+        void Play(bool _loop = false);
+        void Stop();
 
         bool IsPlaying() const;
 
-        void SetVolume(float _volume) const;
+        void SetVolume(float _volume);
         float GetVolume() const;
 
-        void SetPosition(const vec3& _pos) const;
+        void SetPosition(const vec3& _pos);
         vec3 GetPosition() const;
 
         bool IsSpatial() const;

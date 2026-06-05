@@ -30,6 +30,7 @@ namespace RR
         void SetJumpTrajectory(const vec3& _trajectory);
 
         bool IsOnGround() const;
+        bool IsMidJump() const;
         float GetMoveSpeed() const;
         float GetMouseSensitivity() const;
         vec3 GetJumpTrajectory() const;
@@ -44,6 +45,7 @@ namespace RR
         float m_sensitivity = 25.0f;
         float m_moveSpeed = 6.f;
 
+        bool m_midJump = false;
         vec3 m_jumpTrajectory {0.0f, 5.0f, 0.0f};
 
         float m_capsuleHeight = 1.2f;

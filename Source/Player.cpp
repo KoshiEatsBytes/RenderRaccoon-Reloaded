@@ -72,17 +72,21 @@ void Player::PreUpdate(float _deltaTime)
         }
     }
 
-    if (input.IsKeyPressed(GLFW_KEY_SPACE))
+
+
+    if (input.IsKeyPressed(GLFW_KEY_SPACE) && m_PCC->IsMidJump())
     {
         if (m_audioComp)
         {
-            if (!m_audioComp->IsPlaying("jump"))
+            if (!m_audioComp->IsPlaying("jump") )
             {
                 m_audioComp->Play("jump");
             }
-
         }
     }
+
+    RR::Log(m_PCC->IsMidJump());
+
 
     bool walking =
         input.IsKeyPressed(GLFW_KEY_A) ||

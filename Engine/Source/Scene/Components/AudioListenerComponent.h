@@ -13,6 +13,7 @@ namespace RR
         ~AudioListenerComponent() override;
 
         void Update(float _deltaTime) override;
+        void LateUpdate(float _deltaTime) override;
 
     protected:
         void OnDisable() override;

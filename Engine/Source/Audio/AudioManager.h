@@ -24,9 +24,13 @@ namespace RR
 
         maEngine* GetAudioEngine() const;
 
+        void SetListenerParams(const vec3& _pos, const vec3& _dir, const vec3& _up) const;
+        void SetListenerDirection(const vec3& _dir) const;
+        void SetListenerWorldUp(const vec3& _up) const;
         void SetListenerPosition(const vec3& _pos) const;
 
     private:
-        maEngine* m_audioEngine = nullptr;
+        bool m_initialized = false;
+        std::unique_ptr<maEngine> m_audioEngine;
     };
 }

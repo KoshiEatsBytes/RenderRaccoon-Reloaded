@@ -11,7 +11,7 @@ namespace RR
     AudioSourceComponent::AudioSourceComponent()
     = default;
 
-    AudioSourceComponent::AudioSourceComponent(const std::string& _name, std::shared_ptr<Audio>& _clip)
+    AudioSourceComponent::AudioSourceComponent(const std::string& _name, const std::shared_ptr<Audio>& _clip)
     {
         RegisterAudio(_name, _clip);
     }
@@ -77,7 +77,7 @@ namespace RR
         }
     }
 
-    void AudioSourceComponent::RegisterAudio(const std::string& _name, std::shared_ptr<Audio>& _clip)
+    void AudioSourceComponent::RegisterAudio(const std::string& _name, const std::shared_ptr<Audio>& _clip)
     {
         if (m_audioClips.contains(_name))
         {
@@ -89,12 +89,7 @@ namespace RR
     }
 
     // PROTECTED -------------------------------------------------------------------------------------------------------
-
-    void AudioSourceComponent::OnEnable()
-    {
-        Component::OnEnable();
-    }
-
+    
     void AudioSourceComponent::OnDisable()
     {
         Component::OnDisable();

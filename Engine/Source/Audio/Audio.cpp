@@ -13,7 +13,7 @@ namespace RR
 
     Audio::~Audio()
     {
-        // Important to first destroy sound the decoder
+        // Important to first destroy sound then decoder
         if (m_sound)
         {
             ma_sound_uninit(GetSound());
@@ -24,23 +24,29 @@ namespace RR
         }
     }
 
-    void Audio::Play(bool _loop) const
+    void Audio::Play(bool _loop)
     {
         if (m_sound)
         {
             ma_sound_start(GetSound());
             auto looping = _loop ? MA_TRUE : MA_FALSE;
             ma_sound_set_looping(GetSound(), looping);
+            return;
         }
+
+        Warn("[AUDIO - PLAY] Tried playing an uninitialized audio file");
     }
 
-    void Audio::Stop() const
+    void Audio::Stop()
     {
         if (m_sound)
         {
             ma_sound_stop(GetSound());
             ma_sound_seek_to_pcm_frame(GetSound(), 0);
+            return;
         }
+
+        Warn("[AUDIO - STOP] Tried stopping an uninitialized audio file");
     }
 
     bool Audio::IsPlaying() const
@@ -49,15 +55,19 @@ namespace RR
         {
             return ma_sound_is_playing(GetSound());
         }
+
         return false;
     }
 
-    void Audio::SetVolume(float _volume) const
+    void Audio::SetVolume(float _volume)
     {
         if (m_sound)
         {
             ma_sound_set_volume(GetSound(), std::clamp(_volume, 0.0f, 1.0f));
+            return;
         }
+
+        Warn("[AUDIO - VOLUME] Tried setting volume of an uninitialized audio file");
     }
 
     float Audio::GetVolume() const
@@ -70,12 +80,16 @@ namespace RR
         return 0.0f;
     }
 
-    void Audio::SetPosition(const vec3& _pos) const
+    void Audio::SetPosition(const vec3& _pos)
     {
         if (m_sound)
         {
             ma_sound_set_position(GetSound(), _pos.x, _pos.y, _pos.z);
+            return;
         }
+
+
+        Warn("[AUDIO - POSITION] Tried setting position of an uninitialized audio file");
     }
 
     vec3 Audio::GetPosition() const
@@ -96,9 +110,15 @@ namespace RR
 
     void Audio::SetSpatial(bool _spatial)
     {
-        m_spatial = _spatial;
-        auto spatial = _spatial ? MA_TRUE : MA_FALSE;
-        ma_sound_set_spatialization_enabled(GetSound(), spatial);
+        if (m_sound)
+        {
+            m_spatial = _spatial;
+            auto spatial = _spatial ? MA_TRUE : MA_FALSE;
+            ma_sound_set_spatialization_enabled(GetSound(), spatial);
+            return;
+        }
+
+        Warn("[AUDIO - SPATIAL] Tried setting spatial mode of an uninitialized audio file");
     }
 
     maSound* Audio::GetSound() const
@@ -114,52 +134,40 @@ namespace RR
     std::shared_ptr<Audio> Audio::Load(const std::string& _path, bool _spatial)
     {
         auto buffer = Engine::GetInstance().GetFileSystem().LoadAssetFile(_path);
-        auto audioEng = Engine::GetInstance().GetAudioManager().GetAudioEngine();
-
         if (buffer.empty())
         {
-            Warn("[AUDIO - LOADING] FIle not found at path: '", _path, "'");
+            Warn("[AUDIO - LOADING] File not found at path: '", _path, "'");
             return nullptr;
         }
 
-        auto audio = std::make_shared<Audio>();
+        auto* audioEng = Engine::GetInstance().GetAudioManager().GetAudioEngine();
+        auto  audio    = std::make_shared<Audio>();
 
-        audio->m_sound = std::make_unique<maSound>();
+        // buffer must outlive decoder
         audio->m_buffer = std::move(buffer);
-        audio->m_decoder = std::make_unique<maDecoder>();
 
-        auto result = ma_decoder_init_memory(
-            audio->m_buffer.data(),
-            audio->m_buffer.size(),
-            nullptr,
-            audio->m_decoder.get()
-            );
-
-        if (result != MA_SUCCESS)
+        // Init on local, save only on success
+        auto decoder = std::make_unique<maDecoder>();
+        if (ma_decoder_init_memory(audio->m_buffer.data(), audio->m_buffer.size(),
+                                   nullptr, decoder.get()) != MA_SUCCESS)
         {
-            Warn("[AUDIO - LOADING] Audio file at path: '", _path, "' could not be decoded correctly");
+            Warn("[AUDIO - LOADING] Could not decode: '", _path, "'");
             return nullptr;
         }
+        audio->m_decoder = std::move(decoder);
 
-        result = ma_sound_init_from_data_source(
-            audioEng,
-            audio->m_decoder.get(),
-            0,
-            NULL,
-            audio->m_sound.get()
-            );
-
-        if (result != MA_SUCCESS)
+        // Same for sound
+        auto sound = std::make_unique<maSound>();
+        if (ma_sound_init_from_data_source(audioEng, audio->m_decoder.get(),
+                                           0, nullptr, sound.get()) != MA_SUCCESS)
         {
-            Warn("[AUDIO - LOADING] Audio file at path: '", _path, "' could not be initialized correctly from data source");
+            Warn("[AUDIO - LOADING] Could not init sound from data source: '", _path, "'");
             return nullptr;
         }
+        audio->m_sound = std::move(sound);
 
-        // set spatial sound
-        auto spatial = _spatial ? MA_TRUE : MA_FALSE;
-        ma_sound_set_spatialization_enabled(audio->m_sound.get(), spatial);
+        ma_sound_set_spatialization_enabled(audio->m_sound.get(), _spatial ? MA_TRUE : MA_FALSE);
         audio->m_spatial = _spatial;
-
         return audio;
     }
 }

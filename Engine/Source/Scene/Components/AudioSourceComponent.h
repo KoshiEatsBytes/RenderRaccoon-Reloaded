@@ -11,7 +11,7 @@ namespace RR
         COMPONENT(AudioSourceComponent)
 
         AudioSourceComponent();
-        AudioSourceComponent(const std::string& _name, std::shared_ptr<Audio>& _clip);
+        AudioSourceComponent(const std::string& _name, const std::shared_ptr<Audio>& _clip);
         ~AudioSourceComponent() override;
 
         void Update(float _deltaTime) override;
@@ -22,10 +22,9 @@ namespace RR
         void StopAll() const;
 
         void LoadAudio(const std::string& _name, const std::string& _path, bool _spatial = true);
-        void RegisterAudio(const std::string& _name, std::shared_ptr<Audio>& _clip);
+        void RegisterAudio(const std::string& _name, const std::shared_ptr<Audio>& _clip);
 
     protected:
-        void OnEnable() override;
         void OnDisable() override;
 
     private:
