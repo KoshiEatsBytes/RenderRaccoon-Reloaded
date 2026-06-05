@@ -389,6 +389,8 @@ namespace RR
         // check if it has a light component
         if (const auto light = _obj->FindComponentByType<LightComponent>())
         {
+            if (!light->IsEnabled()) return;
+
             // save light source to light vec
             LightData lData;
             lData.color = light->GetColor();

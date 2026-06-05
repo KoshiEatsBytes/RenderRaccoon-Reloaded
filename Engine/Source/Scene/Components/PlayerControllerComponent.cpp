@@ -124,6 +124,15 @@ namespace RR
         m_jumpTrajectory = _trajectory;
     }
 
+    bool PlayerControllerComponent::IsOnGround() const
+    {
+        if (m_kinematicController)
+        {
+            return m_kinematicController->IsOnGround();
+        }
+        return false;
+    }
+
     float PlayerControllerComponent::GetMoveSpeed() const
     {
         return m_moveSpeed;

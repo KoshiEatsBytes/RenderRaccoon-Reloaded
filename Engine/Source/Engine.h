@@ -9,6 +9,7 @@
 #include "Render/RenderQueue.h"
 #include "FileSystem/FileSystem.h"
 #include "Helpers/ApplicationData.h"
+#include "Audio/AudioManager.h"
 
 // fw dc to allow window to be available
 // as part of the singleton
@@ -62,6 +63,7 @@ namespace RR
         RenderQueue& GetRenderQueue();
         FileSystem& GetFileSystem();
         TextureManager& GetTextureManager();
+        AudioManager& GetAudioManager();
         ApplicationData& GetAppData();
 
     private:
@@ -77,6 +79,7 @@ namespace RR
         RenderQueue m_renderQueue;
         FileSystem m_fileSystem;
         TextureManager m_textureManager;
+        AudioManager m_audioManager;
         ApplicationData m_appData;
     };
 }

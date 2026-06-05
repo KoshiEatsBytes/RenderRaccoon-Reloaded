@@ -29,6 +29,7 @@ namespace RR
         void SetMouseSensitivity(float _sens);
         void SetJumpTrajectory(const vec3& _trajectory);
 
+        bool IsOnGround() const;
         float GetMoveSpeed() const;
         float GetMouseSensitivity() const;
         vec3 GetJumpTrajectory() const;

@@ -38,3 +38,9 @@
 #include "Scene/Components/AnimationComponent.h"
 #include "Scene/Components/PhysicsComponent.h"
 #include "Scene/Components/ColliderComponent.h"
+#include "Scene/Components/AudioListenerComponent.h"
+#include "Scene/Components/AudioSourceComponent.h"
+
+// Audio
+#include "Audio/AudioManager.h"
+#include "Audio/Audio.h"

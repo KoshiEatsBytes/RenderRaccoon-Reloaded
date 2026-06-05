@@ -1,7 +1,7 @@
 
 #pragma once
 #include "Scene/Component.h"
-#include "AnimationStructs.h"
+#include "../../Helpers/AnimationStructs.h"
 
 namespace RR
 {

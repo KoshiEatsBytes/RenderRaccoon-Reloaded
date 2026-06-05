@@ -67,7 +67,7 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/Components/LightComponent.h
         Source/Scene/Components/AnimationComponent.cpp
         Source/Scene/Components/AnimationComponent.h
-        Source/Scene/Components/AnimationStructs.h
+        Source/Helpers/AnimationStructs.h
         Source/Physics/PhysicsManager.cpp
         Source/Physics/PhysicsManager.h
         Source/Physics/Collider.cpp
@@ -82,6 +82,14 @@ set(PROJECT_SOURCE_FILES
         Source/Physics/KinematicCharacterController.cpp
         Source/Physics/KinematicCharacterController.h
         Source/Helpers/TypeInfo.h
+        Source/Audio/AudioManager.cpp
+        Source/Audio/AudioManager.h
+        Source/Audio/Audio.cpp
+        Source/Audio/Audio.h
+        Source/Scene/Components/AudioSourceComponent.cpp
+        Source/Scene/Components/AudioSourceComponent.h
+        Source/Scene/Components/AudioListenerComponent.cpp
+        Source/Scene/Components/AudioListenerComponent.h
 )
 
 # Compose application structure

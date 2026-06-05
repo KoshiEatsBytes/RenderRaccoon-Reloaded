@@ -77,37 +77,6 @@ namespace RR
         }
     }
 
-    /**
-     * @brief Adds a component to the current GameObject
-     * @param _component Ptr to the component you want to add
-     */
-    void GameObject::AddComponent(Component* _component)
-    {
-        if (m_ticked)
-        {
-            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding component at RunTime to GO: '", m_name, "' Discarding.");
-            delete _component;
-            return;
-        }
-
-        if (!_component)
-        {
-            Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding INVALID component to GO: '", m_name, "' Discarding.");
-            return;
-        }
-
-        m_components.emplace_back(_component);
-        _component->m_owner = this;
-
-        // Sorts components by execution order
-        std::stable_sort(m_components.begin(), m_components.end(),
-        [](const auto& a, const auto& b) {
-            return a->GetExecutionOrder() < b->GetExecutionOrder();
-        });
-
-        _component->Init();
-    }
-
     void GameObject::MarkForDestroy()
     {
         if (m_alive)
@@ -232,12 +201,26 @@ namespace RR
         return m_alive;
     }
 
-    void GameObject::SetActive(const bool _active)
+    void GameObject::SetEnabled(const bool _active)
     {
+        if (m_active == _active) return;
+
+        // Disabled/Enable all components
+        for (auto& component : m_components)
+        {
+            component->SetEnabled(_active);
+        }
+
+        // Disable/Enable all children
+        for (auto& child : m_children)
+        {
+            child->SetEnabled(_active);
+        }
+
         m_active = _active;
     }
 
-    bool GameObject::IsActive() const
+    bool GameObject::IsEnabled() const
     {
         return m_active;
     }

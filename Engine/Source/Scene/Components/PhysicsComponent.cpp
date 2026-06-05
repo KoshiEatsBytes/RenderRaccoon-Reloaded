@@ -349,6 +349,8 @@ namespace RR
             {
                 for (auto* cc : components)
                 {
+                    if (!cc->IsEnabled()) continue;
+
                     auto shape = cc->GetCollider()->GetShape();
                     shape->setLocalScaling(BtConv::ToBt(scale));
                     _compound.addChildShape(BtConv::ToBtTransform(pos, rot), shape);
@@ -365,7 +367,7 @@ namespace RR
         // recurse until sub-bodies
         for (auto& child : _go->GetChildren())
         {
-            if (!child->IsActive()) continue;
+            if (!child->IsEnabled()) continue;
             if (child->FindComponentByType<PhysicsComponent>()) continue;
 
             child->m_parentPhysicsOwnership = _ownership;

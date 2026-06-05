@@ -147,6 +147,13 @@ namespace RR
             return false;
         }
 
+        if (!m_audioManager.Init())
+        {
+            Error("[INITIALIZATION] Failed to initialize RR Audio Engine");
+            glfwTerminate();
+            return false;
+        }
+
         if (!m_appManager.Init())
         {
             Error("[INITIALIZATION] Failed to initialize RR Application Manager");
@@ -200,9 +207,18 @@ namespace RR
                     // logic for matrices
                     if (auto camComponent = camObj->FindComponentByType<CameraComponent>())
                     {
-                        camData.viewMatrix = camComponent->GetViewMatrix();
-                        camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
-                        camData.position = camObj->GetWorldPosition();
+                        if (camComponent->IsEnabled())
+                        {
+                            camData.viewMatrix = camComponent->GetViewMatrix();
+                            camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
+                            camData.position   = camObj->GetWorldPosition();
+                        }
+                        else
+                        {
+                            camData.viewMatrix = 1.0f;
+                            camData.projMatrix = 1.0f;
+                            camData.position   = {0.0f,0.0f,0.0f};
+                        }
                     }
                 }
 
@@ -279,9 +295,14 @@ namespace RR
         return m_fileSystem;
     }
 
-    TextureManager & Engine::GetTextureManager()
+    TextureManager& Engine::GetTextureManager()
     {
         return m_textureManager;
+    }
+
+    AudioManager& Engine::GetAudioManager()
+    {
+        return m_audioManager;
     }
 
     ApplicationData& Engine::GetAppData()

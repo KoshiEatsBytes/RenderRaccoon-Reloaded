@@ -8,6 +8,7 @@
 #include "Helpers/Types.h"
 #include "Helpers/TypeInfo.h"
 #include "Component.h"
+#include "Helpers/Printer.hpp"
 
 namespace RR
 {
@@ -35,7 +36,7 @@ namespace RR
         virtual void Update(float _deltaTime);
         virtual void LateUpdate(float _deltaTime);
 
-        void AddComponent(Component* _component);
+        //Component* AddComponent(Component* _component);
         void MarkForDestroy();
 
         GameObject* LoadGLTF(const std::string& _path) const;
@@ -56,8 +57,8 @@ namespace RR
         void SetAlive(bool _alive);
         bool IsAlive() const;
 
-        void SetActive(bool _active);
-        bool IsActive() const;
+        void SetEnabled(bool _active);
+        bool IsEnabled() const;
 
         // pos/rot/scale set/get
         vec3 GetPosition() const;
@@ -114,6 +115,58 @@ namespace RR
 
     public:
         // Templates ---------------------------------------------------------------------------------------------------
+
+        /**
+         * @brief Adds a component to the current GameObject
+         * @param _component Ptr to the component you want to add
+         * @return ptr to the component
+         */
+        template <ComponentType T>
+        T* AddComponent(T* _component)
+        {
+            if (m_ticked)
+            {
+                Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding component at RunTime to GO: '", m_name, "' Discarding.");
+                delete _component;
+                return nullptr;
+            }
+
+            if (!_component)
+            {
+                Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding INVALID component to GO: '", m_name, "' Discarding.");
+                return nullptr;
+            }
+
+            if (auto comp = FindComponentByType<T>())
+            {
+                Warn("[GAME-OBJECT - ADD COMPONENT] Tried adding a SECOND PhysicsComponent to: '", m_name, "' Discarding.");
+                delete _component;
+                return nullptr;
+            }
+
+            m_components.emplace_back(_component);
+            _component->m_owner = this;
+
+            // Sorts components by execution order
+            std::stable_sort(m_components.begin(), m_components.end(),
+            [](const auto& a, const auto& b) {
+                return a->GetExecutionOrder() < b->GetExecutionOrder();
+            });
+
+            _component->Init();
+            return _component;
+        }
+
+        /**
+         * @brief Adds a component to the current GameObject
+         * @tparam T Type of the component you want to add
+         * @return ptr to the componet
+         */
+        template<ComponentType T, typename... Args>
+        T* AddComponent(Args&&... args)
+        {
+            return AddComponent<T>(new T(std::forward<Args>(args)...));
+        }
 
         /**
          * @brief Searches and returns a component of the game-object

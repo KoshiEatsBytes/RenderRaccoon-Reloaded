@@ -12,7 +12,7 @@
 #include "../Render/Mesh.h"
 #include "../Scene/Components/MeshComponent.h"
 #include "../Scene/Components/AnimationComponent.h"
-#include "../Scene/Components/AnimationStructs.h"
+#include "AnimationStructs.h"
 
 using cgAccessor = cgltf_accessor;
 using cgOptions = cgltf_options;

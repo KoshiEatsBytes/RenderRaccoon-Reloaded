@@ -2,6 +2,8 @@
 #include "Player.h"
 
 #include "GLFW/glfw3.h"
+#include "Scene/Components/AudioListenerComponent.h"
+#include "Scene/Components/AudioSourceComponent.h"
 
 Player::Player()
 {
@@ -13,9 +15,17 @@ Player::~Player()
 
 void Player::Init()
 {
-    AddComponent(new RR::CameraComponent());
-    SetPosition(vec3(0.0f, 0.0f, 2.0f));
-    AddComponent(new RR::PlayerControllerComponent);
+    SetPosition(vec3(0.0f, 8.0f, 0.0f));
+
+    AddComponent<RR::CameraComponent>();
+    m_PCC = AddComponent<RR::PlayerControllerComponent>(1.2f, 0.4f);
+    AddComponent<RR::AudioListenerComponent>();
+
+
+    m_audioComp = AddComponent<RR::AudioSourceComponent>();
+    m_audioComp->LoadAudio("shoot", "Audio/shoot.wav");
+    m_audioComp->LoadAudio("jump", "Audio/jump.wav");
+    m_audioComp->LoadAudio("step", "Audio/step.wav");
 
     auto gun = LoadGLTF("Models/Gun/scene.gltf");
     gun->SetParent(this);
@@ -26,12 +36,12 @@ void Player::Init()
     {
         if (auto bullet = gun->FindObjectByName("bullet_33", true))
         {
-            bullet->SetActive(false);
+            bullet->SetEnabled(false);
         }
 
         if (auto flash = gun->FindObjectByName("BOOM_35", true))
         {
-            flash->SetActive(false);
+            flash->SetEnabled(false);
         }
 
         anim->Play("shoot", false);
@@ -39,9 +49,9 @@ void Player::Init()
     m_animationComp = gun->FindComponentByType<RR::AnimationComponent>();
 }
 
-void Player::Update(float _deltaTime)
+void Player::PreUpdate(float _deltaTime)
 {
-    GameObject::Update(_deltaTime);
+    GameObject::PreUpdate(_deltaTime);
 
     auto& input = RR::Engine::GetInstance().GetInputManager();
 
@@ -50,6 +60,56 @@ void Player::Update(float _deltaTime)
         if (m_animationComp && !m_animationComp->IsPlaying())
         {
             m_animationComp->Play("shoot", false);
+
+            if (m_audioComp)
+            {
+                if (m_audioComp->IsPlaying("shoot"))
+                {
+                    m_audioComp->Stop("shoot");
+                }
+                m_audioComp->Play("shoot");
+            }
         }
     }
+
+    if (input.IsKeyPressed(GLFW_KEY_SPACE))
+    {
+        if (m_audioComp)
+        {
+            if (!m_audioComp->IsPlaying("jump"))
+            {
+                m_audioComp->Play("jump");
+            }
+
+        }
+    }
+
+    bool walking =
+        input.IsKeyPressed(GLFW_KEY_A) ||
+        input.IsKeyPressed(GLFW_KEY_S) ||
+        input.IsKeyPressed(GLFW_KEY_D) ||
+        input.IsKeyPressed(GLFW_KEY_W);
+
+    if (walking && m_PCC && m_PCC->IsOnGround())
+    {
+        if (m_audioComp)
+        {
+            if (!m_audioComp->IsPlaying("step"))
+            {
+                m_audioComp->Play("step", true);
+            }
+        }
+    }
+    else
+    {
+        if (m_audioComp && m_audioComp->IsPlaying("step"))
+        {
+            m_audioComp->Stop("step");
+        }
+    }
+}
+
+void Player::Update(float _deltaTime)
+{
+    GameObject::Update(_deltaTime);
 }

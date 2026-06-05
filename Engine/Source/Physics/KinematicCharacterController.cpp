@@ -45,7 +45,7 @@ namespace RR
         }
     }
 
-    bool KinematicCharacterController::OnGround() const
+    bool KinematicCharacterController::IsOnGround() const
     {
         return m_controller->onGround();
     }

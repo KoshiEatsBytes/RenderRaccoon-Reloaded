@@ -20,7 +20,7 @@ namespace RR
 
         void SetWalkVelocity(const vec3& _velocity) const;
         void Jump(const vec3& _direction);
-        bool OnGround() const;
+        bool IsOnGround() const;
 
         void Resize(float _radius, float _height);
         void AddToWorld();

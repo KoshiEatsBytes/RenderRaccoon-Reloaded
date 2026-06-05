@@ -32,3 +32,11 @@ using wChar  = wchar_t;
 using sizeT  = size_t;
 using uint32 = uint32_t;
 
+// Audio
+struct ma_engine;
+struct ma_sound;
+struct ma_decoder;
+using maEngine = ma_engine;
+using maSound = ma_sound;
+using maDecoder = ma_decoder;
+
