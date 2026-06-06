@@ -161,6 +161,11 @@ namespace RR
         ma_sound_set_fade_in_pcm_frames(m_sound.get(), -1.0f, _target, fadeFrames);
     }
 
+    bool AudioVoice::IsFinished() const
+    {
+        return m_initialized && ma_sound_at_end(m_sound.get());
+    }
+
     bool AudioVoice::IsPlaying() const
     {
         return m_initialized && ma_sound_is_playing(m_sound.get());

@@ -27,6 +27,7 @@ namespace RR
         void FadeOut(float _duration);
         void FadeTo(float _target, float _duration);
 
+        bool IsFinished() const;
         bool IsPlaying() const;
         bool IsInitialized() const;
 

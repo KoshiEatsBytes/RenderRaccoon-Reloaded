@@ -1,5 +1,6 @@
 
 #include <fstream>
+#include <algorithm>
 
 #include "FileSystem.h"
 #include "config.h"
@@ -60,6 +61,31 @@ namespace RR
     {
         auto buffer = LoadAssetFile(_relativePath);
         return std::string(buffer.begin(), buffer.end());
+    }
+
+    std::vector<fSysPath> FileSystem::ListAssetFiles(const std::string &_subfolder,
+        const std::vector<std::string> &_extensions) const
+    {
+        std::vector<fSysPath> result;
+        const fSysPath root = GetAssetFolder();
+        const fSysPath dir  = root / _subfolder;
+
+        if (!std::filesystem::exists(dir)) return result;
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(dir))
+        {
+            if (!entry.is_regular_file()) continue;
+            if (!_extensions.empty())
+            {
+                std::string extension = entry.path().extension().string();
+                std::ranges::transform(extension, extension.begin(), ::tolower);
+                if (std::ranges::find(_extensions, extension) == _extensions.end()) continue;
+            }
+            result.push_back(std::filesystem::relative(entry.path(), root));
+        }
+        // Make result deterministic
+        std::ranges::sort(result);
+        return result;
     }
 
     fSysPath FileSystem::GetExecutableFolder() const

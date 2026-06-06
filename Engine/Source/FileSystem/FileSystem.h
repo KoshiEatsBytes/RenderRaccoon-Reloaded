@@ -24,8 +24,10 @@ namespace RR
 
         std::vector<char> LoadFile(const fSysPath& _path);
         std::vector<char> LoadAssetFile(const std::string& _relativePath);
-
         std::string LoadAssetFileText(const std::string &_relativePath);
+
+        std::vector<fSysPath> ListAssetFiles(const std::string& _subfolder,
+            const std::vector<std::string>& _extensions = {}) const;
 
         fSysPath GetExecutableFolder() const;
         fSysPath GetAssetFolder() const;
