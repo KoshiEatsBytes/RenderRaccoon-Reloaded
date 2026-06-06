@@ -213,5 +213,7 @@ namespace RR
             case ma_positioning_relative:
                 return true;
         }
+
+        return false;
     }
 }

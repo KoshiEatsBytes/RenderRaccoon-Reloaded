@@ -231,8 +231,9 @@ namespace RR
             // Mouse moved this frame
             m_inputManager.SetMousePositionChanged(false);
 
-            // Late Update before new frame
+            // Late Update before new frame and audio
             m_appManager.LateUpdate(deltaTime);
+            m_audioManager.Update(deltaTime);
         }
     }
 

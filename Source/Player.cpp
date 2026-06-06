@@ -85,8 +85,6 @@ void Player::PreUpdate(float _deltaTime)
         }
     }
 
-    RR::Log(m_PCC->IsMidJump());
-
 
     bool walking =
         input.IsKeyPressed(GLFW_KEY_A) ||

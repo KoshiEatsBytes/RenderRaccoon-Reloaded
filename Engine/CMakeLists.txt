@@ -97,6 +97,8 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/SpatialAudio.h
         Source/Audio/StaticAudio.cpp
         Source/Audio/StaticAudio.h
+        Source/Audio/StaticChannel.cpp
+        Source/Audio/StaticChannel.h
 )
 
 # Compose application structure
