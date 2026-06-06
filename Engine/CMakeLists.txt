@@ -90,6 +90,13 @@ set(PROJECT_SOURCE_FILES
         Source/Scene/Components/AudioSourceComponent.h
         Source/Scene/Components/AudioListenerComponent.cpp
         Source/Scene/Components/AudioListenerComponent.h
+        Source/Audio/Voice/AudioClip.h
+        Source/Audio/Voice/AudioVoice.cpp
+        Source/Audio/Voice/AudioVoice.h
+        Source/Audio/SpatialAudio.cpp
+        Source/Audio/SpatialAudio.h
+        Source/Audio/StaticAudio.cpp
+        Source/Audio/StaticAudio.h
 )
 
 # Compose application structure
