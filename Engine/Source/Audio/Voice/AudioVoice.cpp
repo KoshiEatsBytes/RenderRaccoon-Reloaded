@@ -71,6 +71,8 @@ namespace RR
             return;
         }
 
+        m_paused = false;
+
         //sets the frame to 0 and cancel scheduled sto, if any
         ma_sound_reset_stop_time_and_fade(m_sound.get());
         ma_sound_seek_to_pcm_frame(m_sound.get(), 0);
@@ -87,6 +89,7 @@ namespace RR
         }
 
         // stops and set frame cursor back to 0
+        m_paused = false;
         ma_sound_stop(m_sound.get());
         ma_sound_seek_to_pcm_frame(m_sound.get(), 0);
     }
@@ -141,6 +144,7 @@ namespace RR
             return;
         }
 
+        m_paused = false;
         FadeTo(0.0f, _duration);
 
         // stops automatically when fade finishes
@@ -215,6 +219,34 @@ namespace RR
         if (!m_initialized) return 0.0f;
         float fadeVol = ma_sound_get_current_fade_volume(m_sound.get());
         return ma_sound_get_volume(m_sound.get()) * fadeVol;
+    }
+
+    bool AudioVoice::IsPaused() const
+    {
+        return m_paused;
+    }
+
+    void AudioVoice::AttachToGroup(maSoundGroup* _group)
+    {
+        if (!m_initialized || !_group)
+        {
+            Warn("[AUDIO - GROUPING] Tried attaching to group an uninitialized audio file");
+            return;
+        }
+
+        ma_node_attach_output_bus(m_sound.get(), 0, _group, 0);
+    }
+
+    void AudioVoice::DetachFromGroup()
+    {
+        if (!m_initialized)
+        {
+            Warn("[AUDIO - GROUPING] Tried detaching from group an uninitialized audio file");
+            return;
+        }
+
+        ma_node_attach_output_bus(m_sound.get(), 0,
+            ma_engine_get_endpoint(m_engineRef), 0);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

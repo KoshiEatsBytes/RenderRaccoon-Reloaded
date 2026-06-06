@@ -99,6 +99,8 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/StaticAudio.h
         Source/Audio/StaticChannel.cpp
         Source/Audio/StaticChannel.h
+        Source/Audio/AudioChannel.cpp
+        Source/Audio/AudioChannel.h
 )
 
 # Compose application structure

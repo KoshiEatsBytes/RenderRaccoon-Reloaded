@@ -39,5 +39,6 @@ struct ma_sound;
 struct ma_decoder;
 using maEngine = ma_engine;
 using maSound = ma_sound;
+using maSoundGroup = ma_sound;
 using maDecoder = ma_decoder;
 

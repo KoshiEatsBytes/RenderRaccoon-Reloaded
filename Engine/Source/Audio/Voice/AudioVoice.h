@@ -37,6 +37,11 @@ namespace RR
         void SetVolume(float _vol);
         float GetVolume() const;
 
+        bool IsPaused() const;
+
+        void AttachToGroup(maSoundGroup* _group);
+        void DetachFromGroup();
+
     protected:
         AudioVoice(std::shared_ptr<AudioClip> _clip, maEngine* _engine);
 
