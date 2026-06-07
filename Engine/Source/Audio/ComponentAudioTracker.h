@@ -4,7 +4,6 @@
 
 #include "Tracker.h"
 
-
 namespace RR
 {
     class AudioSourceComponent;

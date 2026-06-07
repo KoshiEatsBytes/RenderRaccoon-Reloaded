@@ -10,7 +10,8 @@ namespace RR
 
     ComponentAudioTracker::ComponentAudioTracker(AudioSourceComponent* _owner,
         std::weak_ptr<bool> _ownerAlive, Tracker<SpatialAudio> _tracker)
-        : m_owner(_owner), m_ownerAlive(std::move(_ownerAlive)), m_tracker(std::move(_tracker)) {}
+        : m_owner(_owner), m_ownerAlive(std::move(_ownerAlive)), m_tracker(std::move(_tracker)){
+    }
 
     void ComponentAudioTracker::PlayOneShot() const
     {

@@ -100,6 +100,11 @@ namespace RR
 
     // 2D PLAYBACK -----------------------------------------------------------------------------------------------------
 
+    void AudioManager::PlayOneShot(const Tracker<SpatialAudio>& _tracker)
+    {
+        PlayOneShot(_tracker.GetKey());
+    }
+
     void AudioManager::PlayOneShot(const std::string& _key, float _vol)
     {
         const uInt channel = ResolveChannel(_key, m_fallbackChannel);
@@ -151,16 +156,9 @@ namespace RR
 
     // TRACKERS --------------------------------------------------------------------------------------------------------
 
-    Tracker<StaticAudio> AudioManager::GetStatic(const std::string& _key)
+    ManagerAudioTracker AudioManager::GetStatic(const std::string& _key)
     {
-        return GetTrack<StaticAudio>(_key);
-    }
-
-    ManagerAudioTracker AudioManager::GetOneShot(const std::string& _key)
-    {
-        // A lightweight handle bound to this manager + key; each PlayOneShot()
-        // spawns a fresh overlapping one-shot (see AudioManager::PlayOneShot).
-        return ManagerAudioTracker(this, _key);
+        return {this, GetTrack<StaticAudio>(_key)};
     }
 
     std::shared_ptr<SpatialAudio> AudioManager::CreateSpatial(const std::string& _key, uInt _channel)

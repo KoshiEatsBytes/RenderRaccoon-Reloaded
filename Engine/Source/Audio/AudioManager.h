@@ -34,6 +34,7 @@ namespace RR
         void BindTrack(const std::string& _key, uInt _channel);
 
         // PLAYBACK
+        void PlayOneShot(const Tracker<SpatialAudio>& _tracker);
         void PlayOneShot(const std::string& _key, float _vol = 1.0f);
         void PlayManaged(const std::string& _key, bool _loop = true, float _fadeIn = 0.0f);
         void StopManaged(const std::string& _key, float _fadeOut = 0.0f);
@@ -41,8 +42,7 @@ namespace RR
         void StopChannel(uInt _channel, float _fadeOut = 0.0f);
 
         // TRACKERS / CREATORS
-        Tracker<StaticAudio>  GetStatic (const std::string& _key);   // persistent 2D track (music/ambience)
-        ManagerAudioTracker   GetOneShot(const std::string& _key);   // fire-and-forget overlapping 2D one-shot
+        ManagerAudioTracker GetStatic (const std::string& _key);
         std::shared_ptr<SpatialAudio> CreateSpatial(const std::string& _key, uInt _channel);
 
         // VOLUME
