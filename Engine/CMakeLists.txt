@@ -84,8 +84,6 @@ set(PROJECT_SOURCE_FILES
         Source/Helpers/TypeInfo.h
         Source/Audio/AudioManager.cpp
         Source/Audio/AudioManager.h
-        Source/Audio/Audio.cpp
-        Source/Audio/Audio.h
         Source/Scene/Components/AudioSourceComponent.cpp
         Source/Scene/Components/AudioSourceComponent.h
         Source/Scene/Components/AudioListenerComponent.cpp
@@ -97,8 +95,6 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/SpatialAudio.h
         Source/Audio/StaticAudio.cpp
         Source/Audio/StaticAudio.h
-        Source/Audio/StaticChannel.cpp
-        Source/Audio/StaticChannel.h
         Source/Audio/AudioChannel.cpp
         Source/Audio/AudioChannel.h
         Source/Audio/Tracker.h

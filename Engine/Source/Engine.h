@@ -47,8 +47,8 @@ namespace RR
         // Singleton - return engine instance
         static Engine& GetInstance();
 
-        bool Init(const int& _width, const int& _height,
-            const std::string& _name);
+        bool Init(int _width, int _height,
+                  const std::string& _name, uInt _audioChannels, uInt _fallbackChannel);
         void Launch();
         void Destroy();
 

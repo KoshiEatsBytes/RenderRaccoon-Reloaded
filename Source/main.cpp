@@ -12,7 +12,7 @@ int main()
     engine.GetAppManager().AddSubSystem<TestSubSystem>();
 
 
-    if (engine.Init(1920, 1080, "RenderRaccoon"))
+    if (engine.Init(1920, 1080, "RenderRaccoon", 3, 0))
     {
 
         RR::Log("Launching application...");

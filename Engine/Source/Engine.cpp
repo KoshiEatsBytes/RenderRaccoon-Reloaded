@@ -94,7 +94,7 @@ namespace RR
         return instance;
     }
 
-    bool Engine::Init(const int& _width, const int& _height, const std::string& _name)
+    bool Engine::Init(int _width, int _height, const std::string& _name, uInt _audioChannels, uInt _fallbackChannel)
     {
         // Initializes window
         if (!glfwInit())
@@ -147,7 +147,7 @@ namespace RR
             return false;
         }
 
-        if (!m_audioManager.Init())
+        if (!m_audioManager.Init(_audioChannels, _fallbackChannel))
         {
             Error("[INITIALIZATION] Failed to initialize RR Audio Engine");
             glfwTerminate();

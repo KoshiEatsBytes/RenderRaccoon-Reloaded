@@ -1,17 +1,16 @@
 
 #include <miniaudio.h>
+#include <algorithm>
 #include <cctype>
 
 #include "AudioManager.h"
 #include "Engine.h"
 #include "Voice/AudioClip.h"
-#include "SpatialAudio.h"
-#include "StaticAudio.h"
 #include "Helpers/Printer.hpp"
 
 namespace RR
 {
-    // PRIVATE ---------------------------------------------------------------------------------------------------------
+    // LIFECYCLE -------------------------------------------------------------------------------------------------------
 
     AudioManager::AudioManager()
     {
@@ -20,192 +19,236 @@ namespace RR
 
     AudioManager::~AudioManager()
     {
+        m_channels.clear();
+
         if (m_initialized)
         {
             ma_engine_uninit(GetAudioEngine());
         }
     }
 
-    // PUBLIC ----------------------------------------------------------------------------------------------------------
-
-    // 2D SOUNDS -------------------------------------------------------------------------------------------------------
-
-    void AudioManager::PlayOneShot(const std::string& _name, float _vol)
+    bool AudioManager::Init(uInt _channelCount, uInt _fallbackChannel)
     {
-        auto voice = CreateStatic(_name);
+        if (_channelCount < 1)
+        {
+            Error("[AUDIO - INIT] Tried initializing audio manager without any channels!");
+            return false;
+        }
+
+        if (_fallbackChannel >= _channelCount) // channels start at 0
+        {
+            Error("[AUDIO - INIT] Tried setting fallback audio channel to channel out of index, defaulting to first");
+            _fallbackChannel = 0;
+        }
+
+        if (ma_engine_init(nullptr, GetAudioEngine()) != MA_SUCCESS)
+        {
+            Error("[AUDIO - INIT] MiniAudio Engine has failed to initialize!");
+            return false;
+        }
+
+
+        for (uInt id = 0; id < _channelCount; ++id)
+        {
+            if (!m_channels[id].Init(m_audioEngine.get()))
+            {
+                Error("[AUDIO - INIT] An audio channel has failed to initialize!");
+                return false;
+            }
+        }
+
+        m_initialized = true;
+        m_channelCount = _channelCount;
+        m_fallbackChannel = _fallbackChannel;
+
+        ScanAudioAssets();
+        return true;
+    }
+
+    void AudioManager::Update(float)
+    {
+        for (auto& [id, channel] : m_channels)
+        {
+            channel.Update();
+        }
+    }
+
+    // CHANNEL BINDING -------------------------------------------------------------------------------------------------
+
+    void AudioManager::BindTrack(const std::string& _key, uInt _channel)
+    {
+        if (_channel >= m_channelCount)
+        {
+            Warn("[AUDIO - BIND] Channel index out of scope! Allocate more channels at init");
+            return;
+        }
+
+        m_keyToChannel[_key] = _channel;
+    }
+
+    uInt AudioManager::ResolveChannel(const std::string& _key, uInt _fallback) const
+    {
+        if (_fallback >= m_channelCount)
+        {
+            Warn("[AUDIO - RESOLVE] Channel index out of scope! fallback on main channel");
+            return 0;
+        }
+
+        auto it = m_keyToChannel.find(_key);
+        return it != m_keyToChannel.end() ? it->second : _fallback;
+    }
+
+    // 2D PLAYBACK -----------------------------------------------------------------------------------------------------
+
+    void AudioManager::PlayOneShot(const std::string& _key, float _vol)
+    {
+        auto channel = ResolveChannel(_key, m_fallbackChannel);
+        m_keyToChannel[_key] = channel;
+
+        auto voice = CreateVoiceShared<StaticAudio>(_key);
         if (!voice) return;
 
-        float volume = std::clamp(_vol * m_oneShotVolume, 0.0f, 1.0f);
-        voice->SetVolume(volume);
+        // Route before play
+        m_channels[channel].AddOneShot(voice);
+        voice->SetVolume(_vol);
         voice->Play(false);
-        m_oneShots.push_back(std::move(voice));
     }
 
-    void AudioManager::PlayMusic(const std::string& _name, bool _loop, float _fadeIn)
+    void AudioManager::PlayManaged(const std::string& _key, bool _loop, float _fadeIn)
     {
-        auto voice = CreateStatic(_name);
+        auto channel = ResolveChannel(_key, m_fallbackChannel);
+        m_keyToChannel[_key] = channel;
+
+        auto voice = CreateVoiceShared<StaticAudio>(_key);
         if (!voice) return;
 
-        m_music.Add(_name, std::move(voice), _loop, _fadeIn);
+        m_channels[channel].Add(_key, voice);
+
+        if (_fadeIn > 0.0f)
+            voice->FadeIn(_fadeIn, _loop);
+        else
+            voice->Play(_loop);
     }
 
-    void AudioManager::PlayManaged(const std::string &_name, bool _loop, float _fadeIn)
+    void AudioManager::StopManaged(const std::string& _key, float _fadeOut)
     {
-        auto voice = CreateStatic(_name);
-        if (!voice) return;
-
-        m_managed.Add(_name, std::move(voice), _loop, _fadeIn);
+        auto channel = ResolveChannel(_key, m_fallbackChannel);
+        m_channels[channel].Stop(_key, _fadeOut);
     }
 
-    void AudioManager::StopMusic(const std::string& _name, float _fadeOut)
-    {
-        m_music.Stop(_name, _fadeOut);
-    }
-
-    void AudioManager::StopManaged(const std::string &_name, float _fadeOut)
-    {
-        m_managed.Stop(_name, _fadeOut);
-    }
-
-    void AudioManager::StopAllMusic(float _fadeOut)
-    {
-        m_music.StopAll(_fadeOut);
-    }
-
-    void AudioManager::StopAllManaged(float _fadeOut)
-    {
-        m_managed.StopAll(_fadeOut);
-    }
-
-    void AudioManager::CrossFadeMusic(const std::string& _from, const std::string& _to, float _seconds,  bool _loop)
-    {
-        StopMusic(_from, _seconds);
-        PlayMusic(_to, _loop, _seconds);
-    }
-
-    void AudioManager::CrossFadeManaged(const std::string &_from, const std::string &_to, float _seconds, bool _loop)
+    void AudioManager::CrossFade(const std::string& _from, const std::string& _to, float _seconds, bool _loop)
     {
         StopManaged(_from, _seconds);
         PlayManaged(_to, _loop, _seconds);
     }
 
-    // VOICE FACTORY AND CLIP CACHE ------------------------------------------------------------------------------------
-
-    std::shared_ptr<AudioClip> AudioManager::GetClip(const std::string& _name)
+    void AudioManager::StopChannel(uInt _channel, float _fadeOut)
     {
-        // Check if clip has already been loaded
-        auto it = m_clipCache.find(_name);
-        if (it != m_clipCache.end())
+        if (_channel >= m_channelCount)
         {
-            if (auto cached = it->second.lock())
+            Warn("[AUDIO - STOP] Channel index out of scope! Allocate more channels at init");
+            return;
+        }
+
+        m_channels[_channel].StopAll(_fadeOut);
+    }
+
+    // TRACKERS --------------------------------------------------------------------------------------------------------
+
+    Tracker<StaticAudio> AudioManager::GetStatic(const std::string& _key)
+    {
+        return GetTrack<StaticAudio>(_key, ResolveChannel(_key, m_fallbackChannel));
+    }
+
+    Tracker<StaticAudio> AudioManager::GetOneShot(const std::string& _key)
+    {
+        auto channelIndex = ResolveChannel(_key, m_fallbackChannel);
+        m_keyToChannel[_key] = channelIndex;
+
+        AudioChannel& channel = m_channels[channelIndex];
+        auto revive = [this, &channel, _key]() -> std::shared_ptr<StaticAudio>
+        {
+            auto voice = CreateVoiceShared<StaticAudio>(_key);
+
+            if (voice)
             {
-                return cached;
+                channel.AddOneShot(voice);
             }
-        }
 
-        // If has not beed loaded - check if it exists in dir
-        auto itPath = m_keyToPath.find(_name);
-        if (itPath == m_keyToPath.end())
-        {
-            Warn("[AUDIO - GET] Requested unknown audio file '", _name, "'");
-            return nullptr;
-        }
+            return voice;
+        };
 
-        // create it and load it
-        auto clip = DecodeClip(itPath->second);
-        if (clip)
-        {
-            m_clipCache[_name] = clip;
-            return clip;
-        }
-
-        Warn("[AUDIO - GET] Requested audio file '", _name, "' could not be decoded.");
-        return nullptr;
+        // Not a live voice, spawn on first play
+        return Tracker<StaticAudio>({}, std::move(revive));
     }
 
-    std::unique_ptr<SpatialAudio> AudioManager::CreateSpatial(const std::string& _name)
+    Tracker<SpatialAudio> AudioManager::GetSpatial(const std::string& _key)
     {
-        // returns new spatial source
-        if (auto clip = GetClip(_name))
-        {
-            return std::make_unique<SpatialAudio>(clip, m_audioEngine.get());
-        }
-        return nullptr;
+
+        // TODO(component phase): spatial is multi-instance + entity-owned — not the keyed model.
+        return {};
     }
 
-    std::unique_ptr<StaticAudio> AudioManager::CreateStatic(const std::string& _name)
+    // VOLUME ----------------------------------------------------------------------------------------------------------
+
+    void AudioManager::SetChannelVolume(uInt _channel, float _vol)
     {
-        // returns new static source
-        if (auto clip = GetClip(_name))
+        if (_channel >= m_channelCount)
         {
-            return std::make_unique<StaticAudio>(clip, m_audioEngine.get());
+            Warn("[AUDIO - SET CHANNEL VOLUME] Channel index out of scope! Allocate more channels at init");
+            return;
         }
-        return nullptr;
+
+        m_channels[_channel].SetVolume(_vol);
     }
 
-    // Volume ----------------------------------------------------------------------------------------------------------
-
-    void AudioManager::SetMusicVolume(const std::string& _name, float _vol)
+    float AudioManager::GetChannelVolume(uInt _channel) const
     {
-        m_music.SetTrackVolume(_name, _vol);
+        if (_channel >= m_channelCount)
+        {
+            Warn("[AUDIO - GET CHANNEL VOLUME] Channel index out of scope! Allocate more channels at init");
+            return 1.0f;
+        }
+
+        auto it = m_channels.find(_channel);
+        return it != m_channels.end() ? it->second.GetVolume() : 1.0f;
     }
 
     void AudioManager::SetMasterVolume(float _vol)
     {
-        if (!m_initialized)
+        if (m_initialized)
         {
-            Warn("[AUDIO - VOLUME] Tried setting master to NOT INITIALIZED audio engine");
+            ma_engine_set_volume(m_audioEngine.get(), std::clamp(_vol, 0.0f, 1.0f));
         }
-
-        ma_engine_set_volume(m_audioEngine.get(), _vol);
     }
 
-    // Get/Sets --------------------------------------------------------------------------------------------------------
+    // LISTENER --------------------------------------------------------------------------------------------------------
 
     void AudioManager::SetListenerParams(const vec3& _pos, const vec3& _dir, const vec3& _up) const
     {
-        if (m_audioEngine)
+        if (!m_audioEngine)
         {
-            ma_engine_listener_set_position (GetAudioEngine(), 0, _pos.x, _pos.y, _pos.z);
-            ma_engine_listener_set_direction(GetAudioEngine(), 0, _dir.x, _dir.y, _dir.z);
-            ma_engine_listener_set_world_up (GetAudioEngine(), 0, _up.x,  _up.y,  _up.z);
+            Warn("[AUDIO MANAGER - LISTENER] Tried setting listener params with invalid engine");
             return;
         }
-
-        Warn("[AUDIO MANAGER - LISTENER PARAMS] Tried setting listener parameters with invalid audio engine");
+        ma_engine_listener_set_position (GetAudioEngine(), 0, _pos.x, _pos.y, _pos.z);
+        ma_engine_listener_set_direction(GetAudioEngine(), 0, _dir.x, _dir.y, _dir.z);
+        ma_engine_listener_set_world_up (GetAudioEngine(), 0, _up.x,  _up.y,  _up.z);
     }
 
-    void AudioManager::SetListenerDirection(const vec3 &_dir) const
+    void AudioManager::SetListenerDirection(const vec3& _dir) const
     {
-        if (m_audioEngine)
-        {
-            ma_engine_listener_set_direction(GetAudioEngine(), 0, _dir.x, _dir.y, _dir.z);
-            return;
-        }
-
-        Warn("[AUDIO MANAGER - LISTENER DIR] Tried setting listener direction with invalid audio engine");
+        if (m_audioEngine) ma_engine_listener_set_direction(GetAudioEngine(), 0, _dir.x, _dir.y, _dir.z);
     }
 
     void AudioManager::SetListenerWorldUp(const vec3& _up) const
     {
-        if (m_audioEngine)
-        {
-            ma_engine_listener_set_world_up(GetAudioEngine(), 0, _up.x, _up.y, _up.z);
-            return;
-        }
-
-        Warn("[AUDIO MANAGER - LISTENER UP] Tried setting listener world up with invalid audio engine");
+        if (m_audioEngine) ma_engine_listener_set_world_up(GetAudioEngine(), 0, _up.x, _up.y, _up.z);
     }
 
     void AudioManager::SetListenerPosition(const vec3& _pos) const
     {
-        if (m_audioEngine)
-        {
-            ma_engine_listener_set_position(GetAudioEngine(), 0, _pos.x, _pos.y, _pos.z);
-            return;
-        }
-
-        Warn("[AUDIO MANAGER - LISTENER POS] Tried setting listener position with invalid audio engine");
+        if (m_audioEngine) ma_engine_listener_set_position(GetAudioEngine(), 0, _pos.x, _pos.y, _pos.z);
     }
 
     maEngine* AudioManager::GetAudioEngine() const
@@ -213,66 +256,32 @@ namespace RR
         return m_audioEngine.get();
     }
 
-    // PRIVATE ---------------------------------------------------------------------------------------------------------
+    // CLIP CACHE (FLYWEIGHT) ------------------------------------------------------------------------------------------
 
-    bool AudioManager::Init()
+    std::shared_ptr<AudioClip> AudioManager::GetClip(const std::string& _key)
     {
-        auto result = ma_engine_init(nullptr, GetAudioEngine());
-
-        if (result != MA_SUCCESS)
+        // already decoded + still referenced?
+        if (auto it = m_clipCache.find(_key); it != m_clipCache.end())
         {
-            Error("[AUDIO - INIT] MiniAudio Engine has failed to initialize!");
-            return false;
+            if (auto cached = it->second.lock()) return cached;
         }
 
-        m_initialized = true;
-        ScanAudioAssets();
-        return true;
-    }
-
-    void AudioManager::ScanAudioAssets()
-    {
-        auto& fileSystem = Engine::GetInstance().GetFileSystem();
-        const auto files = fileSystem.ListAssetFiles(
-            "Audio", {".wav", ".mp3", ".flac", ".ogg"});
-
-        // Iterate over files globbed
-        for (const auto& relToRoot : files)
+        auto itPath = m_keyToPath.find(_key);
+        if (itPath == m_keyToPath.end())
         {
-            const std::string key = DeriveKey(relToRoot.lexically_relative("Audio"));
-
-            // Prevent duplicate naming files
-            if (m_keyToPath.contains(key))
-            {
-                Warn("[AUDIO - SCAN] Duplicate key '", key, "' from '", relToRoot.generic_string(),
-                 "' — already mapped to '", m_keyToPath[key], "'. Rename to distinguish");
-                continue;
-            }
-            m_keyToPath[key] = relToRoot.generic_string();
+            Warn("[AUDIO - GET] Requested unknown audio key '", _key, "'");
+            return nullptr;
         }
 
-        Log("[AUDIO] Registered ", m_keyToPath.size(), " audio assets");
-    }
+        auto clip = DecodeClip(itPath->second);
+        if (clip)
+        {
+            m_clipCache[_key] = clip;
+            return clip;
+        }
 
-    void AudioManager::Update(float _deltaTime)
-    {
-        // Erase one shots that are done playing
-        std::erase_if(m_oneShots,
-            [](const std::unique_ptr<StaticAudio>& voice) {
-                return voice->IsFinished();
-            });
-
-        // Erase music when its been told to stop and has actually stopped
-        std::erase_if(m_music, [](const auto& killVoice)
-            {
-                const MusicTrack& track = killVoice.second;
-
-                if (track.voice->IsFinished() || (track.removing && !track.voice->IsPlaying()))
-                {
-                    return true;
-                }
-                return false;
-            });
+        Warn("[AUDIO - GET] Audio key '", _key, "' could not be decoded");
+        return nullptr;
     }
 
     std::shared_ptr<AudioClip> AudioManager::DecodeClip(const std::string& _relativePath)
@@ -280,26 +289,17 @@ namespace RR
         auto rawBytes = Engine::GetInstance().GetFileSystem().LoadAssetFile(_relativePath);
         if (rawBytes.empty())
         {
-            Warn("[AUDIO - CLIP] Audio clip Empty or not found at: '", _relativePath, "'");
+            Warn("[AUDIO - CLIP] Audio clip empty or not found at: '", _relativePath, "'");
             return nullptr;
         }
 
-        // configure clip decoder
         ma_decoder_config config = ma_decoder_config_init(
             ma_format_f32,
-            0, //native channels
-            ma_engine_get_sample_rate(m_audioEngine.get())
-            );
+            0, // native channels (mono stays spatializable)
+            ma_engine_get_sample_rate(m_audioEngine.get()));
 
         ma_decoder decoder;
-        auto result = ma_decoder_init_memory(
-            rawBytes.data(),
-            rawBytes.size(),
-            &config, &decoder
-            );
-
-        // let user know if decodition explodesss
-        if (result != MA_SUCCESS)
+        if (ma_decoder_init_memory(rawBytes.data(), rawBytes.size(), &config, &decoder) != MA_SUCCESS)
         {
             Warn("[AUDIO - CLIP] Failed to decode clip at: '", _relativePath, "'");
             return nullptr;
@@ -311,7 +311,6 @@ namespace RR
         ma_uint64 frameCount = 0;
         ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount);
 
-        // read data to vector then delete decoder
         std::vector<float> pcm(frameCount * channels);
         ma_uint64 framesRead = 0;
         ma_decoder_read_pcm_frames(&decoder, pcm.data(), frameCount, &framesRead);
@@ -319,22 +318,41 @@ namespace RR
 
         if (framesRead == 0)
         {
-            Warn("[AUDIO - CLIP] Loaded clip with 0 frames at: '", _relativePath, "' discarding");
+            Warn("[AUDIO - CLIP] Loaded clip with 0 frames at: '", _relativePath, "', discarding");
             return nullptr;
         }
         pcm.resize(framesRead * channels);
 
-        // if valid, ship!
         return std::make_shared<AudioClip>(std::move(pcm), framesRead, channels, sampleRate);
+    }
+
+    void AudioManager::ScanAudioAssets()
+    {
+        auto& fileSystem = Engine::GetInstance().GetFileSystem();
+        const auto files = fileSystem.ListAssetFiles("Audio", {".wav", ".mp3", ".flac", ".ogg"});
+
+        for (const auto& relToRoot : files)
+        {
+            const std::string key = DeriveKey(relToRoot.lexically_relative("Audio"));
+
+            if (m_keyToPath.contains(key))
+            {
+                Warn("[AUDIO - SCAN] Duplicate key '", key, "' from '", relToRoot.generic_string(),
+                     "' — already mapped to '", m_keyToPath[key], "'. Rename to disambiguate.");
+                continue;
+            }
+            m_keyToPath[key] = relToRoot.generic_string();
+        }
+
+        Log("[AUDIO] Registered ", m_keyToPath.size(), " audio assets");
     }
 
     void AudioManager::AppendWords(const std::string& _segment, std::vector<std::string>& _out)
     {
         std::string word;
-
         for (char ch : _segment)
         {
-            if (ch=='_' || ch=='-' || ch==' ')
+            if (ch == '_' || ch == '-' || ch == ' ')
             {
                 if (!word.empty())
                 {
@@ -347,53 +365,28 @@ namespace RR
                 word += ch;
             }
         }
-
         if (!word.empty()) _out.push_back(word);
     }
 
     std::string AudioManager::DeriveKey(const fSysPath& _relToAudio)
     {
         std::vector<std::string> words;
-
         for (const auto& segment : _relToAudio.parent_path())
         {
             AppendWords(segment.string(), words);
         }
-
         AppendWords(_relToAudio.stem().string(), words);
+
         std::string key;
-
-        for (auto& currWord : words)
+        for (auto& word : words)
         {
-            currWord[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(currWord[0])));
-            key += currWord;
+            word[0] = static_cast<char>(std::toupper(static_cast<unsigned char>(word[0])));
+            key += word;
         }
-
         if (!key.empty())
         {
             key[0] = static_cast<char>(std::tolower(static_cast<unsigned char>(key[0])));
         }
-
         return key;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
