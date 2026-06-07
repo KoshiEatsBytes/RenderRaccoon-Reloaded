@@ -182,11 +182,21 @@ namespace RR
         return Tracker<StaticAudio>({}, std::move(revive));
     }
 
-    Tracker<SpatialAudio> AudioManager::GetSpatial(const std::string& _key)
+    std::shared_ptr<SpatialAudio> AudioManager::CreateSpatial(const std::string& _key, uInt _channel)
     {
+        if (_channel >= m_channelCount)
+        {
+            Warn("[AUDIO - SPATIAL] channel out of scope, reverting to fallback");
+            _channel = m_fallbackChannel;
+        }
 
-        // TODO(component phase): spatial is multi-instance + entity-owned — not the keyed model.
-        return {};
+        auto voice = CreateVoiceShared<SpatialAudio>(_key);
+        if (voice)
+        {
+            // routes bus to component
+            voice->AttachToGroup(m_channels[_channel].GetGroup());
+        }
+        return voice;
     }
 
     // VOLUME ----------------------------------------------------------------------------------------------------------
@@ -234,6 +244,11 @@ namespace RR
         ma_engine_listener_set_position (GetAudioEngine(), 0, _pos.x, _pos.y, _pos.z);
         ma_engine_listener_set_direction(GetAudioEngine(), 0, _dir.x, _dir.y, _dir.z);
         ma_engine_listener_set_world_up (GetAudioEngine(), 0, _up.x,  _up.y,  _up.z);
+    }
+
+    void AudioManager::SetListenerVelocity(const vec3& _vel) const
+    {
+        if (m_audioEngine) ma_engine_listener_set_velocity(GetAudioEngine(), 0, _vel.x, _vel.y, _vel.z);
     }
 
     void AudioManager::SetListenerDirection(const vec3& _dir) const

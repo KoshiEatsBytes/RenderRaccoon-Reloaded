@@ -23,9 +23,9 @@ void Player::Init()
 
 
     m_audioComp = AddComponent<RR::AudioSourceComponent>();
-    m_audioComp->LoadAudio("shoot", "Audio/shoot.wav");
-    m_audioComp->LoadAudio("jump", "Audio/jump.wav");
-    m_audioComp->LoadAudio("step", "Audio/step.wav");
+    //m_audioComp->LoadAudio("shoot", "Audio/shoot.wav");
+    //m_audioComp->LoadAudio("jump", "Audio/jump.wav");
+    //m_audioComp->LoadAudio("step", "Audio/step.wav");
 
     auto gun = LoadGLTF("Models/Gun/scene.gltf");
     gun->SetParent(this);

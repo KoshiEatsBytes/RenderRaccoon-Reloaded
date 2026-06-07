@@ -38,10 +38,10 @@ namespace RR
         void CrossFade  (const std::string& _from, const std::string& _to, float _seconds = 1.0f, bool _loop = true);
         void StopChannel(uInt _channel, float _fadeOut = 0.0f);
 
-        // TRACKERS
+        // TRACKERS / CREATORS
         Tracker<StaticAudio>  GetStatic (const std::string& _key);
         Tracker<StaticAudio>  GetOneShot(const std::string& _key);
-        Tracker<SpatialAudio> GetSpatial(const std::string& _key);
+        std::shared_ptr<SpatialAudio> CreateSpatial(const std::string& _key, uInt _channel);
 
         // VOLUME
         void  SetChannelVolume(uInt _channel, float _vol);
@@ -53,6 +53,7 @@ namespace RR
         void SetListenerDirection(const vec3& _dir) const;
         void SetListenerWorldUp(const vec3& _up) const;
         void SetListenerPosition(const vec3& _pos) const;
+        void SetListenerVelocity(const vec3& _vel) const;
 
         std::shared_ptr<AudioClip> GetClip(const std::string& _key);
         maEngine* GetAudioEngine() const;
