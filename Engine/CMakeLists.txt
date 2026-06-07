@@ -101,6 +101,7 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/StaticChannel.h
         Source/Audio/AudioChannel.cpp
         Source/Audio/AudioChannel.h
+        Source/Audio/Tracker.h
 )
 
 # Compose application structure

@@ -195,7 +195,111 @@ Engine (singleton)            platform + subsystems + main loop
 
 ---
 
-## 12. Build notes
+## 12. Audio
+
+- **Library: miniaudio** (single-header). Picked over OpenAL Soft / SoLoud / FMOD for: zero MinGW
+  build friction (single header, like `cgltf`/`stb_image`), permissive license, built-in WAV/FLAC/MP3
+  decoders, and — decisive for an internals-focused project — a dual high-level/low-level API (the
+  mixer can be profiled or replaced later). Format support is identical whether you use the engine or
+  decode by hand (same decoders).
+- **Build:** header-only, so *not* an `add_subdirectory` library. `#define MINIAUDIO_IMPLEMENTATION`
+  lives in **exactly one** TU, wrapped in a small `STATIC` `miniaudio` target that also carries the
+  platform link deps (`winmm`/`ole32`; Linux `dl`/`pthread`/`m`; macOS Core Audio frameworks).
+  Windows needs none by default (backends are runtime-loaded) — they're insurance / for
+  `MA_NO_RUNTIME_LINKING`.
+  - *Gotcha — one target only:* listing the impl `.c` in both the `miniaudio` lib *and*
+    `PROJECT_SOURCE_FILES` double-compiles it and risks duplicate symbols.
+  - *Gotcha — forward-declaring miniaudio types in `Types.h`:* `ma_engine`/`ma_sound`/`ma_decoder`
+    are named-tag structs → `struct X;` works. `ma_result` (an **enum**) and `ma_audio_buffer`/`_ref`
+    (**anonymous** typedefs) **cannot** be `struct`-forward-declared ("using typedef-name after
+    struct") — anonymous ones are wrapped in our own named struct (`AudioBufferRef`) to keep
+    `miniaudio.h` out of engine headers. `ma_sound_group` *is* `ma_sound` (`maSoundGroup = ma_sound`).
+- **Placement:** `AudioManager` is **Engine-owned** (like `RenderQueue`/`InputManager`), reached via
+  `Engine::GetInstance().GetAudioManager()` — *not* a SubSystem. Audio is core infrastructure, not a
+  game opt-in. It's ticked from the Engine loop (its `Update` reaps finished voices); an Engine-owned
+  manager can still be driven per-frame, so "needs an Update" didn't force the SubSystem path.
+
+### Clip flyweight vs voices (the core split)
+- **`AudioClip` is the flyweight** — immutable decoded PCM (`vector<float>` + channels/rate), loaded
+  **once** and shared. A **voice** (one `ma_sound`) is per-playback. Fusing them (the original `Audio`
+  class) was the root mistake: a `ma_sound` is a *single* voice, so a shared object couldn't overlap
+  with itself or be played by two emitters. The split is what enables polyphony and sharing.
+- Decode once to PCM at the **engine sample rate** but **native channel count** (mono stays mono —
+  miniaudio only spatializes mono sources). Each voice wraps its **own** `ma_audio_buffer_ref`
+  (independent read cursor) over the clip's shared PCM — you **cannot** share a `ma_decoder`/data
+  source across simultaneous voices (single cursor).
+- Cache is `unordered_map<key, weak_ptr<AudioClip>>` → clips free when the last referencing voice
+  dies (≈ per-scene lifetime for free; no per-scene cache needed). Decoding is lazy (first `GetClip`);
+  the manifest scan only catalogs.
+- **Voices:** `AudioVoice` (base: play/stop/pause/resume, fades, volume/pitch, group routing,
+  `IsFinished`/`IsPaused`) → `SpatialAudio` (3D + **mono gate**: a non-mono clip warns and degrades to
+  2D) and `StaticAudio` (2D + pan). miniaudio handles are pimpl'd so headers stay miniaudio-free; the
+  dtor **manually `*_uninit`s** in dependency order (sound → buffer_ref → clip) because the mixer
+  reads the buffer on its own thread — a `unique_ptr` only frees memory, it doesn't `uninit`.
+
+### Asset registry (keys, not paths)
+- Audio is addressed by **stable camelCase keys**, built at `Init` by scanning `Assets/Audio`
+  (`FileSystem::ListAssetFiles`, the reusable enumeration primitive) into a `key → path` manifest;
+  `GetClip(key)` resolves + lazily decodes + caches.
+- The key is the **full relative path under `Audio/`, camelCased** (`Audio/Gun/shoot.wav` →
+  `gunShoot`; split on `/ _ - space`). Using the *full* path (not just the filename) makes collisions
+  nearly impossible by construction — so the original "append 1/2/3 on duplicate" idea was dropped:
+  it was scan-order-dependent → **unstable keys**. Genuine collisions (same name+folder, different
+  extension) **warn** instead.
+
+### Channels = `ma_sound_group` buses
+- A **channel is a `ma_sound_group`**, not a hand-rolled mixer. Channel volume/pitch/pan are **group**
+  properties the mixer applies (`ma_sound_group_set_*`); per-voice values stay independent. The
+  earlier hand-rolled version multiplied `track × channel` and stored the result on the voice — which
+  was **lossy** (changing channel volume clobbered per-track volumes) and broke the menu-slider use
+  case. Groups fix it for free and enable master/music/SFX volume buses.
+- Voices join a channel via **`AudioVoice::AttachToGroup`** (`ma_node_attach_output_bus`, runtime
+  re-routing) — so voice creation stays group-agnostic and "bind" just assigns the bus. An
+  **un-grouped voice routes to the engine endpoint** → affected by master volume only.
+- A channel exposes **bus controls + collection lifecycle** (add / stop / reap) but **no per-track
+  tuning** — individual-voice control is the Tracker's job (reaching into one sound "through" a bus is
+  out of place for what a bus does).
+- **Reap** (per-frame `Update`): one-shots on `IsFinished()`; tracks on
+  `IsFinished() || (!IsPlaying() && !IsPaused())`. Keying off `IsPaused()` (rather than a channel-side
+  "removing" flag) keeps a *paused* track alive while collecting a *stopped* one — and lets `Stop`
+  live on the voice/Tracker without coupling to channel internals. Note `ma_sound_is_playing` reports
+  node *state* (started/stopped), **not** "reached the end" — a finished one-shot is still "started",
+  which is why one-shots reap on `ma_sound_at_end` instead.
+
+### Tracker — non-owning voice handle
+- **`Tracker<T>`** (`T` = `StaticAudio`/`SpatialAudio`) is a copyable, lifecycle-neutral handle for
+  controlling a specific voice without the channel proxying every method. Holds `weak_ptr<T>` + a
+  `std::function` **revive callback** + a sticky-config cache.
+- **Two access tiers.** The tracker's own methods are *smart*: `.Play()` **revives** a reaped voice
+  via the callback (rebuild from the cached clip → re-add to the channel; flyweight intact), sticky
+  config (volume/pitch/pan) is **cached and replayed on revive**, and all no-op safely if the voice
+  is gone. **`operator->` goes straight to the raw voice** for the long tail (`SetCone`,
+  `SetMinMaxDistance`…) — the fast path, assumes alive (guard with `if (tracker)`).
+- **Type-safe surface** via C++20 `requires`: `SetPan` exists only on `Tracker<StaticAudio>`,
+  `SetPosition`/etc. only on `Tracker<SpatialAudio>`. The getter's *context* fixes `T` (manager
+  getters → static, component getters → spatial), so `auto track = ...` is never ambiguous.
+- **Ownership:** the channel owns the voice (`shared_ptr<AudioVoice>`), the Tracker observes
+  (`weak_ptr<T>`) — both from one `make_shared<Derived>` so they share a control block. The channel's
+  reap is authoritative; a Tracker never extends a voice's lifetime.
+
+### 2D vs 3D & polyphony
+- **One-shots** (UI/SFX) are **ephemeral, fire-and-forget** — a fresh voice per `PlayOneShot`, reaped
+  at end. Deliberately *not* keyed-and-reused: one voice per key can't overlap with itself, which
+  kills polyphony (rapid gunfire, footsteps). Per-play cost is negligible (clip cached; only a cheap
+  `ma_sound` node-init). If it ever profiles hot, the fix is a **voice pool** (reuse voice objects,
+  preserving polyphony) + **voice limiting** — *not* one-voice-per-key.
+- **Music / managed** sounds are **keyed, single-instance, controllable** (stop/fade/crossfade by
+  name; `CrossFade` = two concurrent fades). Multiple concurrent tracks are supported → layering.
+- **3D** sounds belong to **components**: an `AudioSourceComponent` owns its spatial voices and pushes
+  the owner's world transform into them each `LateUpdate` via `Tracker<SpatialAudio>` — per-entity
+  ownership (they die with the entity). Groups apply to 3D too: spatialization happens at the sound,
+  the group is a downstream volume bus → a "3D SFX volume" slider.
+- **Listener** is global/singular, driven by an `AudioListenerComponent` on the camera (position +
+  direction + world-up pushed per frame).
+
+---
+
+## 13. Build notes
 
 - **Per-scene physics**, not a global Engine `PhysicsManager`. Components reach physics via their
   scene.
@@ -207,7 +311,7 @@ Engine (singleton)            platform + subsystems + main loop
 
 ---
 
-## 13. Benchmark findings (1000 dynamic boxes, Ryzen 7 7800X3D)
+## 14. Benchmark findings (1000 dynamic boxes, Ryzen 7 7800X3D)
 
 - **Debug → Release single-threaded:** ~20–40× (the earlier "5–7 FPS" was a Debug artifact; real
   single-thread baseline is ~6 ms/frame).
@@ -222,7 +326,7 @@ Engine (singleton)            platform + subsystems + main loop
 
 ---
 
-## 14. Known limitations & future work
+## 15. Known limitations & future work
 
 - **No frustum culling** — every object draws every frame (the next obvious optimization; the
   benchmark scenes already demonstrate the cost).
@@ -235,3 +339,11 @@ Engine (singleton)            platform + subsystems + main loop
 - **Reparenting** a physics-hierarchy GameObject has stale-ownership edge cases (documented, not
   guarded).
 - **MT determinism** — multithreaded solving isn't bit-exact run-to-run (acceptable for gameplay).
+- **Audio — manager/component wiring in progress.** The clip / voice / channel (`ma_sound_group`) /
+  `Tracker` layer is built; `AudioManager` and `AudioSourceComponent` still need migrating onto
+  `AudioChannel` + Trackers (the older `StaticChannel` is superseded).
+- **Audio — no voice pool / voice limiting** yet (the optimization to reach for if one-shot spawning
+  ever profiles hot — not one-voice-per-key, which would kill polyphony).
+- **Audio — OGG needs `stb_vorbis` wired in** (WAV/MP3/FLAC are built into miniaudio).
+- **Audio — no streaming;** clips fully decode to PCM (fine for SFX/short music; large music files
+  would benefit from a per-voice streaming decoder).
