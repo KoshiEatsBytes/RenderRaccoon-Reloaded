@@ -33,6 +33,8 @@ namespace RR
         // Advanced
         void SetCone(float _innerRad, float _outerRad, float _outerGain);
         void SetRelativeToListener(bool _relative);
+        void CloneSettings(const SpatialAudio& _from);
+        void SetSpatialization(bool _spatial);
 
         // Gets
         AttenuationModel GetAttenuationModel() const;

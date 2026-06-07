@@ -164,6 +164,33 @@ namespace RR
         ma_sound_set_positioning(m_sound.get(), _relative ? ma_positioning_relative : ma_positioning_absolute);
     }
 
+    void SpatialAudio::CloneSettings(const SpatialAudio& _from)
+    {
+        if (!m_initialized) return;
+
+        SetVolume(_from.GetVolume());
+        SetPitch (_from.GetPitch());
+
+        // Spatial profile
+        SetAttenuationModel(_from.GetAttenuationModel());
+
+        const vec2 mm = _from.GetMinMaxDistance();
+        SetMinMaxDistance(mm.x, mm.y);
+
+        SetRolloff(_from.GetRollOff());
+        SetDopplerFactor(_from.GetDopplerFactor());
+
+        const vec3 cone = _from.GetCone();
+        SetCone(cone.x, cone.y, cone.z);
+
+        SetRelativeToListener(_from.GetRelativeToListener());
+    }
+
+    void SpatialAudio::SetSpatialization(bool _spatial)
+    {
+        AudioVoice::SetSpatial(_spatial);
+    }
+
     AttenuationModel SpatialAudio::GetAttenuationModel() const
     {
         return m_attModel;

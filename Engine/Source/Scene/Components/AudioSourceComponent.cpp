@@ -26,9 +26,9 @@ namespace RR
         }
 
         // reap finished one-shots
-        std::erase_if(m_voices, [](const auto& entry)
+        std::erase_if(m_oneShots, [](const auto& entry)
         {
-            return entry.second->IsFinished();
+            return entry->IsFinished();
         });
     }
 
@@ -67,7 +67,23 @@ namespace RR
             return;
         }
 
-        it->second->Play(_loop);
+        auto& temp = it->second;
+
+        if (_loop || !temp->IsPlaying())
+        {
+            temp->Play(_loop);
+        }
+
+        // requesting a new play on a non loop already playing component means a oneshot,
+        // so clone the already playing one and play again
+        auto clone = Engine::GetInstance().GetAudioManager().CreateSpatial(_key, temp->GetChannel());
+        if (!clone) return;
+
+        clone->CloneSettings(*temp);
+        clone->SetPosition(m_owner->GetPosition());
+        clone->Play(false);
+
+        m_oneShots.push_back(std::move(clone));
     }
 
     void AudioSourceComponent::Stop(const std::string& _key, float _fade)

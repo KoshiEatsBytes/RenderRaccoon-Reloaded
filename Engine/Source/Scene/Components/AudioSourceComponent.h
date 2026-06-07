@@ -48,6 +48,7 @@ namespace RR
         vec3 ComputeVelocity(const vec3& _pos, float _dt);
 
         std::unordered_map<std::string, std::shared_ptr<SpatialAudio>> m_voices;
+        std::vector<std::shared_ptr<SpatialAudio>> m_oneShots;
 
         // velocity
         vec3 m_lastPos {0.0f};

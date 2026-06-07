@@ -165,9 +165,37 @@ namespace RR
         ma_sound_set_fade_in_pcm_frames(m_sound.get(), -1.0f, _target, fadeFrames);
     }
 
+    void AudioVoice::AttachToGroup(maSoundGroup* _group)
+    {
+        if (!m_initialized || !_group)
+        {
+            Warn("[AUDIO - GROUPING] Tried attaching to group an uninitialized audio file");
+            return;
+        }
+
+        ma_node_attach_output_bus(m_sound.get(), 0, _group, 0);
+    }
+
+    void AudioVoice::DetachFromGroup()
+    {
+        if (!m_initialized)
+        {
+            Warn("[AUDIO - GROUPING] Tried detaching from group an uninitialized audio file");
+            return;
+        }
+
+        ma_node_attach_output_bus(m_sound.get(), 0,
+            ma_engine_get_endpoint(m_engineRef), 0);
+    }
+
     bool AudioVoice::IsFinished() const
     {
         return m_initialized && ma_sound_at_end(m_sound.get());
+    }
+
+    bool AudioVoice::IsPaused() const
+    {
+        return m_paused;
     }
 
     bool AudioVoice::IsPlaying() const
@@ -221,32 +249,14 @@ namespace RR
         return ma_sound_get_volume(m_sound.get()) * fadeVol;
     }
 
-    bool AudioVoice::IsPaused() const
+    uInt AudioVoice::GetChannel() const
     {
-        return m_paused;
+        return m_channel;
     }
 
-    void AudioVoice::AttachToGroup(maSoundGroup* _group)
+    void AudioVoice::SetChannel(uInt _channel)
     {
-        if (!m_initialized || !_group)
-        {
-            Warn("[AUDIO - GROUPING] Tried attaching to group an uninitialized audio file");
-            return;
-        }
-
-        ma_node_attach_output_bus(m_sound.get(), 0, _group, 0);
-    }
-
-    void AudioVoice::DetachFromGroup()
-    {
-        if (!m_initialized)
-        {
-            Warn("[AUDIO - GROUPING] Tried detaching from group an uninitialized audio file");
-            return;
-        }
-
-        ma_node_attach_output_bus(m_sound.get(), 0,
-            ma_engine_get_endpoint(m_engineRef), 0);
+        m_channel = _channel;
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

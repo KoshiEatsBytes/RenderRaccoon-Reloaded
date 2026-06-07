@@ -90,7 +90,7 @@ namespace RR
     {
         if (_fallback >= m_channelCount)
         {
-            Warn("[AUDIO - RESOLVE] Channel index out of scope! fallback on main channel");
+            Warn("[AUDIO - RESOLVE] Fallback channel out of scope! fallback-ing on main channel");
             return 0;
         }
 
@@ -102,27 +102,21 @@ namespace RR
 
     void AudioManager::PlayOneShot(const std::string& _key, float _vol)
     {
-        auto channel = ResolveChannel(_key, m_fallbackChannel);
-        m_keyToChannel[_key] = channel;
-
         auto voice = CreateVoiceShared<StaticAudio>(_key);
         if (!voice) return;
 
         // Route before play
-        m_channels[channel].AddOneShot(voice);
+        m_channels[voice->GetChannel()].AddOneShot(voice);
         voice->SetVolume(_vol);
         voice->Play(false);
     }
 
     void AudioManager::PlayManaged(const std::string& _key, bool _loop, float _fadeIn)
     {
-        auto channel = ResolveChannel(_key, m_fallbackChannel);
-        m_keyToChannel[_key] = channel;
-
         auto voice = CreateVoiceShared<StaticAudio>(_key);
         if (!voice) return;
 
-        m_channels[channel].Add(_key, voice);
+        m_channels[voice->GetChannel()].Add(_key, voice);
 
         if (_fadeIn > 0.0f)
             voice->FadeIn(_fadeIn, _loop);
@@ -157,13 +151,12 @@ namespace RR
 
     Tracker<StaticAudio> AudioManager::GetStatic(const std::string& _key)
     {
-        return GetTrack<StaticAudio>(_key, ResolveChannel(_key, m_fallbackChannel));
+        return GetTrack<StaticAudio>(_key);
     }
 
     Tracker<StaticAudio> AudioManager::GetOneShot(const std::string& _key)
     {
         auto channelIndex = ResolveChannel(_key, m_fallbackChannel);
-        m_keyToChannel[_key] = channelIndex;
 
         AudioChannel& channel = m_channels[channelIndex];
         auto revive = [this, &channel, _key]() -> std::shared_ptr<StaticAudio>
@@ -190,6 +183,7 @@ namespace RR
             _channel = m_fallbackChannel;
         }
 
+        BindTrack(_key, _channel);
         auto voice = CreateVoiceShared<SpatialAudio>(_key);
         if (voice)
         {

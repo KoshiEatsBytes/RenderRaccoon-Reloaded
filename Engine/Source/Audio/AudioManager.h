@@ -86,7 +86,12 @@ namespace RR
         std::shared_ptr<T> CreateVoiceShared(const std::string& _key)
         {
             auto clip = GetClip(_key);
-            return clip ? std::make_shared<T>(clip, m_audioEngine.get()) : nullptr;
+            if (!clip) return nullptr;
+
+            auto voice = std::make_shared<T>(clip, m_audioEngine.get());
+            auto channel = ResolveChannel(_key, m_fallbackChannel);
+            voice->SetChannel(channel);
+            return voice;
         }
 
     public:
@@ -98,17 +103,9 @@ namespace RR
         }
 
         template<typename T>
-        Tracker<T> GetTrack(const std::string& _key, uInt _channel)
+        Tracker<T> GetTrack(const std::string& _key)
         {
-            if (_channel >= m_channelCount)
-            {
-                Warn("[AUDIO - RESOLVE] Channel index out of scope! fallback on main channel");
-                return {};
-            }
-
-            m_keyToChannel[_key] = _channel;
-
-            AudioChannel& channel = m_channels[_channel];
+            AudioChannel& channel = m_channels[ResolveChannel(_key)];
             std::shared_ptr<T> live = std::static_pointer_cast<T>(channel.Find(_key));
 
             auto revive = [this, &channel, _key]() -> std::shared_ptr<T>

@@ -23,9 +23,13 @@ void Player::Init()
 
 
     m_audioComp = AddComponent<RR::AudioSourceComponent>();
-    //m_audioComp->LoadAudio("shoot", "Audio/shoot.wav");
-    //m_audioComp->LoadAudio("jump", "Audio/jump.wav");
-    //m_audioComp->LoadAudio("step", "Audio/step.wav");
+    m_shootsfx = m_audioComp->BindTrack("shoot", 0);
+    m_audioComp->BindTrack("jump", 1);
+    m_audioComp->BindTrack("step", 2);
+
+    //auto& audio = RR::Engine::GetInstance().GetAudioManager();
+    //m_shootSFX = audio.GetOneShot("shoot");
+    //m_shootSFX->SetVolume(0.15f);
 
     auto gun = LoadGLTF("Models/Gun/scene.gltf");
     gun->SetParent(this);
@@ -61,15 +65,10 @@ void Player::PreUpdate(float _deltaTime)
         {
             m_animationComp->Play("shoot", false);
 
-            if (m_audioComp)
-            {
-                if (m_audioComp->IsPlaying("shoot"))
-                {
-                    m_audioComp->Stop("shoot");
-                }
-                m_audioComp->Play("shoot");
-            }
         }
+
+        m_shootsfx->Play();
+
     }
 
 

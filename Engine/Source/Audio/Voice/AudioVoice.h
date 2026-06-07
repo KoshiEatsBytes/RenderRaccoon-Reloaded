@@ -27,7 +27,11 @@ namespace RR
         void FadeOut(float _duration);
         void FadeTo(float _target, float _duration);
 
+        void AttachToGroup(maSoundGroup* _group);
+        void DetachFromGroup();
+
         bool IsFinished() const;
+        bool IsPaused() const;
         bool IsPlaying() const;
         bool IsInitialized() const;
 
@@ -37,10 +41,8 @@ namespace RR
         void SetVolume(float _vol);
         float GetVolume() const;
 
-        bool IsPaused() const;
-
-        void AttachToGroup(maSoundGroup* _group);
-        void DetachFromGroup();
+        uInt GetChannel() const;
+        void SetChannel(uInt _channel);
 
     protected:
         AudioVoice(std::shared_ptr<AudioClip> _clip, maEngine* _engine);
@@ -53,6 +55,7 @@ namespace RR
         std::unique_ptr<maSound>          m_sound;
 
         maEngine* m_engineRef = nullptr;
+        uInt m_channel = 0;
         bool m_initialized = false;
         bool m_paused = false;
 
