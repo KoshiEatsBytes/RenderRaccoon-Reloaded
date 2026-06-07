@@ -100,7 +100,7 @@ namespace RR
 
     // 2D PLAYBACK -----------------------------------------------------------------------------------------------------
 
-    void AudioManager::PlayOneShot(const Tracker<SpatialAudio>& _tracker)
+    void AudioManager::PlayOneShot(const Tracker<StaticAudio>& _tracker)
     {
         PlayOneShot(_tracker.GetKey());
     }
@@ -108,22 +108,29 @@ namespace RR
     void AudioManager::PlayOneShot(const std::string& _key, float _vol)
     {
         const uInt channel = ResolveChannel(_key, m_fallbackChannel);
-        auto voice = CreateVoiceShared<StaticAudio>(_key, channel);
-        if (!voice) return;
 
-        // Route before play
-        m_channels[channel].AddOneShot(voice);
-        voice->SetVolume(_vol);
-        voice->Play(false);
+        // clone the chached voice so settings stick
+        auto prototype = GetOrCreateVoice<StaticAudio>(_key, channel);
+        if (!prototype) return;
+
+        auto clone = CreateVoiceShared<StaticAudio>(_key, channel);
+        if (!clone) return;
+
+        clone->CloneSettings(*prototype);
+        if (_vol != 1.0f) clone->SetVolume(prototype->GetVolume() * _vol);
+
+        // Route into the bus, then play; the channel reaps it once finished.
+        m_channels[channel].AddOneShot(clone);
+        clone->Play(false);
     }
 
     void AudioManager::PlayManaged(const std::string& _key, bool _loop, float _fadeIn)
     {
         const uInt channel = ResolveChannel(_key, m_fallbackChannel);
-        auto voice = CreateVoiceShared<StaticAudio>(_key, channel);
-        if (!voice) return;
 
-        m_channels[channel].Add(_key, voice);
+        // Reuse the cached voice if present so its settings persist across plays.
+        auto voice = GetOrCreateVoice<StaticAudio>(_key, channel);
+        if (!voice) return;
 
         if (_fadeIn > 0.0f)
             voice->FadeIn(_fadeIn, _loop);

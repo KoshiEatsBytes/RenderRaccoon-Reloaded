@@ -59,17 +59,10 @@ namespace RR
 
     void AudioChannel::Update()
     {
-        // One-shots are non-looping, reap once playback reaches the end
+        // One-shots are clones of a cached voice: reap once playback reaches the end.
         std::erase_if(m_oneShots, [](const std::shared_ptr<AudioVoice>& voice)
         {
             return voice->IsFinished();
-        });
-
-        // Tracks: reap when finished, or stopped
-        std::erase_if(m_tracks, [](const auto& entry)
-        {
-            const AudioVoice& voice = *entry.second;
-            return voice.IsFinished() || (!voice.IsPlaying() && !voice.IsPaused());
         });
     }
 

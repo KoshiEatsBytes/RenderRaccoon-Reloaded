@@ -34,7 +34,7 @@ namespace RR
         void BindTrack(const std::string& _key, uInt _channel);
 
         // PLAYBACK
-        void PlayOneShot(const Tracker<SpatialAudio>& _tracker);
+        void PlayOneShot(const Tracker<StaticAudio>& _tracker);
         void PlayOneShot(const std::string& _key, float _vol = 1.0f);
         void PlayManaged(const std::string& _key, bool _loop = true, float _fadeIn = 0.0f);
         void StopManaged(const std::string& _key, float _fadeOut = 0.0f);
@@ -95,6 +95,20 @@ namespace RR
             return voice;
         }
 
+        // Fetch the cached voice for a key, or create and cache it
+        template<AudioType T>
+        std::shared_ptr<T> GetOrCreateVoice(const std::string& _key, uInt _channel)
+        {
+            AudioChannel& channel = m_channels[_channel];
+            std::shared_ptr<T> voice = std::static_pointer_cast<T>(channel.Find(_key));
+            if (!voice)
+            {
+                voice = CreateVoiceShared<T>(_key, _channel);
+                if (voice) channel.Add(_key, voice);
+            }
+            return voice;
+        }
+
     public:
 
         template<typename E> requires std::is_enum_v<E>
@@ -107,14 +121,12 @@ namespace RR
         Tracker<T> GetTrack(const std::string& _key)
         {
             const uInt channelIndex = ResolveChannel(_key, m_fallbackChannel);
-            AudioChannel& channel = m_channels[channelIndex];
-            std::shared_ptr<T> live = std::static_pointer_cast<T>(channel.Find(_key));
+
+            std::shared_ptr<T> live = GetOrCreateVoice<T>(_key, channelIndex);
 
             auto revive = [this, _key, channelIndex]() -> std::shared_ptr<T>
             {
-                auto voice = CreateVoiceShared<T>(_key, channelIndex);
-                if (voice) m_channels[channelIndex].Add(_key, voice);
-                return voice;
+                return GetOrCreateVoice<T>(_key, channelIndex);
             };
             return Tracker<T>(live, std::move(revive), _key);
         }

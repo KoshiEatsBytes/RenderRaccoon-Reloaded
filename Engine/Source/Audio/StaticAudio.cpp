@@ -58,4 +58,13 @@ namespace RR
         if (m_initialized) return ma_sound_get_pan(m_sound.get());
         return 0.0f;
     }
+
+    void StaticAudio::CloneSettings(const StaticAudio& _from)
+    {
+        if (!m_initialized) return;
+
+        SetVolume(_from.GetVolume());
+        SetPitch (_from.GetPitch());
+        SetPan   (_from.GetPan());
+    }
 }

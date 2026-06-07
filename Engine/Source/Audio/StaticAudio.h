@@ -18,5 +18,8 @@ namespace RR
         void SetPan(float _pan);
         void SetPanMode(PanMode _mode);
         float GetPan() const;
+
+        // Copy settings from another static voice
+        void CloneSettings(const StaticAudio& _from);
     };
 }
