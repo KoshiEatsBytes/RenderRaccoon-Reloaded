@@ -54,6 +54,9 @@ namespace RR
         std::unordered_map<std::string, std::shared_ptr<SpatialAudio>> m_voices;
         std::vector<std::shared_ptr<SpatialAudio>> m_oneShots;
 
+        // Liveness token handed to trackers
+        std::shared_ptr<bool> m_aliveToken = std::make_shared<bool>(true);
+
         // velocity
         vec3 m_lastPos {0.0f};
         vec3 m_velocity {0.0f};

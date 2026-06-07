@@ -102,21 +102,23 @@ namespace RR
 
     void AudioManager::PlayOneShot(const std::string& _key, float _vol)
     {
-        auto voice = CreateVoiceShared<StaticAudio>(_key);
+        const uInt channel = ResolveChannel(_key, m_fallbackChannel);
+        auto voice = CreateVoiceShared<StaticAudio>(_key, channel);
         if (!voice) return;
 
         // Route before play
-        m_channels[voice->GetChannel()].AddOneShot(voice);
+        m_channels[channel].AddOneShot(voice);
         voice->SetVolume(_vol);
         voice->Play(false);
     }
 
     void AudioManager::PlayManaged(const std::string& _key, bool _loop, float _fadeIn)
     {
-        auto voice = CreateVoiceShared<StaticAudio>(_key);
+        const uInt channel = ResolveChannel(_key, m_fallbackChannel);
+        auto voice = CreateVoiceShared<StaticAudio>(_key, channel);
         if (!voice) return;
 
-        m_channels[voice->GetChannel()].Add(_key, voice);
+        m_channels[channel].Add(_key, voice);
 
         if (_fadeIn > 0.0f)
             voice->FadeIn(_fadeIn, _loop);
@@ -154,25 +156,11 @@ namespace RR
         return GetTrack<StaticAudio>(_key);
     }
 
-    Tracker<StaticAudio> AudioManager::GetOneShot(const std::string& _key)
+    ManagerAudioTracker AudioManager::GetOneShot(const std::string& _key)
     {
-        auto channelIndex = ResolveChannel(_key, m_fallbackChannel);
-
-        AudioChannel& channel = m_channels[channelIndex];
-        auto revive = [this, &channel, _key]() -> std::shared_ptr<StaticAudio>
-        {
-            auto voice = CreateVoiceShared<StaticAudio>(_key);
-
-            if (voice)
-            {
-                channel.AddOneShot(voice);
-            }
-
-            return voice;
-        };
-
-        // Not a live voice, spawn on first play
-        return Tracker<StaticAudio>({}, std::move(revive), _key);
+        // A lightweight handle bound to this manager + key; each PlayOneShot()
+        // spawns a fresh overlapping one-shot (see AudioManager::PlayOneShot).
+        return ManagerAudioTracker(this, _key);
     }
 
     std::shared_ptr<SpatialAudio> AudioManager::CreateSpatial(const std::string& _key, uInt _channel)
@@ -183,8 +171,8 @@ namespace RR
             _channel = m_fallbackChannel;
         }
 
-        BindTrack(_key, _channel);
-        auto voice = CreateVoiceShared<SpatialAudio>(_key);
+        // Deliberately does NOT bind the key globally
+        auto voice = CreateVoiceShared<SpatialAudio>(_key, _channel);
         if (voice)
         {
             // routes bus to component
@@ -269,7 +257,7 @@ namespace RR
 
     std::shared_ptr<AudioClip> AudioManager::GetClip(const std::string& _key)
     {
-        // already decoded + still referenced?
+        // already decoded & still referenced
         if (auto it = m_clipCache.find(_key); it != m_clipCache.end())
         {
             if (auto cached = it->second.lock()) return cached;
@@ -302,10 +290,8 @@ namespace RR
             return nullptr;
         }
 
-        ma_decoder_config config = ma_decoder_config_init(
-            ma_format_f32,
-            0, // native channels (mono stays spatializable)
-            ma_engine_get_sample_rate(m_audioEngine.get()));
+        ma_decoder_config config = ma_decoder_config_init(ma_format_f32,
+            0, ma_engine_get_sample_rate(m_audioEngine.get()));
 
         ma_decoder decoder;
         if (ma_decoder_init_memory(rawBytes.data(), rawBytes.size(), &config, &decoder) != MA_SUCCESS)

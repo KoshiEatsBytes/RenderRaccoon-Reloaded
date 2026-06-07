@@ -67,7 +67,7 @@ void Player::PreUpdate(float _deltaTime)
 
         }
 
-        m_shootsfx->Play();
+        m_shootsfx.Play();
 
     }
 

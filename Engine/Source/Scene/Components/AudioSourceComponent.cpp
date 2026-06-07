@@ -1,4 +1,6 @@
 
+#include <cmath>
+
 #include "AudioSourceComponent.h"
 
 #include "Engine.h"
@@ -47,7 +49,7 @@ namespace RR
         m_voices[_key] = voice;
 
         auto rootTracker = Tracker<SpatialAudio>(voice, {}, _key);
-        return ComponentAudioTracker(this, rootTracker);
+        return ComponentAudioTracker(this, m_aliveToken, rootTracker);
     }
 
     ComponentAudioTracker AudioSourceComponent::GetTrack(const std::string& _key)
@@ -56,7 +58,7 @@ namespace RR
         if (it != m_voices.end())
         {
             auto rootTracker = Tracker<SpatialAudio>(it->second, {}, _key);
-            return ComponentAudioTracker(this, rootTracker);
+            return ComponentAudioTracker(this, m_aliveToken, rootTracker);
         }
 
         Warn("[AUDIO SOURCE] GetTrack with key '", _key, "' found no match");
@@ -277,8 +279,10 @@ namespace RR
             raw = vec3(0.0f);
         }
 
-        // calculates velocity for fitting sound
-        m_velocity = m_velocity + (raw - m_velocity) * 0.5f;
+        // Frame-rate independent exponential smoothing
+        constexpr float kSmoothTime = 0.05f;
+        const float alpha = 1.0f - std::exp(-_dt / kSmoothTime);
+        m_velocity = m_velocity + (raw - m_velocity) * alpha;
         return m_velocity;
     }
 }

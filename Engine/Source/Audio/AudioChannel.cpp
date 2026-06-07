@@ -65,7 +65,7 @@ namespace RR
             return voice->IsFinished();
         });
 
-        // Tracks, reap finished and stopped, not paused
+        // Tracks: reap when finished, or stopped
         std::erase_if(m_tracks, [](const auto& entry)
         {
             const AudioVoice& voice = *entry.second;

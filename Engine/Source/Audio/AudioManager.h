@@ -8,6 +8,7 @@
 #include "Helpers/Common.h"
 #include "AudioChannel.h"
 #include "Tracker.h"
+#include "ManagerAudioTracker.h"
 #include "Helpers/Concepts.h"
 #include "Helpers/Printer.hpp"
 
@@ -40,8 +41,8 @@ namespace RR
         void StopChannel(uInt _channel, float _fadeOut = 0.0f);
 
         // TRACKERS / CREATORS
-        Tracker<StaticAudio>  GetStatic (const std::string& _key);
-        Tracker<StaticAudio>  GetOneShot(const std::string& _key);
+        Tracker<StaticAudio>  GetStatic (const std::string& _key);   // persistent 2D track (music/ambience)
+        ManagerAudioTracker   GetOneShot(const std::string& _key);   // fire-and-forget overlapping 2D one-shot
         std::shared_ptr<SpatialAudio> CreateSpatial(const std::string& _key, uInt _channel);
 
         // VOLUME
@@ -84,14 +85,13 @@ namespace RR
         // TEMPLATES -------------------------------------------------------------------------------------------------------
 
         template<AudioType T>
-        std::shared_ptr<T> CreateVoiceShared(const std::string& _key)
+        std::shared_ptr<T> CreateVoiceShared(const std::string& _key, uInt _channel)
         {
             auto clip = GetClip(_key);
             if (!clip) return nullptr;
 
             auto voice = std::make_shared<T>(clip, m_audioEngine.get());
-            auto channel = ResolveChannel(_key, m_fallbackChannel);
-            voice->SetChannel(channel);
+            voice->SetChannel(_channel);
             return voice;
         }
 
@@ -106,13 +106,14 @@ namespace RR
         template<typename T>
         Tracker<T> GetTrack(const std::string& _key)
         {
-            AudioChannel& channel = m_channels[ResolveChannel(_key)];
+            const uInt channelIndex = ResolveChannel(_key, m_fallbackChannel);
+            AudioChannel& channel = m_channels[channelIndex];
             std::shared_ptr<T> live = std::static_pointer_cast<T>(channel.Find(_key));
 
-            auto revive = [this, &channel, _key]() -> std::shared_ptr<T>
+            auto revive = [this, _key, channelIndex]() -> std::shared_ptr<T>
             {
-                auto voice = CreateVoiceShared<T>(_key);
-                if (voice) channel.Add(_key, voice);
+                auto voice = CreateVoiceShared<T>(_key, channelIndex);
+                if (voice) m_channels[channelIndex].Add(_key, voice);
                 return voice;
             };
             return Tracker<T>(live, std::move(revive), _key);
