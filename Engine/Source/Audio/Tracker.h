@@ -4,7 +4,7 @@
 #include <functional>
 #include <concepts>
 
-#include "Helpers/Types.h" // vec3
+#include "Helpers/Types.h"
 #include "StaticAudio.h"
 #include "SpatialAudio.h"
 
@@ -35,8 +35,8 @@ namespace RR
         using Reviver = std::function<std::shared_ptr<T>()>;
 
         Tracker() = default;
-        Tracker(std::weak_ptr<T> _voice, Reviver _revive)
-            : m_voice(std::move(_voice)), m_revive(std::move(_revive)) {
+        Tracker(std::weak_ptr<T> _voice, Reviver _revive, const std::string& _key)
+            : m_voice(std::move(_voice)), m_revive(std::move(_revive)), m_key(_key) {
 
         }
 
@@ -157,6 +157,11 @@ namespace RR
             return voice && voice->IsFinished();
         }
 
+        const std::string& GetKey() const
+        {
+            return m_key;
+        }
+
         explicit operator bool() const
         {
             return IsValid();
@@ -187,6 +192,7 @@ namespace RR
 
         std::weak_ptr<T> m_voice;
         Reviver m_revive;
+        std::string m_key;
 
         // sticky cache
         float m_volume = 1.0f;

@@ -21,4 +21,8 @@ namespace RR
     class ISubSystem;
     template<typename T>
     concept SubSystemType = std::is_base_of_v<ISubSystem, T>;
+
+    class AudioVoice;
+    template<typename T>
+    concept AudioType = std::is_base_of_v<AudioVoice, T>;
 }

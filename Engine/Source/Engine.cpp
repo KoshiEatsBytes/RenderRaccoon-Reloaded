@@ -18,10 +18,8 @@ namespace RR
 
     Engine::~Engine()
     {
-        if (m_btScheduler != nullptr)
-        {
-            delete m_btScheduler;
-        }
+        m_appManager.UnloadCurrentScene();
+        if (m_btScheduler) delete m_btScheduler;
     }
 
     /**

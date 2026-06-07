@@ -172,7 +172,7 @@ namespace RR
         };
 
         // Not a live voice, spawn on first play
-        return Tracker<StaticAudio>({}, std::move(revive));
+        return Tracker<StaticAudio>({}, std::move(revive), _key);
     }
 
     std::shared_ptr<SpatialAudio> AudioManager::CreateSpatial(const std::string& _key, uInt _channel)

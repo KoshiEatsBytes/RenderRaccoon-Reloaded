@@ -23,7 +23,7 @@ void Player::Init()
 
 
     m_audioComp = AddComponent<RR::AudioSourceComponent>();
-    m_shootsfx = m_audioComp->BindTrack("shoot", 0);
+    //m_shootsfx = m_audioComp->BindTrack("shoot", 0);
     m_audioComp->BindTrack("jump", 1);
     m_audioComp->BindTrack("step", 2);
 

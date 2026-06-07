@@ -8,6 +8,7 @@
 #include "Helpers/Common.h"
 #include "AudioChannel.h"
 #include "Tracker.h"
+#include "Helpers/Concepts.h"
 #include "Helpers/Printer.hpp"
 
 namespace RR
@@ -82,7 +83,7 @@ namespace RR
 
         // TEMPLATES -------------------------------------------------------------------------------------------------------
 
-        template<typename T>
+        template<AudioType T>
         std::shared_ptr<T> CreateVoiceShared(const std::string& _key)
         {
             auto clip = GetClip(_key);
@@ -114,7 +115,7 @@ namespace RR
                 if (voice) channel.Add(_key, voice);
                 return voice;
             };
-            return Tracker<T>(live, std::move(revive));
+            return Tracker<T>(live, std::move(revive), _key);
         }
     };
 }

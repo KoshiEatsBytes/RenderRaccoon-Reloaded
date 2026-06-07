@@ -98,6 +98,8 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/AudioChannel.cpp
         Source/Audio/AudioChannel.h
         Source/Audio/Tracker.h
+        Source/Audio/ComponentAudioTracker.h
+        Source/Audio/ComponentAudioTracker.cpp
 )
 
 # Compose application structure

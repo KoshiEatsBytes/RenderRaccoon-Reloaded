@@ -34,7 +34,7 @@ namespace RR
 
     // TRACKERS --------------------------------------------------------------------------------------------------------
 
-    Tracker<SpatialAudio> AudioSourceComponent::BindTrack(const std::string& _key, uInt _channel)
+    ComponentAudioTracker AudioSourceComponent::BindTrack(const std::string &_key, uInt _channel)
     {
         auto voice = Engine::GetInstance().GetAudioManager().CreateSpatial(_key, _channel);
         if (!voice)
@@ -46,13 +46,46 @@ namespace RR
         ApplyProfile(voice);
         m_voices[_key] = voice;
 
-        return Tracker<SpatialAudio>(voice, {});
+        auto rootTracker = Tracker<SpatialAudio>(voice, {}, _key);
+        return ComponentAudioTracker(this, rootTracker);
     }
 
-    Tracker<SpatialAudio> AudioSourceComponent::GetTrack(const std::string& _key)
+    ComponentAudioTracker AudioSourceComponent::GetTrack(const std::string& _key)
     {
         auto it = m_voices.find(_key);
-        return it != m_voices.end() ? Tracker<SpatialAudio>(it->second, {}) : Tracker<SpatialAudio>{};
+        if (it != m_voices.end())
+        {
+            auto rootTracker = Tracker<SpatialAudio>(it->second, {}, _key);
+            return ComponentAudioTracker(this, rootTracker);
+        }
+
+        Warn("[AUDIO SOURCE] GetTrack with key '", _key, "' found no match");
+        return {};
+    }
+
+    void AudioSourceComponent::PlayOneShot(const Tracker<SpatialAudio>& _track)
+    {
+        PlayOneShot(_track.GetKey());
+    }
+
+    void AudioSourceComponent::PlayOneShot(const std::string& _key)
+    {
+        auto it = m_voices.find(_key);
+        if (it == m_voices.end())
+        {
+            Warn("[AUDIO - SOURCE COMPONENT] Tried playing non-existing sound");
+            return;
+        }
+
+        auto& temp = it->second;
+        auto clone = Engine::GetInstance().GetAudioManager().CreateSpatial(_key, temp->GetChannel());
+        if (!clone) return;
+
+        clone->CloneSettings(*temp);
+        clone->SetPosition(m_owner->GetWorldPosition());
+        clone->Play(false);
+
+        m_oneShots.push_back(std::move(clone));
     }
 
     // HANDLES ---------------------------------------------------------------------------------------------------------
@@ -67,23 +100,7 @@ namespace RR
             return;
         }
 
-        auto& temp = it->second;
-
-        if (_loop || !temp->IsPlaying())
-        {
-            temp->Play(_loop);
-        }
-
-        // requesting a new play on a non loop already playing component means a oneshot,
-        // so clone the already playing one and play again
-        auto clone = Engine::GetInstance().GetAudioManager().CreateSpatial(_key, temp->GetChannel());
-        if (!clone) return;
-
-        clone->CloneSettings(*temp);
-        clone->SetPosition(m_owner->GetPosition());
-        clone->Play(false);
-
-        m_oneShots.push_back(std::move(clone));
+        it->second->Play(_loop);
     }
 
     void AudioSourceComponent::Stop(const std::string& _key, float _fade)
@@ -202,10 +219,15 @@ namespace RR
     {
         Component::OnEnable();
 
-        // Pause all
+        // resume all
         for (auto& [key, voice] : m_voices)
         {
             voice->Resume();
+        }
+
+        for (auto& oneShot : m_oneShots)
+        {
+            oneShot->Resume();
         }
     }
 
@@ -213,10 +235,15 @@ namespace RR
     {
         Component::OnDisable();
 
-        // Unpause all
+        // pause all
         for (auto& [key, voice] : m_voices)
         {
             voice->Pause();
+        }
+
+        for (auto& oneShot : m_oneShots)
+        {
+            oneShot->Pause();
         }
     }
 

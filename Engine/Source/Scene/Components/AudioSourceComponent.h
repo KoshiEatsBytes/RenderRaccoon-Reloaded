@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "Scene/Component.h"
-#include "Audio/Tracker.h"
+#include "Audio/ComponentAudioTracker.h"
 
 namespace RR
 {
@@ -21,8 +21,12 @@ namespace RR
         void LateUpdate(float _deltaTime) override;
 
         // Trackers
-        Tracker<SpatialAudio> BindTrack(const std::string& _key, uInt _channel);
-        Tracker<SpatialAudio> GetTrack (const std::string& _key);
+        ComponentAudioTracker BindTrack(const std::string& _key, uInt _channel);
+        ComponentAudioTracker GetTrack (const std::string& _key);
+
+        // OneShot wrappers
+        void PlayOneShot(const Tracker<SpatialAudio>& _track);
+        void PlayOneShot(const std::string& _key);
 
         // Handles
         void Play  (const std::string& _key, bool _loop = false);
