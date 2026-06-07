@@ -256,6 +256,12 @@ Engine (singleton)            platform + subsystems + main loop
 - Voices join a channel via **`AudioVoice::AttachToGroup`** (`ma_node_attach_output_bus`, runtime
   re-routing) — so voice creation stays group-agnostic and "bind" just assigns the bus. An
   **un-grouped voice routes to the engine endpoint** → affected by master volume only.
+- **Channels are plain `uInt` indices**, created up front by `Init(channelCount, fallbackChannel)` — the
+  *game* supplies its own `enum : int` mapping, so the manager carries no hard-coded channel set (the
+  earlier in-manager `AudioChannelID` enum was dropped for exactly this reason). A `key → channel`
+  **binding** (`m_keyToChannel`, set by `BindTrack` or auto-set on the first explicit play) lets the
+  by-key `Play`/`Stop`/`Get*` calls resolve a channel without one being passed every time; unbound keys
+  fall back to `fallbackChannel`. Indices are 0-based — valid is `< channelCount`.
 - A channel exposes **bus controls + collection lifecycle** (add / stop / reap) but **no per-track
   tuning** — individual-voice control is the Tracker's job (reaching into one sound "through" a bus is
   out of place for what a bus does).
@@ -290,12 +296,32 @@ Engine (singleton)            platform + subsystems + main loop
   preserving polyphony) + **voice limiting** — *not* one-voice-per-key.
 - **Music / managed** sounds are **keyed, single-instance, controllable** (stop/fade/crossfade by
   name; `CrossFade` = two concurrent fades). Multiple concurrent tracks are supported → layering.
-- **3D** sounds belong to **components**: an `AudioSourceComponent` owns its spatial voices and pushes
-  the owner's world transform into them each `LateUpdate` via `Tracker<SpatialAudio>` — per-entity
-  ownership (they die with the entity). Groups apply to 3D too: spatialization happens at the sound,
-  the group is a downstream volume bus → a "3D SFX volume" slider.
-- **Listener** is global/singular, driven by an `AudioListenerComponent` on the camera (position +
-  direction + world-up pushed per frame).
+- **3D** sounds are **component-owned**, because the same key can play from many emitters at once
+  (three torches, all `torchLoop`) and each voice must die with its **entity** — neither fits the
+  manager's keyed/owned model. So the manager only offers a **factory**, `CreateSpatial(key, channel)`,
+  which builds the voice, routes it into the channel's group (volume bus), and returns the *owning*
+  `shared_ptr`. `AudioSourceComponent` owns those voices (keyed by clip), drives position/direction/
+  velocity each `LateUpdate`, reaps finished one-shots, and hands out a **weak `Tracker<SpatialAudio>`
+  with an empty revive** (it owns lifetime, so no revive is needed). A per-source **3D profile**
+  (min/max distance, rolloff, attenuation model, doppler factor, cone) is stamped onto each voice at
+  creation and re-applied to live voices when changed; per-clip exceptions go through the tracker's
+  `operator->`.
+- **Listener** is global/singular, driven by an `AudioListenerComponent` on the camera — it pushes
+  position + direction + world-up **+ velocity** each frame (see Velocity & Doppler).
+
+### Velocity & Doppler
+- Doppler is **relative**, so it needs velocity on *both* the source and the listener — miss the
+  listener half and a moving player won't Doppler world sounds. Both sides push velocity each frame;
+  `dopplerFactor` (per voice, default 1) scales the effect.
+- **Velocity is finite-differenced from world position** (`(pos − lastPos)/dt`, with a teleport guard
+  and a smoothing lerp), *not* read from the physics body — and that's the *more* correct choice, not a
+  shortcut. A rigid body's `GetLinearVelocity()` is its **center-of-mass** velocity, but a point on the
+  body moves at `v_com + ω × r`. Our composite bodies bake child colliders at an offset, so an audio
+  source on a *child* of a rotating body (a speaker on a spinning platform) has real tangential
+  velocity that `GetLinearVelocity()` misses entirely (it reports ~0 for a platform spinning in place).
+  Finite-differencing the child's world position captures exactly that — the same value Bullet's
+  `getVelocityInLocalPoint` would give, with no physics coupling — and it matches the
+  *interpolated/rendered* transform, so Doppler tracks what's on screen.
 
 ---
 
@@ -339,9 +365,6 @@ Engine (singleton)            platform + subsystems + main loop
 - **Reparenting** a physics-hierarchy GameObject has stale-ownership edge cases (documented, not
   guarded).
 - **MT determinism** — multithreaded solving isn't bit-exact run-to-run (acceptable for gameplay).
-- **Audio — manager/component wiring in progress.** The clip / voice / channel (`ma_sound_group`) /
-  `Tracker` layer is built; `AudioManager` and `AudioSourceComponent` still need migrating onto
-  `AudioChannel` + Trackers (the older `StaticChannel` is superseded).
 - **Audio — no voice pool / voice limiting** yet (the optimization to reach for if one-shot spawning
   ever profiles hot — not one-voice-per-key, which would kill polyphony).
 - **Audio — OGG needs `stb_vorbis` wired in** (WAV/MP3/FLAC are built into miniaudio).

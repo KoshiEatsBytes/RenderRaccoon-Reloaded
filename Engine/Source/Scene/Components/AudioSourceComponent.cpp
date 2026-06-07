@@ -60,13 +60,24 @@ namespace RR
     void AudioSourceComponent::Play(const std::string& _key, bool _loop)
     {
         auto it = m_voices.find(_key);
-        if (it != m_voices.end()) it->second->Play(_loop);
+
+        if (it == m_voices.end())
+        {
+            Warn("[AUDIO - SOURCE COMPONENT] Tried playing non-existing sound");
+            return;
+        }
+
+        it->second->Play(_loop);
     }
 
     void AudioSourceComponent::Stop(const std::string& _key, float _fade)
     {
         auto it = m_voices.find(_key);
-        if (it == m_voices.end()) return;
+        if (it == m_voices.end())
+        {
+            Warn("[AUDIO - SOURCE COMPONENT] Tried stopping non-existing sound");
+            return;
+        }
 
         if (_fade > 0.0f)
             it->second->FadeOut(_fade);
@@ -77,13 +88,25 @@ namespace RR
     void AudioSourceComponent::Pause(const std::string& _key)
     {
         auto it = m_voices.find(_key);
-        if (it != m_voices.end()) it->second->Pause();
+        if (it == m_voices.end())
+        {
+            Warn("[AUDIO - SOURCE COMPONENT] Tried pausing non-existing sound");
+            return;
+        }
+
+        it->second->Pause();
     }
 
     void AudioSourceComponent::Resume(const std::string& _key)
     {
         auto it = m_voices.find(_key);
-        if (it != m_voices.end()) it->second->Resume();
+        if (it == m_voices.end())
+        {
+            Warn("[AUDIO - SOURCE COMPONENT] Tried resuming non-existing sound");
+            return;
+        }
+
+        it->second->Resume();
     }
 
     bool AudioSourceComponent::IsPlaying(const std::string& _key) const
@@ -211,6 +234,7 @@ namespace RR
             raw = vec3(0.0f);
         }
 
+        // calculates velocity for fitting sound
         m_velocity = m_velocity + (raw - m_velocity) * 0.5f;
         return m_velocity;
     }
