@@ -20,8 +20,11 @@ private:
 
     std::shared_ptr<RR::Material> m_material;
     std::shared_ptr<RR::Mesh>     m_boxMesh;
+    std::vector<RR::GameObject*>  m_spawnedBoxes;
 
+    bool m_spawn = true;
     float m_spawnTimer = 0.0f;
+    float m_despawnTimer = 0.0f;
     float m_fpsTimer   = 0.0f;
     int   m_frameCount = 0;
     int   m_boxCount   = 0;

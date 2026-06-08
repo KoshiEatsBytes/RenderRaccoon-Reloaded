@@ -58,8 +58,9 @@ namespace RR
             }
 
             // Mesh
-            _graphicsAPI.BindMesh(command.mesh);
-            _graphicsAPI.DrawMesh(command.mesh);
+            _graphicsAPI.BindMesh  (command.mesh);
+            _graphicsAPI.DrawMesh  (command.mesh);
+            _graphicsAPI.UnBindMesh(command.mesh);
         }
 
         m_commands.clear();

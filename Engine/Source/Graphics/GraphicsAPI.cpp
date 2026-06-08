@@ -215,6 +215,17 @@ namespace RR
         _mesh->Bind();
     }
 
+    void GraphicsAPI::UnBindMesh(Mesh *_mesh)
+    {
+        if (!_mesh)
+        {
+            Warn("[BINDING - MESH] Tried to unbind INVALID mesh");
+            return;
+        }
+
+        _mesh->Bind();
+    }
+
     void GraphicsAPI::DrawMesh(Mesh *_mesh)
     {
         if (!_mesh)

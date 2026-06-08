@@ -363,6 +363,7 @@ namespace RR
         for (const auto& obj: m_objects)
         {
             obj->Update(_deltaTime);
+
         }
 
         Update(_deltaTime);
@@ -373,6 +374,12 @@ namespace RR
         for (const auto& obj: m_objects)
         {
             obj->LateUpdate(_deltaTime);
+
+            // Enqueue for destruction any dying object
+            if (!obj->IsAlive())
+            {
+                EnqueueDestroy(obj.get());
+            }
         }
 
         LateUpdate(_deltaTime);

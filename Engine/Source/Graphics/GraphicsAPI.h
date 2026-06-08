@@ -46,6 +46,7 @@ namespace RR
         void BindShaderProgram(ShaderProgram* _shaderProgram);
         void BindMaterial(Material* _material);
         void BindMesh(Mesh* _mesh);
+        void UnBindMesh(Mesh* _mesh);
         void DrawMesh(Mesh* _mesh);
         void ClearBuffers();
 

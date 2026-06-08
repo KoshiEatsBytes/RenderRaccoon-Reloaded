@@ -23,6 +23,7 @@ namespace RR
         Mesh& operator=(const Mesh&) = delete;
 
         void Bind();
+        void UnBind();
         void Draw();
 
         static std::shared_ptr<Mesh> CreateBox(const vec3& _extents = vec3(1.0f));

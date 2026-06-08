@@ -90,6 +90,11 @@ namespace RR
         glBindVertexArray(m_VAO);
     }
 
+    void Mesh::UnBind()
+    {
+        glBindVertexArray(0);
+    }
+
     void Mesh::Draw()
     {
         // Are any indices used?

@@ -36,8 +36,9 @@ namespace RR
         virtual void Update(float _deltaTime);
         virtual void LateUpdate(float _deltaTime);
 
-        //Component* AddComponent(Component* _component);
+        // lifecycle
         void MarkForDestroy();
+        void UnMarkForDestroy();
 
         GameObject* LoadGLTF(const std::string& _path) const;
 
@@ -54,7 +55,6 @@ namespace RR
 
         Scene* GetScene() const;
 
-        void SetAlive(bool _alive);
         bool IsAlive() const;
 
         void SetEnabled(bool _active);

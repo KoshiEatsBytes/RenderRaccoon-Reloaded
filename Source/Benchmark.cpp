@@ -57,6 +57,7 @@ void Benchmark::SpawnBox(const vec3& _pos, const quat& _rot)
     box->AddComponent(new RR::MeshComponent(m_material, m_boxMesh));
     box->AddComponent(new RR::ColliderComponent(std::make_shared<RR::BoxCollider>(vec3(1.0f))));
     box->AddComponent(new RR::PhysicsComponent(RR::BodyType::DYNAMIC, 1.0f, 0.5f));
+    m_spawnedBoxes.push_back(box);
     ++m_boxCount;
 }
 
@@ -70,6 +71,10 @@ void Benchmark::Update(float _deltaTime)
         RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<Game>();
     if (input.IsKeyPressed(GLFW_KEY_ESCAPE))
         RR::Engine::GetInstance().SetShouldClose(true);
+    if (input.IsKeyPressed(GLFW_KEY_K))
+        m_spawn = false;
+    if (input.IsKeyPressed(GLFW_KEY_J))
+        m_spawn = true;
 
     // avg fps in 1 sec window
     m_fpsTimer   += _deltaTime;
@@ -83,19 +88,39 @@ void Benchmark::Update(float _deltaTime)
         m_frameCount = 0;
     }
 
-    // Rain around 100 boxes/sec up to the cap
-    const float interval = 0.04f;
-    const int   batch    = 4;
-    m_spawnTimer += _deltaTime;
-    while (m_spawnTimer >= interval && m_boxCount < kMaxBoxes)
+    if (!m_spawn)
     {
-        m_spawnTimer -= interval;
-        for (int i = 0; i < batch && m_boxCount < kMaxBoxes; ++i)
+        // Rain around 100 boxes/sec up to the cap
+        const float interval = 0.04f;
+        const int   batch    = 4;
+        m_despawnTimer += _deltaTime;
+        while (m_despawnTimer >= interval && m_boxCount > 0)
         {
-            const float fx = std::sin(m_boxCount * 78.233f) * 9.0f;
-            const float fz = std::cos(m_boxCount * 12.9898f) * 9.0f;
-            const quat  rot(vec3(m_boxCount * 0.11f, m_boxCount * 0.07f, m_boxCount * 0.13f));
-            SpawnBox(vec3(fx, 22.0f, fz), rot);
+            m_despawnTimer -= interval;
+            for (int i = 0; i < batch && m_boxCount > 0; ++i)
+            {
+                m_spawnedBoxes.back()->MarkForDestroy();
+                m_spawnedBoxes.pop_back();
+                --m_boxCount;
+            }
+        }
+    }
+    else
+    {
+        // Rain around 100 boxes/sec up to the cap
+        const float interval = 0.04f;
+        const int   batch    = 4;
+        m_spawnTimer += _deltaTime;
+        while (m_spawnTimer >= interval && m_boxCount < kMaxBoxes)
+        {
+            m_spawnTimer -= interval;
+            for (int i = 0; i < batch && m_boxCount < kMaxBoxes; ++i)
+            {
+                const float fx = std::sin(m_boxCount * 78.233f) * 9.0f;
+                const float fz = std::cos(m_boxCount * 12.9898f) * 9.0f;
+                const quat  rot(vec3(m_boxCount * 0.11f, m_boxCount * 0.07f, m_boxCount * 0.13f));
+                SpawnBox(vec3(fx, 22.0f, fz), rot);
+            }
         }
     }
 }

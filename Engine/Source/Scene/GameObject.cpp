@@ -82,7 +82,14 @@ namespace RR
         if (m_alive)
         {
             m_alive = false;
-            m_scene->EnqueueDestroy(this);
+        }
+    }
+
+    void GameObject::UnMarkForDestroy()
+    {
+        if (!m_alive)
+        {
+            m_alive = true;
         }
     }
 
@@ -189,11 +196,6 @@ namespace RR
     Scene* GameObject::GetScene() const
     {
         return m_scene;
-    }
-
-    void GameObject::SetAlive(bool _alive)
-    {
-        m_alive = _alive;
     }
 
     bool GameObject::IsAlive() const
