@@ -22,6 +22,10 @@ namespace RR
         Mesh(const Mesh&) = delete;
         Mesh& operator=(const Mesh&) = delete;
 
+        // specify move contrustors
+        Mesh(Mesh&& _out) noexcept;
+        Mesh& operator=(Mesh&& _out) noexcept;
+
         void Bind();
         void UnBind();
         void Draw();

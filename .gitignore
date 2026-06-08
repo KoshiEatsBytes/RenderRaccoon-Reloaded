@@ -1,3 +1,9 @@
 /build/
 /.vs/
 /out/
+/cmake-build-*/
+/PLAN.md
+/OPTIMIZATIONS.md
+/FORDISSERTATION.md
+/DECISIONS.md
+/CLAUDE.md
