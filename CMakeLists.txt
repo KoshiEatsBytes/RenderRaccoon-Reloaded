@@ -22,6 +22,8 @@ set(PROJECT_SOURCE_FILES
         Source/MultiPitBenchmark.h
         Source/AudioDemo.cpp
         Source/AudioDemo.h
+        Source/Bullet.cpp
+        Source/Bullet.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

@@ -8,6 +8,7 @@ out vec2 vUV;
 out vec3 vNormal;
 out vec3 vFragPos;
 
+// tranforms and camera
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
@@ -18,5 +19,6 @@ void main()
     vNormal = mat3(transpose(inverse(uModel))) * normal;
     vFragPos = vec3(uModel * vec4(position, 1.0));
 
+    // mvp transform
     gl_Position = uProj * uView * uModel * vec4(position, 1.0);
 }

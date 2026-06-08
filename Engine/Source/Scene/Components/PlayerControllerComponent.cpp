@@ -48,10 +48,10 @@ namespace RR
             float deltaX = currPos.x - oldPos.x;
             float deltaY = currPos.y - oldPos.y;
 
-            m_yRot += -deltaX * m_sensitivity * _deltaTime;
+            m_yRot += -deltaX * m_sensitivity;
             m_yRot  = std::fmod(m_yRot, 360.0f);
 
-            m_xRot += -deltaY * m_sensitivity * _deltaTime;
+            m_xRot += -deltaY * m_sensitivity;
             m_xRot  = std::clamp(m_xRot, m_verticalRotConstraints.x, m_verticalRotConstraints.y);
 
             quat yRot = glm::angleAxis(glm::radians(m_yRot), vec3(0.0f, 1.0f, 0.0f));

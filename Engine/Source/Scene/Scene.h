@@ -102,6 +102,7 @@ namespace RR
             if (m_sceneStarted)
             {
                 obj->m_scene = this;
+                obj->Init();
                 EnqueueSpawn(obj, _parent);
                 return obj;
             }

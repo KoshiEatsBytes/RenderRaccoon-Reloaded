@@ -1,0 +1,14 @@
+{
+  "Shaders": {
+    "Vertex": "Shaders/Default/Default.vert",
+    "Fragment": "Shaders/Default/Default.frag"
+  },
+  "Params": {
+    "Textures": [
+      {
+        "Name": "baseColorTexture",
+        "Path": "Textures/checker.png"
+      }
+    ]
+  }
+}

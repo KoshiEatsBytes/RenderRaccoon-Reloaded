@@ -4,6 +4,7 @@
 
 #include "RigidBody.h"
 
+#include "BtConv.hpp"
 #include "Engine.h"
 #include "PhysicsManager.h"
 #include "Helpers/Printer.hpp"
@@ -165,6 +166,8 @@ namespace RR
 
     vec3 RigidBody::GetPosition() const
     {
+        if (!m_body) return vec3(0.f);
+
         const auto& pos = m_body->getWorldTransform().getOrigin();
         return vec3(pos.x(), pos.y(), pos.z());
     }
@@ -200,6 +203,8 @@ namespace RR
 
     quat RigidBody::GetRotation() const
     {
+        if (!m_body) return quat(1.0f, 0.0f, 0.0f, 0.0f);
+
         const auto& rot = m_body->getWorldTransform().getRotation();
         return quat(rot.w(), rot.x(), rot.y(), rot.z());
     }

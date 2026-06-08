@@ -1,6 +1,7 @@
 
 #include "Player.h"
 
+#include "Bullet.h"
 #include "GLFW/glfw3.h"
 #include "Scene/Components/AudioListenerComponent.h"
 #include "Scene/Components/AudioSourceComponent.h"
@@ -43,6 +44,7 @@ void Player::Init()
         if (auto flash = gun->FindObjectByName("BOOM_35", true))
         {
             flash->SetEnabled(false);
+            m_muzzle = flash;
         }
 
         anim->Play("shoot", false);
@@ -65,6 +67,17 @@ void Player::PreUpdate(float _deltaTime)
 
             m_shootSfx.PlayOneShot();
             m_shootCooldown = 0.12f;
+
+            auto bullet = m_scene->CreateObject<Bullet>("Bullet");
+            vec3 pos {0.0f};
+            if (m_muzzle)
+            {
+                pos = m_muzzle->GetWorldPosition();
+            }
+            bullet->Teleport(pos + m_rotation * vec3(0.2f, 0.2f, -1.75f));
+
+            vec3 front = m_rotation * vec3(0.0f, 0.0f, -1.0f);
+            bullet->ApplyCentralImpulse(front * 500.f);
         }
     }
 

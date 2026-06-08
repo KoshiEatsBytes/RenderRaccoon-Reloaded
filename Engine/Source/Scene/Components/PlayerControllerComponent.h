@@ -42,7 +42,7 @@ namespace RR
     private:
         std::unique_ptr<KinematicCharacterController> m_kinematicController;
 
-        float m_sensitivity = 25.0f;
+        float m_sensitivity = 0.05f;
         float m_moveSpeed = 6.f;
 
         bool m_midJump = false;

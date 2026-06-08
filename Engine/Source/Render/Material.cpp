@@ -45,6 +45,12 @@ namespace RR
             m_shaderProgram->SetUniform(name, pair.first, pair.second);
         }
 
+        // set 3f uniforms
+        for (auto& [name, vec] : m_float3Params)
+        {
+            m_shaderProgram->SetUniform(name, vec);
+        }
+
         // Set textures
         for (auto& [name, texture]: m_textures)
         {
@@ -143,6 +149,19 @@ namespace RR
                 }
             }
 
+            // Float 3 param loop
+            if (paramsObj.contains("Float3"))
+            {
+                for (auto& param : paramsObj["Float3"])
+                {
+                    std::string name = param.value("Name", "");
+                    float v0 = param.value("V0", 0.0f);
+                    float v1 = param.value("V1", 0.0f);
+                    float v2 = param.value("V2", 0.0f);
+                    result->SetParam(name, vec3(v0, v1, v2));
+                }
+            }
+
             // Textures param loop
             if (paramsObj.contains("Textures"))
             {
@@ -193,6 +212,11 @@ namespace RR
     void Material::SetParam(const std::string& _name, float _v0, float _v1)
     {
         m_float2Params[_name] = {_v0, _v1};
+    }
+
+    void Material::SetParam(const std::string& _name, const vec3& _v0)
+    {
+        m_float3Params[_name] = _v0;
     }
 
     void Material::SetParam(const std::string &_name, const std::shared_ptr<Texture>& _texture)

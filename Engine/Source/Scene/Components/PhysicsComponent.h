@@ -24,6 +24,7 @@ namespace RR
 
         void ApplyForce(const vec3& _force, const vec3& _relativePos = vec3(0));
         void ApplyImpulse(const vec3& _impulse, const vec3& _relativePos = vec3(0));
+        void ApplyCentralImpulse(const vec3& _direction);
 
         void SetDamping(float _linear, float _angular);
         void SetLinearLock(const vec3& _factor);

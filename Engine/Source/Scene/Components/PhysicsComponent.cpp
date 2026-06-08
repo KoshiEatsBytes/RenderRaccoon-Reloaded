@@ -168,16 +168,35 @@ namespace RR
 
     void PhysicsComponent::ApplyForce(const vec3& _force, const vec3& _relativePos)
     {
-        if (!m_rigidBody) return;
+        if (!m_rigidBody)
+        {
+            Warn("[RIGIDBODY - IMPULSE] Tried applying force to an INVALID Rigidbody");
+            return;
+        }
 
         m_rigidBody->GetBody()->applyForce(BtConv::ToBt(_force), BtConv::ToBt(_relativePos));
     }
 
     void PhysicsComponent::ApplyImpulse(const vec3& _impulse, const vec3& _relativePos)
     {
-        if (!m_rigidBody) return;
+        if (!m_rigidBody)
+        {
+            Warn("[RIGIDBODY - IMPULSE] Tried applying impulse to an INVALID Rigidbody");
+            return;
+        }
 
         m_rigidBody->GetBody()->applyImpulse(BtConv::ToBt(_impulse), BtConv::ToBt(_relativePos));
+    }
+
+    void PhysicsComponent::ApplyCentralImpulse(const vec3 &_direction)
+    {
+        if (!m_rigidBody)
+        {
+            Warn("[RIGIDBODY - IMPULSE] Tried applying central impulse to an INVALID Rigidbody");
+            return;
+        }
+
+        m_rigidBody->GetBody()->applyCentralImpulse(BtConv::ToBt(_direction));
     }
 
     void PhysicsComponent::SetDamping(float _linear, float _angular)

@@ -223,7 +223,7 @@ namespace RR
             return;
         }
 
-        _mesh->Bind();
+        _mesh->UnBind();
     }
 
     void GraphicsAPI::DrawMesh(Mesh *_mesh)

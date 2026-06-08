@@ -24,6 +24,7 @@ private:
     RR::ComponentAudioTracker m_shootSfx;
     RR::ComponentAudioTracker m_walkSfx;
     RR::ComponentAudioTracker m_jumpSfx;
+    RR::GameObject* m_muzzle = nullptr;
 
     float m_shootCooldown = 0.0f;
 };

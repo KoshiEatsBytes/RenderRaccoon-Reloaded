@@ -33,7 +33,11 @@ void main()
     float specularStrenght = 0.5; //TODO: this should be a var
     vec3 specular = specularStrenght * spec * uLight.color;
 
-    vec3 result = diffuse + specular;
+    // ambient lighting
+    const float ambientStrenght = 0.4;
+    vec3 ambient = ambientStrenght * uLight.color;
+
+    vec3 result = diffuse + specular + ambient;
 
     vec4 texColor = texture(baseColorTexture, vUV);
 

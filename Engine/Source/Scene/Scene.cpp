@@ -50,6 +50,7 @@ namespace RR
         if (m_sceneStarted)
         {
             obj->m_scene = this;
+            obj->Init();
             EnqueueSpawn(obj, _parent);
             return obj;
         }
@@ -468,8 +469,6 @@ namespace RR
             GameObject* parent = pending.parent;
 
             SetParent(object, parent);
-            object->m_scene = this;
-            object->Init();
         }
     }
 

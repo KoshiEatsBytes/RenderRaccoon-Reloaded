@@ -27,6 +27,7 @@ namespace RR
         void Draw();
 
         static std::shared_ptr<Mesh> CreateBox(const vec3& _extents = vec3(1.0f));
+        static std::shared_ptr<Mesh> CreateSphere(float _radius, float _sectors, float _stacks);
 
     private:
         VertexLayout m_vertexLayout;
@@ -37,5 +38,7 @@ namespace RR
 
         size_t m_vertexCount = 0;
         size_t m_indexCount  = 0;
+
+        static constexpr float PI = 3.14159265358979323846f;
     };
 }
