@@ -21,7 +21,6 @@ bool AudioDemo::Init()
 
     auto player = CreateObject<Player>("Player");
     SetMainCamera(player);
-    player->AddComponent(new RR::AudioListenerComponent());
 
     auto* light = CreateObject("Light");
     auto* lightComp = new RR::LightComponent();
@@ -46,12 +45,17 @@ bool AudioDemo::Init()
     m_emitterSource->BindTrack("step", ChEffects);
     m_emitterSource->SetMinMaxDistance(2.0f, 25.0f);
     m_emitterSource->SetDopplerFactor(2.0f);
-    m_emitterSource->Play("step", true);
 
-    audio.BindTrack("shoot", ChEffects);
-    audio.BindTrack("jump",  ChEffects);
+    audio.BindTrack("shoot", ChEffects);   
+    audio.BindTrack("jump",  ChMusic);     
+    m_shoot = audio.GetStatic("shoot");    
 
-    RR::Success("[AUDIO DEMO] 1=shoot  2=jump  SPACE=toggle emitter  [=SFX 25%  ]=SFX 100%  ESC=quit");
+    RR::Success("[AUDIO DEMO] --- 2D manager tests ---");
+    RR::Log("  1 = shoot one-shot (mash = OVERLAP)     F (hold) = auto-fire");
+    RR::Log("  3/4 = shoot vol 0.2/1.0    5/6 = shoot pitch low/high   -> then press 1: clones INHERIT");
+    RR::Log("  M = music on (jump loop)   N = music off   R = reload scene (music must CUT OUT)");
+    RR::Log("  T = toggle 3D Doppler emitter    [ / ] = SFX bus 25% / 100%    ESC = quit");
+    RR::Log("[PLAYER] LMB (hold) = 3D shoot (overlap)   G/H = shoot pitch low/high");
     return true;
 }
 
@@ -67,10 +71,32 @@ void AudioDemo::Update(float _deltaTime)
     const float x = std::sin(m_time * 1.5f) * 12.0f;
     m_emitter->SetPosition(vec3(x, 0.0f, -3.0f));
 
-    if (JustPressed(GLFW_KEY_1)) audio.PlayOneShot("shoot");
-    if (JustPressed(GLFW_KEY_2)) audio.PlayOneShot("jump");
+    if (JustPressed(GLFW_KEY_1)) m_shoot.PlayOneShot();
 
-    if (JustPressed(GLFW_KEY_SPACE))
+    m_autoFire -= _deltaTime;
+    if (input.IsKeyPressed(GLFW_KEY_F) && m_autoFire <= 0.0f)
+    {
+        m_shoot.PlayOneShot();
+        m_autoFire = 0.1f;
+    }
+
+    if (m_shoot)
+    {
+        if (JustPressed(GLFW_KEY_3)) { m_shoot->SetVolume(0.2f); RR::Log("[TEST] shoot volume 0.2 -> press 1"); }
+        if (JustPressed(GLFW_KEY_4)) { m_shoot->SetVolume(1.0f); RR::Log("[TEST] shoot volume 1.0 -> press 1"); }
+        if (JustPressed(GLFW_KEY_5)) { m_shoot->SetPitch(0.6f);  RR::Log("[TEST] shoot pitch 0.6 -> press 1"); }
+        if (JustPressed(GLFW_KEY_6)) { m_shoot->SetPitch(1.6f);  RR::Log("[TEST] shoot pitch 1.6 -> press 1"); }
+    }
+
+    if (JustPressed(GLFW_KEY_M)) { audio.PlayManaged("jump", true); RR::Log("[TEST] music ON (jump loop)"); }
+    if (JustPressed(GLFW_KEY_N)) { audio.StopManaged("jump");       RR::Log("[TEST] music OFF"); }
+    if (JustPressed(GLFW_KEY_R))
+    {
+        RR::Log("[TEST] reloading scene -> music & all 2D voices must go silent");
+        engine.GetAppManager().RequestSceneLoad<AudioDemo>();
+    }
+
+    if (JustPressed(GLFW_KEY_T))
     {
         if (m_emitterSource->IsPlaying("step")) m_emitterSource->Stop("step", 0.3f);
         else                                    m_emitterSource->Play("step", true);

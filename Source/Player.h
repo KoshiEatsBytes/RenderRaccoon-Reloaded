@@ -20,7 +20,12 @@ private:
     RR::AnimationComponent* m_animationComp = nullptr;
     RR::AudioSourceComponent* m_audioComp = nullptr;
     RR::PlayerControllerComponent* m_PCC = nullptr;
-    RR::Tracker<RR::SpatialAudio> m_shootsfx;
+
+    RR::ComponentAudioTracker m_shootSfx;
+    RR::ComponentAudioTracker m_walkSfx;
+    RR::ComponentAudioTracker m_jumpSfx;
+
+    float m_shootCooldown = 0.0f;
 };
 
 

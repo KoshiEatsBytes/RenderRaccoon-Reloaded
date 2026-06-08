@@ -23,13 +23,10 @@ void Player::Init()
 
 
     m_audioComp = AddComponent<RR::AudioSourceComponent>();
-    //m_shootsfx = m_audioComp->BindTrack("shoot", 0);
-    m_audioComp->BindTrack("jump", 1);
-    m_audioComp->BindTrack("step", 2);
-
-    //auto& audio = RR::Engine::GetInstance().GetAudioManager();
-    //m_shootSFX = audio.GetOneShot("shoot");
-    //m_shootSFX->SetVolume(0.15f);
+    m_shootSfx = m_audioComp->BindTrack("shoot", 1);
+    m_jumpSfx  = m_audioComp->BindTrack("jump", 1);
+    m_walkSfx  = m_audioComp->BindTrack("step", 1);
+    m_jumpSfx->SetSpatialization(false);
 
     auto gun = LoadGLTF("Models/Gun/scene.gltf");
     gun->SetParent(this);
@@ -59,27 +56,29 @@ void Player::PreUpdate(float _deltaTime)
 
     auto& input = RR::Engine::GetInstance().GetInputManager();
 
-    if (input.IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
+    m_shootCooldown -= _deltaTime;
+    if (input.IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT) && m_shootCooldown <= 0.0f)
     {
         if (m_animationComp && !m_animationComp->IsPlaying())
         {
             m_animationComp->Play("shoot", false);
 
+            m_shootSfx.PlayOneShot();
+            m_shootCooldown = 0.12f;
         }
-
-        m_shootsfx.Play();
-
     }
 
+    if (m_shootSfx && input.IsKeyPressed(GLFW_KEY_G)) m_shootSfx->SetPitch(0.6f);
+    if (m_shootSfx && input.IsKeyPressed(GLFW_KEY_H)) m_shootSfx->SetPitch(1.5f);
 
 
     if (input.IsKeyPressed(GLFW_KEY_SPACE) && m_PCC->IsMidJump())
     {
-        if (m_audioComp)
+        if (m_jumpSfx)
         {
-            if (!m_audioComp->IsPlaying("jump") )
+            if (!m_jumpSfx->IsPlaying())
             {
-                m_audioComp->Play("jump");
+                m_jumpSfx.PlayOneShot();
             }
         }
     }
@@ -93,19 +92,19 @@ void Player::PreUpdate(float _deltaTime)
 
     if (walking && m_PCC && m_PCC->IsOnGround())
     {
-        if (m_audioComp)
+        if (m_walkSfx)
         {
-            if (!m_audioComp->IsPlaying("step"))
+            if (!m_walkSfx->IsPlaying())
             {
-                m_audioComp->Play("step", true);
+                m_walkSfx->Play(true);
             }
         }
     }
     else
     {
-        if (m_audioComp && m_audioComp->IsPlaying("step"))
+        if (m_walkSfx && m_walkSfx->IsPlaying())
         {
-            m_audioComp->Stop("step");
+            m_walkSfx->Stop();
         }
     }
 }

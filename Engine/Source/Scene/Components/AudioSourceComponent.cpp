@@ -27,6 +27,14 @@ namespace RR
             voice->SetVelocity(vel);    // doppler
         }
 
+        for (auto& voice : m_oneShots)
+        {
+            if (!voice->IsPlaying()) continue;
+            voice->SetPosition(pos);
+            voice->SetDirection(fwd);   // cone
+            voice->SetVelocity(vel);    // doppler
+        }
+
         // reap finished one-shots
         std::erase_if(m_oneShots, [](const auto& entry)
         {

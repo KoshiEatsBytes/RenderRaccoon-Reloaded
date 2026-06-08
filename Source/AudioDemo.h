@@ -24,7 +24,9 @@ private:
 
     RR::GameObject*           m_emitter       = nullptr;
     RR::AudioSourceComponent* m_emitterSource = nullptr;
-    float m_time = 0.0f;
+    RR::ManagerAudioTracker   m_shoot;
+    float m_time     = 0.0f;
+    float m_autoFire = 0.0f;
     std::unordered_map<int, bool> m_prevKeys;
 
 };

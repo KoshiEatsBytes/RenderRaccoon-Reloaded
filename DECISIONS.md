@@ -259,18 +259,19 @@ Engine (singleton)            platform + subsystems + main loop
 - **Channels are plain `uInt` indices**, created up front by `Init(channelCount, fallbackChannel)` — the
   *game* supplies its own `enum : int` mapping, so the manager carries no hard-coded channel set (the
   earlier in-manager `AudioChannelID` enum was dropped for exactly this reason). A `key → channel`
-  **binding** (`m_keyToChannel`, set by `BindTrack` or auto-set on the first explicit play) lets the
-  by-key `Play`/`Stop`/`Get*` calls resolve a channel without one being passed every time; unbound keys
-  fall back to `fallbackChannel`. Indices are 0-based — valid is `< channelCount`.
+  **binding** (`m_keyToChannel`, set **explicitly** by `BindTrack`) lets the by-key `Play`/`Stop`/`Get*`
+  calls resolve a channel without one being passed every time; unbound keys fall back to
+  `fallbackChannel`. Voice *creation* never writes the binding — `CreateSpatial` takes its channel as an
+  argument and deliberately leaves the global map alone, so two emitters of the same key on different
+  channels can't stomp each other. Indices are 0-based — valid is `< channelCount`.
 - A channel exposes **bus controls + collection lifecycle** (add / stop / reap) but **no per-track
   tuning** — individual-voice control is the Tracker's job (reaching into one sound "through" a bus is
   out of place for what a bus does).
-- **Reap** (per-frame `Update`): one-shots on `IsFinished()`; tracks on
-  `IsFinished() || (!IsPlaying() && !IsPaused())`. Keying off `IsPaused()` (rather than a channel-side
-  "removing" flag) keeps a *paused* track alive while collecting a *stopped* one — and lets `Stop`
-  live on the voice/Tracker without coupling to channel internals. Note `ma_sound_is_playing` reports
-  node *state* (started/stopped), **not** "reached the end" — a finished one-shot is still "started",
-  which is why one-shots reap on `ma_sound_at_end` instead.
+- **Reap** (per-frame `Update`): **only one-shots**, on `IsFinished()`. Managed/prototype tracks are
+  **never reaped** — they persist for the channel's lifetime (see *Voice lifecycle*) so their settings
+  stick and they can be replayed or cloned without rebuilding. Note `ma_sound_is_playing` reports node
+  *state* (started/stopped), **not** "reached the end" — a finished one-shot is still "started", which
+  is why reaping keys off `ma_sound_at_end` (`IsFinished`).
 
 ### Tracker — non-owning voice handle
 - **`Tracker<T>`** (`T` = `StaticAudio`/`SpatialAudio`) is a copyable, lifecycle-neutral handle for
@@ -285,29 +286,68 @@ Engine (singleton)            platform + subsystems + main loop
   `SetPosition`/etc. only on `Tracker<SpatialAudio>`. The getter's *context* fixes `T` (manager
   getters → static, component getters → spatial), so `auto track = ...` is never ambiguous.
 - **Ownership:** the channel owns the voice (`shared_ptr<AudioVoice>`), the Tracker observes
-  (`weak_ptr<T>`) — both from one `make_shared<Derived>` so they share a control block. The channel's
-  reap is authoritative; a Tracker never extends a voice's lifetime.
+  (`weak_ptr<T>`) — both from one `make_shared<Derived>` so they share a control block. Since prototypes
+  now persist (only one-shots reap), the `weak_ptr` normally stays valid for the channel's lifetime, so
+  the revive callback is a safety net rather than the common path. A Tracker never extends a voice's
+  lifetime.
+- **Two convenience wrappers** sit on `Tracker<T>`, mirroring each other: **`ManagerAudioTracker`**
+  (wraps `Tracker<StaticAudio>` + the `AudioManager`) and **`ComponentAudioTracker`** (wraps
+  `Tracker<SpatialAudio>` + its owning `AudioSourceComponent`). Both add **`PlayOneShot()`** (delegates
+  to the owner, which clones the cached voice) and **`operator->`** (raw voice access for config), so a
+  caller can **bind once and fire/configure without reaching back to the singleton/component** each time.
+  `AudioManager::GetStatic(key)` returns a `ManagerAudioTracker`; `AudioSourceComponent::BindTrack` /
+  `GetTrack` return a `ComponentAudioTracker`.
 
-### 2D vs 3D & polyphony
-- **One-shots** (UI/SFX) are **ephemeral, fire-and-forget** — a fresh voice per `PlayOneShot`, reaped
-  at end. Deliberately *not* keyed-and-reused: one voice per key can't overlap with itself, which
-  kills polyphony (rapid gunfire, footsteps). Per-play cost is negligible (clip cached; only a cheap
-  `ma_sound` node-init). If it ever profiles hot, the fix is a **voice pool** (reuse voice objects,
-  preserving polyphony) + **voice limiting** — *not* one-voice-per-key.
-- **Music / managed** sounds are **keyed, single-instance, controllable** (stop/fade/crossfade by
-  name; `CrossFade` = two concurrent fades). Multiple concurrent tracks are supported → layering.
-- **3D** sounds are **component-owned**, because the same key can play from many emitters at once
-  (three torches, all `torchLoop`) and each voice must die with its **entity** — neither fits the
-  manager's keyed/owned model. So the manager only offers a **factory**, `CreateSpatial(key, channel)`,
-  which builds the voice, routes it into the channel's group (volume bus), and returns the *owning*
-  `shared_ptr`. `AudioSourceComponent` owns those voices (keyed by clip), drives position/direction/
-  velocity each `LateUpdate`, reaps finished one-shots, and hands out a **weak `Tracker<SpatialAudio>`
-  with an empty revive** (it owns lifetime, so no revive is needed). A per-source **3D profile**
-  (min/max distance, rolloff, attenuation model, doppler factor, cone) is stamped onto each voice at
-  creation and re-applied to live voices when changed; per-clip exceptions go through the tracker's
-  `operator->`.
+### Voice lifecycle — cached prototypes & cloned one-shots
+- The **manager mirrors `AudioSourceComponent`**: a key's voice is **created once and cached**
+  (`GetOrCreateVoice` → it lives in its channel's `m_tracks`) and **never reaped**. That cached voice is
+  the key's **prototype** — the single place its volume/pitch/pan live, so settings applied through a
+  handle *stick* across plays.
+- **One-shots clone the prototype.** `PlayOneShot(key)` get-or-creates the prototype, builds a fresh
+  voice (`CreateVoiceShared`), copies the prototype's settings onto it (`StaticAudio::CloneSettings`),
+  routes it into the bus, plays it non-looping, and the channel reaps **the clone** at end. This resolves
+  the earlier "ephemeral vs keyed" tension: the **prototype is keyed-and-reused** (settings stay
+  consistent and tweakable) while the **clones are ephemeral and overlapping** (polyphony — rapid
+  gunfire/footsteps still layer). `PlayOneShot`'s `_vol` is a **scale** on the prototype's volume
+  (default `1.0` = inherit unchanged), so a per-shot override never clobbers the sticky setting.
+- **Managed / music** playback drives the **prototype directly** (`PlayManaged`, or
+  `GetStatic(key)->Play`) — keyed, single-instance, controllable (stop/fade; `CrossFade` = two concurrent
+  fades; multiple concurrent keys → layering). Re-playing a key reuses the same cached voice instead of
+  orphaning it.
+- Because the prototype must exist before settings can stick, **`GetTrack`/`GetStatic` create eagerly**
+  (get-or-create) so `GetStatic(key)->SetVolume(..)` always has a live voice. *Cost:* one cached
+  `ma_sound` per distinct key per channel, alive for the channel's lifetime — **bounded by the sound
+  set** (like the component's `m_voices`), not a leak.
+
+### 2D vs 3D
+- **2D (`StaticAudio`)** voices are **manager-owned** — the cached prototypes above, living in channels.
+- **3D (`SpatialAudio`)** voices are **component-owned**, because the same key can play from many emitters
+  at once (three torches, all `torchLoop`) and each voice must die with its **entity** — neither fits the
+  manager's keyed/owned model. The manager only offers a **factory**, `CreateSpatial(key, channel)`, which
+  builds the voice, routes it into the channel's group (volume bus), and returns the *owning* `shared_ptr`
+  (channel passed explicitly; it does **not** touch the global binding). `AudioSourceComponent` owns those
+  voices (keyed by clip), drives position/direction/velocity each `LateUpdate`, reaps **only** its finished
+  one-shot clones, and hands out a `ComponentAudioTracker`. Its `PlayOneShot` mirrors the manager's:
+  **clone the cached voice** (`SpatialAudio::CloneSettings`), position the clone at the emitter's **world**
+  position, play, reap at end. A per-source **3D profile** (min/max distance, rolloff, attenuation model,
+  doppler factor, cone) is stamped onto each voice at creation and re-applied when changed; per-clip
+  exceptions go through `operator->`.
 - **Listener** is global/singular, driven by an `AudioListenerComponent` on the camera — it pushes
   position + direction + world-up **+ velocity** each frame (see Velocity & Doppler).
+
+### Scene unload (`UnloadAll`)
+- Component-owned 3D voices die with their entities on scene unload, but **manager-owned 2D voices and
+  decoded clips would otherwise persist across scenes.** `AudioManager::UnloadAll()` flushes them:
+  `AudioChannel::Clear()` every bus (destroy voices, **keep the group**) + clear the clip cache (PCM frees
+  once the removed voices release it). The **asset registry (`key → path`) and channel bindings are kept**
+  — they're scene-independent (paths and routing, not loaded data), and rebuilding the registry would mean
+  a filesystem rescan.
+- Driven from `ApplicationManager` at both teardown points: `UnloadCurrentScene` (explicit + shutdown via
+  `Destroy`) and `LoadPendingScene` — in the latter **before** the incoming scene's `OnLoad`, so it can't
+  wipe sounds the new scene just set up. *Trade-offs:* on the rare scene-load **failure + rollback** the
+  old scene's 2D music has already been flushed (its 3D component voices are untouched); and mid-transition
+  a clip still held by the outgoing scene's not-yet-destroyed voices may briefly re-decode. Both are
+  transient and self-correcting.
 
 ### Velocity & Doppler
 - Doppler is **relative**, so it needs velocity on *both* the source and the listener — miss the
@@ -365,8 +405,9 @@ Engine (singleton)            platform + subsystems + main loop
 - **Reparenting** a physics-hierarchy GameObject has stale-ownership edge cases (documented, not
   guarded).
 - **MT determinism** — multithreaded solving isn't bit-exact run-to-run (acceptable for gameplay).
-- **Audio — no voice pool / voice limiting** yet (the optimization to reach for if one-shot spawning
-  ever profiles hot — not one-voice-per-key, which would kill polyphony).
+- **Audio — no voice pool / voice limiting** yet (the optimization to reach for if one-shot *clone*
+  spawning ever profiles hot — pool/reuse the clone voices; the per-key prototype already stays single,
+  only the overlapping clones would need pooling).
 - **Audio — OGG needs `stb_vorbis` wired in** (WAV/MP3/FLAC are built into miniaudio).
 - **Audio — no streaming;** clips fully decode to PCM (fine for SFX/short music; large music files
   would benefit from a per-voice streaming decoder).
