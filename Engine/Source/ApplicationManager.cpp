@@ -1,5 +1,6 @@
 
 #include "ApplicationManager.h"
+#include "Engine.h"
 #include "ISubSystem.h"
 #include "Physics/PhysicsManager.h"
 
@@ -20,6 +21,8 @@ namespace RR
 
         m_activeScene->OnDestroy();
         m_activeScene.reset();
+        
+        Engine::GetInstance().GetAudioManager().UnloadAll();
     }
 
     GameObject* ApplicationManager::GetSceneCamera() const
@@ -129,6 +132,10 @@ namespace RR
 
         // Stash old scene
         std::unique_ptr<Scene> oldScene = std::move(m_activeScene);
+
+        // Flush the previous scene's audio BEFORE the new scene loads its own in
+        // OnLoad(), so nothing carries across the transition.
+        Engine::GetInstance().GetAudioManager().UnloadAll();
 
         // Install, then init
         m_activeScene = std::move(newScene);

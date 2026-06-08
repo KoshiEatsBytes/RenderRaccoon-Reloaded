@@ -112,6 +112,12 @@ namespace RR
         }
     }
 
+    void AudioChannel::Clear()
+    {
+        m_tracks.clear();
+        m_oneShots.clear();
+    }
+
     std::shared_ptr<AudioVoice> AudioChannel::Find(const std::string& _name) const
     {
         auto it = m_tracks.find(_name);

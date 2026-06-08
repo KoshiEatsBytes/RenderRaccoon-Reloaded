@@ -37,6 +37,7 @@ namespace RR
         void AddOneShot(std::shared_ptr<AudioVoice> _voice);
         void Stop(const std::string& _name, float _fadeOut = 0.0f);
         void StopAll(float _fadeOut = 0.0f);
+        void Clear();
 
         // Lookup
         std::shared_ptr<AudioVoice> Find(const std::string& _name) const;

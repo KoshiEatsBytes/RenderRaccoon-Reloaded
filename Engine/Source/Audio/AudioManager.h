@@ -45,6 +45,9 @@ namespace RR
         ManagerAudioTracker GetStatic (const std::string& _key);
         std::shared_ptr<SpatialAudio> CreateSpatial(const std::string& _key, uInt _channel);
 
+        // SCENE LIFECYCLE
+        void UnloadAll();
+
         // VOLUME
         void  SetChannelVolume(uInt _channel, float _vol);
         float GetChannelVolume(uInt _channel) const;

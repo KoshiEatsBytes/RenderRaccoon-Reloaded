@@ -73,6 +73,15 @@ namespace RR
         }
     }
 
+    void AudioManager::UnloadAll()
+    {
+        for (auto& [id, channel] : m_channels)
+        {
+            channel.Clear();
+        }
+        m_clipCache.clear();
+    }
+
     // CHANNEL BINDING -------------------------------------------------------------------------------------------------
 
     void AudioManager::BindTrack(const std::string& _key, uInt _channel)
