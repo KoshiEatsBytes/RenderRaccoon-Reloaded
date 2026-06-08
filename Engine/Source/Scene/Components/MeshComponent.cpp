@@ -35,7 +35,8 @@ namespace RR
         command.material = m_material.get();
         command.mesh = m_mesh.get();
         command.modelMatrix = GetOwner()->GetWorldTransform();
-        
+        command.color = m_color;
+
         Engine::GetInstance().GetRenderQueue().Submit(command);
     }
 
@@ -49,5 +50,10 @@ namespace RR
     void MeshComponent::SetMesh(const std::shared_ptr<Mesh>& _mesh)
     {
         m_mesh = _mesh;
+    }
+
+    void MeshComponent::SetColor(const vec3& _color)
+    {
+        m_color = _color;
     }
 }

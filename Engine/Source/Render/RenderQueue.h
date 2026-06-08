@@ -19,6 +19,7 @@ namespace RR
         Mesh* mesh = nullptr;
         Material* material = nullptr;
         mat4 modelMatrix;
+        vec3 color = vec3(1.0f);   // tint multiplied into the shader's uColor (white = none)
     };
 
     class RenderQueue

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "Scene/Component.h"
+#include "Helpers/Types.h"
 
 namespace RR
 {
@@ -24,10 +25,12 @@ namespace RR
 
         void SetMaterial(const std::shared_ptr<Material>& _material);
         void SetMesh(const std::shared_ptr<Mesh>& _mesh);
+        void SetColor(const vec3& _color);
 
     private:
         std::shared_ptr<Material> m_material;
         std::shared_ptr<Mesh> m_mesh;
+        vec3 m_color = vec3(1.0f);
     };
 }
 

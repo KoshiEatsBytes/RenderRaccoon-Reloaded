@@ -42,6 +42,7 @@ namespace RR
             // material
             _graphicsAPI.BindMaterial(command.material);
             shaderProgram->SetUniform("uModel", command.modelMatrix);
+            shaderProgram->SetUniform("uColor", command.color);
 
             // Camera
             shaderProgram->SetUniform("uView", _camData.viewMatrix);

@@ -3,6 +3,7 @@
 #include "Game.h"
 
 #include "AudioDemo.h"
+#include "DemoScene.h"
 #include "Benchmark.h"
 #include "MultiPitBenchmark.h"
 #include "../Engine/Source/Helpers/GLTFLib.hpp"
@@ -100,6 +101,9 @@ void Game::Update(float _deltaTime)
 
     if (input.IsKeyPressed(GLFW_KEY_3))
         RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<AudioDemo>();
+
+    if (input.IsKeyPressed(GLFW_KEY_4))
+        RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<DemoScene>();
 }
 
 void Game::LateUpdate(float _deltaTime)
