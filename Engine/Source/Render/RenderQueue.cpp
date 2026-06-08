@@ -54,7 +54,7 @@ namespace RR
             {
                 auto& light = _lights[0];
                 shaderProgram->SetUniform("uLight.color", light.color);
-                shaderProgram->SetUniform("uLight.position", light.position);
+                shaderProgram->SetUniform("uLight.direction", glm::normalize(-light.position));
             }
 
             // Mesh
