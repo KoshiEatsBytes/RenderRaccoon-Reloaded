@@ -1,5 +1,5 @@
-#include "Benchmark.h"
-#include "Game.h"
+#include "../Benchmark.h"
+#include "../Game.h"
 #include "GLFW/glfw3.h"
 #include <cmath>
 

@@ -1,10 +1,10 @@
 
 #include <RR.h>
 
-#include "AudioDemo.h"
-#include "DemoScene.h"
-#include "Game.h"
-#include "TestSubSystem.h"
+#include "Testing/AudioDemo.h"
+#include "Testing/DemoScene.h"
+#include "Testing/Game.h"
+#include "Testing/TestSubSystem.h"
 
 int main()
 {

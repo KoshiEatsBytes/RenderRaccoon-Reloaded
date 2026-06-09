@@ -1,0 +1,15 @@
+//
+// Created by Simon on 09/06/2026.
+//
+
+#ifndef RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H
+#define RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H
+
+namespace RR
+{
+    class BenchmarkSubSystem
+    {
+    };
+} // RR
+
+#endif //RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H

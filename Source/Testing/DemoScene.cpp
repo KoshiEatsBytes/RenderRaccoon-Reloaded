@@ -1,8 +1,8 @@
 
 #include "DemoScene.h"
 
-#include "Game.h"
-#include "Player.h"
+#include "../Game.h"
+#include "../Player.h"
 #include "GLFW/glfw3.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------

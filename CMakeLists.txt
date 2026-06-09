@@ -8,24 +8,24 @@ include(FetchContent)
 
 set(PROJECT_SOURCE_FILES
         Source/main.cpp
-        Source/Game.cpp
-        Source/Game.h
-        Source/TestObject.cpp
-        Source/TestObject.h
-        Source/Player.cpp
-        Source/Player.h
-        Source/TestSubSystem.cpp
-        Source/TestSubSystem.h
-        Source/Benchmark.cpp
-        Source/Benchmark.h
-        Source/MultiPitBenchmark.cpp
-        Source/MultiPitBenchmark.h
-        Source/AudioDemo.cpp
-        Source/AudioDemo.h
-        Source/DemoScene.cpp
-        Source/DemoScene.h
-        Source/Bullet.cpp
-        Source/Bullet.h
+        Source/Testing/Game.cpp
+        Source/Testing/Game.h
+        Source/Testing/TestObject.cpp
+        Source/Testing/TestObject.h
+        Source/Testing/Player.cpp
+        Source/Testing/Player.h
+        Source/Testing/TestSubSystem.cpp
+        Source/Testing/TestSubSystem.h
+        Source/Testing/Benchmark.cpp
+        Source/Testing/Benchmark.h
+        Source/Testing/MultiPitBenchmark.cpp
+        Source/Testing/MultiPitBenchmark.h
+        Source/Testing/AudioDemo.cpp
+        Source/Testing/AudioDemo.h
+        Source/Testing/DemoScene.cpp
+        Source/Testing/DemoScene.h
+        Source/Testing/Bullet.cpp
+        Source/Testing/Bullet.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

@@ -1,5 +1,5 @@
 
-#include "TestObject.h"
+#include "../TestObject.h"
 
 #include "GLFW/glfw3.h"
 
