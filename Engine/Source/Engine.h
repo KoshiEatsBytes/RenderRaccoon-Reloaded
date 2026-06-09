@@ -55,6 +55,8 @@ namespace RR
         void SetShouldClose(bool _close);
         bool GetShouldClose() const;
 
+        void SetCursorMode(bool _enable);
+
         Scene* GetScene() const;
         //PhysicsManager* GetPhysicsManager() const;
         ApplicationManager& GetAppManager();

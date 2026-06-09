@@ -40,6 +40,7 @@ namespace RR
         void EnqueueSpawn(GameObject* _object, GameObject* _parent);
 
         // Get/Sets
+        void SetCursorEnabled(bool _enabled);
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
         GameObject* GetMainCamera() const;
@@ -53,6 +54,7 @@ namespace RR
         virtual void Update(float _deltaTime)       = 0;
         virtual void LateUpdate(float _deltaTime)   = 0;
         virtual void Destroy()                      = 0;
+        virtual void OnGui();
 
         std::string m_name = "noName";
         ApplicationData& m_appData;

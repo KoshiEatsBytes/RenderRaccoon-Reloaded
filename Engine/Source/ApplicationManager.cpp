@@ -96,6 +96,11 @@ namespace RR
         if (m_activeScene) m_activeScene->UpdateInternal(_deltaTime);
     }
 
+    void ApplicationManager::RenderGUI() const
+    {
+        if (m_activeScene) m_activeScene->OnGui();
+    }
+
     void ApplicationManager::LateUpdate(float _deltaTime)
     {
         for (auto& subSystem : m_subSystems)

@@ -11,7 +11,7 @@ int main()
     RR::PrintLogo();
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.GetAppManager().RequestSceneLoad<DemoScene>();
+    engine.GetAppManager().RequestSceneLoad<Game>();
     engine.GetAppManager().AddSubSystem<TestSubSystem>();
 
 

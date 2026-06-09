@@ -21,6 +21,7 @@ Game::~Game() = default;
 
 bool Game::Init()
 {
+    SetCursorEnabled(true);
 
     auto player = CreateObject<Player>("Player");
     SetMainCamera(player);

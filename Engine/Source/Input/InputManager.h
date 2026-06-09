@@ -24,6 +24,7 @@ namespace RR
 
         // METHODS -----------------------------------------------------------------------------------------------------
 
+        void SetUICapture(bool _keyboard, bool _mouse);
         void SetKeyPressed(int _key, bool _pressed);
         bool IsKeyPressed(int _key) const;
         void SetMouseButtonPressed(int _button, bool _pressed);
@@ -41,6 +42,9 @@ namespace RR
     private:
         std::array<bool, 384> m_keys = {false};
         std::array<bool, 16> m_mouseKeys = {false};
+
+        bool m_uiCaptureKeyboard = false;
+        bool m_uiCaptureMouse    = false;
 
         bool m_mousePosChanged = false;
         vec2 m_mousePosOld = vec2(0.0f);

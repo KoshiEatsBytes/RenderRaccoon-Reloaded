@@ -5,6 +5,9 @@
 
 #include "Engine.h"
 #include "ApplicationManager.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
 #include "Scene/Components/CameraComponent.h"
@@ -120,8 +123,6 @@ namespace RR
         glfwSetKeyCallback(m_window, KeyCallBack);
         glfwSetMouseButtonCallback(m_window, MouseButtonCallBack);
         glfwSetCursorPosCallback(m_window, CursorPositionCallBack);
-        // sticks cursor so application
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
         glfwMakeContextCurrent(m_window);
 
@@ -141,6 +142,25 @@ namespace RR
         if (!m_graphicsAPI.Init())
         {
             Error("[INITIALIZATION] Failed to initialize RR Graphics API");
+            glfwTerminate();
+            return false;
+        }
+
+        // Wire up ImGui
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGui::StyleColorsDark();
+
+        if (!ImGui_ImplGlfw_InitForOpenGL(m_window, true))
+        {
+            Error("[INITIALIZATION] Failed to initialize ImGui glfw for OpenGL");
+            glfwTerminate();
+            return false;
+        }
+
+        if (!ImGui_ImplOpenGL3_Init("#version 330"))
+        {
+            Error("[INITIALIZATION] Failed to initialize ImGui");
             glfwTerminate();
             return false;
         }
@@ -176,6 +196,14 @@ namespace RR
                !m_shouldClose)
         {
             glfwPollEvents();
+
+            // ImGui early frame update
+            ImGui_ImplOpenGL3_NewFrame();
+            ImGui_ImplGlfw_NewFrame();
+            ImGui::NewFrame();
+
+            const ImGuiIO& io = ImGui::GetIO();
+            m_inputManager.SetUICapture(io.WantCaptureKeyboard, io.WantCaptureMouse);
 
             // compute delta time
             auto now = std::chrono::steady_clock::now();
@@ -224,6 +252,13 @@ namespace RR
             }
 
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);
+            m_appManager.RenderGUI();
+
+            // ImGui draw on top of 3D
+            ImGui::Render();
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+            // end of frame
             glfwSwapBuffers(m_window);
 
             // Mouse moved this frame
@@ -232,12 +267,20 @@ namespace RR
             // Late Update before new frame and audio
             m_appManager.LateUpdate(deltaTime);
             m_audioManager.Update(deltaTime);
+
+            // prevent mouse skips
+            m_inputManager.m_mousePosOld = m_inputManager.m_mousePosCurrent;
         }
     }
 
     void Engine::Destroy()
     {
         m_appManager.Destroy();
+
+        // Clean-up ImGui
+        ImGui_ImplOpenGL3_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
 
         // Clean-up glfw
         glfwTerminate();
@@ -256,6 +299,12 @@ namespace RR
     bool Engine::GetShouldClose() const
     {
         return m_shouldClose;
+    }
+
+    void Engine::SetCursorMode(bool _enable)
+    {
+        auto enable = _enable ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
+        glfwSetInputMode(m_window, GLFW_CURSOR, enable);
     }
 
     Scene* Engine::GetScene() const

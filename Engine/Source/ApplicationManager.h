@@ -33,6 +33,7 @@ namespace RR
         void PreUpdate(float _deltaTime) const;
         void PhysicsUpdate(float _deltaTime) const;
         void Update(float _deltaTime) const;
+        void RenderGUI() const;
         void LateUpdate(float _deltaTime);
         void Destroy();
 

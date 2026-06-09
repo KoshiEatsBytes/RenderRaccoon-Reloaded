@@ -7,6 +7,8 @@ Benchmark::Benchmark() : Scene("BenchmarkScene") {}
 
 bool Benchmark::Init()
 {
+    SetCursorEnabled(false);
+
     m_material = RR::Material::Load("Materials/Brick.json");
     m_boxMesh  = RR::Mesh::CreateBox(vec3(1.0f));
 

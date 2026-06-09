@@ -12,6 +12,8 @@ DemoScene::~DemoScene() = default;
 
 bool DemoScene::Init()
 {
+    SetCursorEnabled(false);
+
     // One shared checker material for the whole arena; per-object colour is a MeshComponent tint
     // (the Default shader multiplies the texture by uColor).
     m_material = RR::Material::Load("Materials/Checker.json");

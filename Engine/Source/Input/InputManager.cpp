@@ -13,6 +13,12 @@ namespace RR
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
+    void InputManager::SetUICapture(bool _keyboard, bool _mouse)
+    {
+        m_uiCaptureKeyboard = _keyboard;
+        m_uiCaptureMouse    = _mouse;
+    }
+
     // KEYBOARD --------------------------------------------------------------------------------------------------------
 
     void InputManager::SetKeyPressed(const int _key, const bool _pressed)
@@ -28,6 +34,8 @@ namespace RR
 
     bool InputManager::IsKeyPressed(const int _key) const
     {
+        if (m_uiCaptureKeyboard) return false;
+
         if (_key < 0 || _key >= static_cast<int>(m_keys.size()))
         {
             Warn("[INPUT - KEYBOARD] Key out of range is being requested, discarding.");
@@ -52,6 +60,8 @@ namespace RR
 
     bool InputManager::IsMouseButtonPressed(int _button) const
     {
+        if (m_uiCaptureMouse) return false;
+
         if (_button < 0 || _button >= static_cast<int>(m_mouseKeys.size()))
         {
             Warn("[INPUT - MOUSE] Key out of range is being set, discarding.");
@@ -90,6 +100,8 @@ namespace RR
 
     bool InputManager::GetMousePositionChanged() const
     {
+        if (m_uiCaptureMouse) return false;
+
         return m_mousePosChanged;
     }
 }

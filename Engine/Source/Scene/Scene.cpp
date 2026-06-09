@@ -131,6 +131,11 @@ namespace RR
         });
     }
 
+    void Scene::SetCursorEnabled(bool _enabled)
+    {
+        Engine::GetInstance().SetCursorMode(_enabled);
+    }
+
     /**
      * @brief Handles parenting for gameobjects in the scene
      * @param _obj Current object
@@ -345,6 +350,10 @@ namespace RR
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
+
+    void Scene::OnGui()
+    {
+    }
 
     void Scene::PreUpdateInternal(float _deltaTime)
     {
