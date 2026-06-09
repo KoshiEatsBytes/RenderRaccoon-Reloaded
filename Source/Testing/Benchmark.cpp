@@ -3,6 +3,8 @@
 #include "GLFW/glfw3.h"
 #include <cmath>
 
+#include "Benchmark/BenchmarkSubSystem.h"
+
 Benchmark::Benchmark() : Scene("BenchmarkScene") {}
 
 bool Benchmark::Init()
@@ -48,6 +50,9 @@ bool Benchmark::Init()
     makeWall("WallW", vec3(-pit, 0.0f, 0.0f), vec3(1.0f, wallH, pit * 2.0f));
 
     RR::Success("[BENCHMARK] Arena ready — raining in up to ", kMaxBoxes, " boxes.");
+
+    m_bench = RR::Engine::GetInstance().GetAppManager().GetSubSystem<RR::BenchmarkSubSystem>();
+
     return true;
 }
 
@@ -77,6 +82,21 @@ void Benchmark::Update(float _deltaTime)
         m_spawn = false;
     if (input.IsKeyPressed(GLFW_KEY_J))
         m_spawn = true;
+
+    if (input.IsKeyPressed(GLFW_KEY_N))
+    {
+        if (m_bench->IsLogging())
+        {
+            m_bench->RequestStopLogging();
+        }
+    }
+    if (input.IsKeyPressed(GLFW_KEY_M))
+    {
+        if (!m_bench->IsLogging())
+        {
+            m_bench->RequestStartLogging();
+        }
+    }
 
     // avg fps in 1 sec window
     m_fpsTimer   += _deltaTime;

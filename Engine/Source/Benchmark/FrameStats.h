@@ -29,6 +29,7 @@ namespace RR
         // Diagnostic - which is the bottleneck
         float avgCpuMs = 0.0f;
         float avgGpuMs = 0.0f;
+        sizeT gpuSampleCount = 0;
 
         // Fps data
         float avgFps  = 0.0f;
@@ -38,11 +39,12 @@ namespace RR
         float low01Ms = 0.0f;
 
         // Stutter
-        int stutterCount = 0;
+        unsigned int stutterCount = 0;
     };
 
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
-    constexpr float stutterThreshold = 2.0f;
+    // Klein et al. 2023: 4–12 ms variation is perceptible
+    constexpr float kStutterDeltaMs = 8.0f;
 }
 
 

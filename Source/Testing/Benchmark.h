@@ -2,6 +2,11 @@
 #pragma once
 #include <RR.h>
 
+namespace RR
+{
+    class BenchmarkSubSystem;
+}
+
 class Benchmark : public RR::Scene
 {
 public:
@@ -21,6 +26,7 @@ private:
     std::shared_ptr<RR::Material> m_material;
     std::shared_ptr<RR::Mesh>     m_boxMesh;
     std::vector<RR::GameObject*>  m_spawnedBoxes;
+    RR::BenchmarkSubSystem*       m_bench;
 
     bool m_spawn = true;
     float m_spawnTimer = 0.0f;

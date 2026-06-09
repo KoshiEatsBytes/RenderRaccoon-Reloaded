@@ -18,10 +18,10 @@ namespace RR
         ISubSystem();
 
         virtual bool Init()                                         = 0;
-        virtual void Update(float _deltaTime)                       = 0;
 
         // Non mandatory hooks
         virtual void PreUpdate(float _deltaTime);
+        virtual void Update(float _deltaTime);
         virtual void LateUpdate(float _deltaTime);
         virtual void Destroy();
 

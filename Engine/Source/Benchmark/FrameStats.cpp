@@ -37,14 +37,21 @@ namespace RR
 
         std::vector<float> frameTimes;
         frameTimes.reserve(_samples.size());
-        double cpuSum = 0.0;
-        double gpuSum = 0.0;
+        double cpuSum  = 0.0;
+        double gpuSum  = 0.0;
+        sizeT gpuValid = 0;
 
         for (const auto& sample : _samples)
         {
             frameTimes.push_back(sample.frameTimeMs);
             cpuSum += sample.cpuMs;
-            gpuSum += sample.gpuMs;
+
+            // document
+            if (sample.gpuMs > 0.0f)
+            {
+                gpuSum += sample.gpuMs;
+                gpuValid++;
+            }
         }
         const double framesNo = static_cast<double>(frameTimes.size());
 
@@ -53,7 +60,8 @@ namespace RR
         stats.avgFrameTimeMs = static_cast<float>(summ / framesNo);
         stats.avgFps = (stats.avgFrameTimeMs > 0.0f) ? 1000.0f / stats.avgFrameTimeMs : 0.0f;
         stats.avgCpuMs = static_cast<float>(cpuSum / framesNo);
-        stats.avgGpuMs = static_cast<float>(gpuSum / framesNo);
+        stats.avgGpuMs = gpuValid ? static_cast<float>(gpuSum / gpuValid) : 0.0f;
+        stats.gpuSampleCount = gpuValid;
 
         // Min Max frametime
         const auto [min, max] = std::minmax_element(frameTimes.begin(), frameTimes.end());
@@ -69,19 +77,6 @@ namespace RR
         }
         stats.stdDeviationMs = static_cast<float>(std::sqrt(var / framesNo));
 
-        // Stutter count
-        // if frametime > frametime * stutterThreshold we consider a spike
-        std::vector<float> ascending = frameTimes;
-        std::sort(ascending.begin(), ascending.end());
-
-        const float median = ascending[ascending.size() / 2];
-        const float threshold = stutterThreshold * median;
-
-        stats.stutterCount = static_cast<int>(std::ranges::count_if(frameTimes,
-            [threshold](float _val) {
-                return _val >= threshold;
-        }));
-
         // Lows
         // worst frames
         std::vector<float> descending = frameTimes;
@@ -91,6 +86,18 @@ namespace RR
         stats.low5Ms  = MeanOfWorst(descending, 5.0f);
         stats.low1Ms  = MeanOfWorst(descending, 1.0f);
         stats.low01Ms = MeanOfWorst(descending, 0.1f);
+
+        // Stutter
+        // if the different between two frames is higher than the stutter delta, log
+        unsigned int stutters = 0;
+        for (sizeT i = 1; i < frameTimes.size(); i++)
+        {
+            if (frameTimes[i] - frameTimes[i - 1] > kStutterDeltaMs)
+            {
+                stutters++;
+            }
+        }
+        stats.stutterCount = stutters;
 
         return stats;
     }

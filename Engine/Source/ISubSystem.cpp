@@ -12,6 +12,10 @@ namespace RR
     {
     }
 
+    void ISubSystem::Update(float _deltaTime)
+    {
+    }
+
     void ISubSystem::LateUpdate(float _deltaTime)
     {
     }

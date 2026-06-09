@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Benchmark/BenchmarkSubSystem.h"
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
 #include "Scene/Components/CameraComponent.h"
@@ -187,9 +188,12 @@ namespace RR
         // Get last time point before application start to compute dt
         m_lastTimePoint = std::chrono::steady_clock::now();
 
-        // Collect camera and light data
+        // containers for camera and light data
         CameraData camData;
         std::vector<LightData> lights;
+
+        // Get benchmark tool if present
+        auto* benchmark = m_appManager.GetSubSystem<BenchmarkSubSystem>();
 
         // Main application loop
         while (!glfwWindowShouldClose(m_window) &&
@@ -209,6 +213,9 @@ namespace RR
             auto now = std::chrono::steady_clock::now();
             float deltaTime = std::chrono::duration<float>(now - m_lastTimePoint).count();
             m_lastTimePoint = now;
+
+            // Being frame for bench
+            if (benchmark) benchmark->BeginFrame(deltaTime);
 
             m_appManager.PreUpdate(deltaTime);
             // Physics step
@@ -251,10 +258,12 @@ namespace RR
                 lights = scene->GetLights();
             }
 
+            if (benchmark) benchmark->BeginGpuTimer();
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);
-            m_appManager.RenderGUI();
+            if (benchmark) benchmark->EndGpuTimer();
 
             // ImGui draw on top of 3D
+            m_appManager.RenderGUI();
             ImGui::Render();
             ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -263,13 +272,13 @@ namespace RR
 
             // Mouse moved this frame
             m_inputManager.SetMousePositionChanged(false);
+            m_inputManager.m_mousePosOld = m_inputManager.m_mousePosCurrent;
 
             // Late Update before new frame and audio
             m_appManager.LateUpdate(deltaTime);
             m_audioManager.Update(deltaTime);
 
-            // prevent mouse skips
-            m_inputManager.m_mousePosOld = m_inputManager.m_mousePosCurrent;
+            if (benchmark) benchmark->EndFrame();
         }
     }
 
