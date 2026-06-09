@@ -102,6 +102,11 @@ set(PROJECT_SOURCE_FILES
         Source/Audio/ComponentAudioTracker.cpp
         Source/Audio/ManagerAudioTracker.h
         Source/Audio/ManagerAudioTracker.cpp
+        Source/ShowCase.cpp
+        Source/ShowCase.h
+        Source/Render/MeshData.h
+        Source/Render/Voxels/ChunkMesher.cpp
+        Source/Render/Voxels/ChunkMesher.h
 )
 
 # Compose application structure

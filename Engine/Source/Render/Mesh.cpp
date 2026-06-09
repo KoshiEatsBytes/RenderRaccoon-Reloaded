@@ -94,33 +94,10 @@ namespace RR
         _out.m_VAO = 0;
         _out.m_VBO = 0;
         _out.m_EBO = 0;
+        _out.m_vertexCount = 0;
+        _out.m_indexCount  = 0;
     }
 
-    Mesh& Mesh::operator=(Mesh&& _out) noexcept
-    {
-        if (this != &_out)
-        {
-            // Delete existing
-            glDeleteVertexArrays(1, &m_VAO);
-            glDeleteBuffers(1, &m_VBO);
-            glDeleteBuffers(1, &m_EBO);
-
-            // Steal from source
-            m_vertexLayout = std::move(_out.m_vertexLayout);
-            m_VBO          = _out.m_VBO;
-            m_EBO          = _out.m_EBO;
-            m_VAO          = _out.m_VAO;
-            m_vertexCount  = _out.m_vertexCount;
-            m_indexCount   = _out.m_indexCount;
-
-            // Zero the source
-            _out.m_VAO = 0;
-            _out.m_VBO = 0;
-            _out.m_EBO = 0;
-        }
-        return *this;
-    }
-    
     /**
      * Bind own VAO calling bind vertex array
      */

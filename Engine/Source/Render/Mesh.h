@@ -24,7 +24,7 @@ namespace RR
 
         // specify move contrustors
         Mesh(Mesh&& _out) noexcept;
-        Mesh& operator=(Mesh&& _out) noexcept;
+        Mesh& operator=(Mesh&& _out) noexcept = delete;
 
         void Bind();
         void UnBind();

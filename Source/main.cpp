@@ -2,6 +2,7 @@
 #include <RR.h>
 
 #include "AudioDemo.h"
+#include "DemoScene.h"
 #include "Game.h"
 #include "TestSubSystem.h"
 
@@ -10,7 +11,7 @@ int main()
     RR::PrintLogo();
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.GetAppManager().RequestSceneLoad<Game>();
+    engine.GetAppManager().RequestSceneLoad<DemoScene>();
     engine.GetAppManager().AddSubSystem<TestSubSystem>();
 
 
