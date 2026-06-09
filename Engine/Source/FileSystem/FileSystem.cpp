@@ -82,29 +82,22 @@ namespace RR
         return out;
     }
 
-    std::vector<fSysPath> FileSystem::ListAssetFiles(const std::string &_subfolder,
-                                                     const std::vector<std::string> &_extensions) const
+    std::vector<fSysPath> FileSystem::ListAssetFiles(const std::string& _subfolder,
+        const std::vector<std::string>& _extensions) const
     {
-        std::vector<fSysPath> result;
-        const fSysPath root = GetAssetFolder();
-        const fSysPath dir  = root / _subfolder;
+        return ListFilesIn(GetAssetFolder(),  _subfolder, _extensions);
+    }
 
-        if (!std::filesystem::exists(dir)) return result;
+    std::vector<fSysPath> FileSystem::ListOutputFiles(const std::string& _subfolder,
+        const std::vector<std::string>& _extensions) const
+    {
+        return ListFilesIn(GetAssetFolder(),  _subfolder, _extensions);
+    }
 
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(dir))
-        {
-            if (!entry.is_regular_file()) continue;
-            if (!_extensions.empty())
-            {
-                std::string extension = entry.path().extension().string();
-                std::ranges::transform(extension, extension.begin(), ::tolower);
-                if (std::ranges::find(_extensions, extension) == _extensions.end()) continue;
-            }
-            result.push_back(std::filesystem::relative(entry.path(), root));
-        }
-        // Make result deterministic
-        std::ranges::sort(result);
-        return result;
+    std::string FileSystem::LoadOutputFileText(const std::string& _relativePath)
+    {
+        auto buffer = LoadFile(GetOutputFolder() / _relativePath);
+        return std::string(buffer.begin(), buffer.end());
     }
 
     fSysPath FileSystem::GetExecutableFolder() const
@@ -142,6 +135,30 @@ namespace RR
     fSysPath FileSystem::GetOutputFolder() const
     {
         return std::filesystem::weakly_canonical(GetExecutableFolder() / "Output");
+    }
+
+    std::vector<fSysPath> FileSystem::ListFilesIn(const fSysPath &_root, const std::string& _subfolder,
+        const std::vector<std::string>& _extensions) const
+    {
+        std::vector<fSysPath> result;
+        const fSysPath dir  = _root / _subfolder;
+
+        if (!std::filesystem::exists(dir)) return result;
+
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(dir))
+        {
+            if (!entry.is_regular_file()) continue;
+            if (!_extensions.empty())
+            {
+                std::string extension = entry.path().extension().string();
+                std::ranges::transform(extension, extension.begin(), ::tolower);
+                if (std::ranges::find(_extensions, extension) == _extensions.end()) continue;
+            }
+            result.push_back(std::filesystem::relative(entry.path(), _root));
+        }
+        // Make result deterministic
+        std::ranges::sort(result);
+        return result;
     }
 }
 

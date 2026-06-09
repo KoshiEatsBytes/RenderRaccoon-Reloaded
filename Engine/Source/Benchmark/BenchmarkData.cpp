@@ -1,5 +1,5 @@
 
-#include "FrameStats.h"
+#include "BenchmarkData.h"
 #include <algorithm>
 #include <numeric>
 #include <cmath>

@@ -8,22 +8,10 @@
 
 #include "ISubSystem.h"
 #include "Helpers/TypeInfo.h"
-#include "Benchmark/FrameStats.h"
+#include "Benchmark/BenchmarkData.h"
 
 namespace RR
 {
-    // Saved as part of the CSV header, is-per-run
-    struct RunInfo
-    {
-        std::string scenario = "unknown";
-        uint32_t    seed     = 0;
-        bool lod        = false;
-        bool async      = false;
-        bool scheduling = false;
-        bool lodCache   = false;
-        bool greedy     = false;
-    };
-
     class BenchmarkSubSystem : public ISubSystem
     {
     public:
@@ -47,7 +35,7 @@ namespace RR
         void EndGpuTimer();
         void EndFrame();
 
-        std::pair<FrameStats, RunInfo> GetLastRunData() const;
+        BenchmarkRun GetLastRunData() const;
 
     protected:
         bool Init() override;

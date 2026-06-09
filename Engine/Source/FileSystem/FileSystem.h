@@ -25,14 +25,23 @@ namespace RR
 
         std::vector<char> LoadFile(const fSysPath& _path);
         std::vector<char> LoadAssetFile(const std::string& _relativePath);
-        std::string LoadAssetFileText(const std::string &_relativePath);
+        std::string LoadAssetFileText(const std::string& _relativePath);
         std::ofstream OpenOutputFile(const std::string& _relativePath, bool _binary = true) const;
 
         std::vector<fSysPath> ListAssetFiles(const std::string& _subfolder,
             const std::vector<std::string>& _extensions = {}) const;
 
+        std::vector<fSysPath> ListOutputFiles(const std::string& _subfolder,
+            const std::vector<std::string>& _extensions = {}) const;
+
+        std::string LoadOutputFileText(const std::string& _relativePath);
+
         fSysPath GetExecutableFolder() const;
         fSysPath GetAssetFolder() const;
         fSysPath GetOutputFolder() const;
+
+    private:
+        std::vector<fSysPath> ListFilesIn(const fSysPath& _root, const std::string& _subfolder,
+                                  const std::vector<std::string>& _extensions) const;
     };
 }

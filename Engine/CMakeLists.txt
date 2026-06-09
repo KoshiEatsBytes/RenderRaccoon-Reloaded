@@ -107,8 +107,8 @@ set(PROJECT_SOURCE_FILES
         Source/Render/MeshData.h
         Source/Render/Voxels/ChunkMesher.cpp
         Source/Render/Voxels/ChunkMesher.h
-        Source/Benchmark/FrameStats.cpp
-        Source/Benchmark/FrameStats.h
+        Source/Benchmark/BenchmarkData.cpp
+        Source/Benchmark/BenchmarkData.h
         Source/Benchmark/BenchmarkSubSystem.cpp
         Source/Benchmark/BenchmarkSubSystem.h
 )

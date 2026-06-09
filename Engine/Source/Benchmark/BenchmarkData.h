@@ -2,6 +2,8 @@
 #pragma once
 #include <vector>
 #include <cstddef>
+#include <cstdint>
+#include <string>
 
 namespace RR
 {
@@ -13,6 +15,20 @@ namespace RR
         float frameTimeMs = 0.0f;
         float cpuMs       = 0.0f;
         float gpuMs       = 0.0f;
+    };
+
+    // Saved as part of the CSV header, is-per-run
+    struct RunInfo
+    {
+        std::string scenario = "unknown";
+        uint32_t seed  = 0;
+        bool completed = false;
+
+        bool lod        = false;
+        bool async      = false;
+        bool scheduling = false;
+        bool lodCache   = false;
+        bool greedy     = false;
     };
 
     // Data container for run data constructed from raw samples
@@ -40,6 +56,13 @@ namespace RR
 
         // Stutter
         unsigned int stutterCount = 0;
+    };
+
+    struct BenchmarkRun
+    {
+        RunInfo                  info;
+        FrameStats               stats;
+        std::vector<FrameSample> samples;
     };
 
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples);

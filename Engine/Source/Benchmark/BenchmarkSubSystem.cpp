@@ -58,6 +58,7 @@ namespace RR
 
         m_startRequested = true;
         m_runInfo = _runInfo;
+        m_runInfo.completed = false;
     }
 
     void BenchmarkSubSystem::RequestStopLogging()
@@ -82,8 +83,9 @@ namespace RR
         // Process stops
         if (m_stopRequested)
         {
-            m_stopRequested = false;
-            m_completed     = true;
+            m_stopRequested     = false;
+            m_completed         = true;
+            m_runInfo.completed = true;
             FinishLogging();
 
             Log("[BENCHMARK - STOP] Stopping benchmarking on current scene");
@@ -171,9 +173,9 @@ namespace RR
         m_frameCounter++;
     }
 
-    std::pair<FrameStats, RunInfo> BenchmarkSubSystem::GetLastRunData() const
+    BenchmarkRun BenchmarkSubSystem::GetLastRunData() const
     {
-        return {m_frameStats, m_runInfo};
+        return {m_runInfo, m_frameStats, m_samples};
     }
 
     // PROTECTED -------------------------------------------------------------------------------------------------------
@@ -189,7 +191,7 @@ namespace RR
         if (m_logging)
         {
             FinishLogging();
-            Log("[BENCHMARK] Application closed before benchmark asked to log, saving before closing...");
+            Log("[BENCHMARK] Application closed before before requesting benchmark stop, saving before closing...");
         }
 
         DestroyGpuQueries();
@@ -230,7 +232,7 @@ namespace RR
         }
 
         // Saves run data
-        m_frameStats = {ComputeStats(m_samples)};
+        m_frameStats = ComputeStats(m_samples);
         WriteCSV();
     }
 
