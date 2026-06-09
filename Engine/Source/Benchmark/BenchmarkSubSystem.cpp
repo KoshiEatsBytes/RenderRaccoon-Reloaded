@@ -1,9 +1,32 @@
 
+#include <fstream>
+#include <iomanip>
+#include <ctime>
+
 #include "BenchmarkSubSystem.h"
 #include "Helpers/Printer.hpp"
+#include "FileSystem/FileSystem.h"
+#include "Engine.h"
 
 namespace RR
 {
+    // STATIC ----------------------------------------------------------------------------------------------------------
+
+    // Unique filenames to distinguish runs.
+    static std::string MakeTimestampName()
+    {
+        const std::time_t time = std::time(nullptr);
+        std::tm tm{};
+#if defined(_WIN32)
+        localtime_s(&tm, &time);
+#else
+        localtime_r(&time, &tm);
+#endif
+        char buf[32];
+        std::strftime(buf, sizeof(buf), "bench_%Y-%m-%d_%H-%M-%S", &tm);
+        return buf;
+    }
+
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
     BenchmarkSubSystem::BenchmarkSubSystem()
@@ -24,7 +47,7 @@ namespace RR
         glDeleteQueries(kRing, m_gpuQueries.data());
     }
 
-    void BenchmarkSubSystem::RequestStartLogging()
+    void BenchmarkSubSystem::RequestStartLogging(const RunInfo& _runInfo)
     {
         if (m_logging)
         {
@@ -34,6 +57,7 @@ namespace RR
         }
 
         m_startRequested = true;
+        m_runInfo = _runInfo;
     }
 
     void BenchmarkSubSystem::RequestStopLogging()
@@ -58,7 +82,8 @@ namespace RR
         // Process stops
         if (m_stopRequested)
         {
-            m_stopRequested  = false;
+            m_stopRequested = false;
+            m_completed     = true;
             FinishLogging();
 
             Log("[BENCHMARK - STOP] Stopping benchmarking on current scene");
@@ -146,6 +171,11 @@ namespace RR
         m_frameCounter++;
     }
 
+    std::pair<FrameStats, RunInfo> BenchmarkSubSystem::GetLastRunData() const
+    {
+        return {m_frameStats, m_runInfo};
+    }
+
     // PROTECTED -------------------------------------------------------------------------------------------------------
 
     bool BenchmarkSubSystem::Init()
@@ -178,6 +208,7 @@ namespace RR
         m_frameCounter      = 0;
         m_warmUpSecondsLeft = kWarmUpSeconds;
         m_logging           = true;
+        m_completed         = false;
     }
 
     void BenchmarkSubSystem::FinishLogging()
@@ -198,12 +229,62 @@ namespace RR
             m_slotPending[slot] = false;
         }
 
-        // Temporary
-        const FrameStats sample = ComputeStats(m_samples);
-        Log("[BENCHMARK] ", static_cast<int>(sample.frameCount), " frames  avg=", sample.avgFrameTimeMs,
-            "ms (", sample.avgFps, " fps)  1%low=", sample.low1Ms, "  0.1%low=", sample.low01Ms,
-            "  max=", sample.maxFrameTimeMs, "  stutters=", sample.stutterCount,
-            "  cpu=", sample.avgCpuMs, "  gpu=", sample.avgGpuMs);
+        // Saves run data
+        m_frameStats = {ComputeStats(m_samples)};
+        WriteCSV();
+    }
+
+    void BenchmarkSubSystem::WriteCSV()
+    {
+        // get save path from FileSys
+        const std::string relPath = "Benchmarks/" + MakeTimestampName() + ".csv";
+        const std::string fullPath = Engine::GetInstance().GetFileSystem().GetOutputFolder().string() + relPath;
+
+        std::ofstream out = Engine::GetInstance().GetFileSystem().OpenOutputFile(relPath);
+        if (!out) return;
+
+        // preserve sub microsecond in the log
+        out << std::setprecision(kResultPrecision);
+
+#ifdef NDEBUG
+        const char* config = "Release";
+#else
+        const char* config = "Debug";
+#endif
+
+        // Save run details first
+        out << "# config="     << config               << "\n"
+            << "# frames="     << m_samples.size()     << "\n"
+            << "# completed="  << m_completed          << "\n"
+            << "# scenario="   << m_runInfo.scenario   << "\n"
+            << "# seed="       << m_runInfo.seed       << "\n"
+            << "# lod="        << m_runInfo.lod        << "\n"
+            << "# async="      << m_runInfo.async      << "\n"
+            << "# scheduling=" << m_runInfo.scheduling << "\n"
+            << "# lodCache="   << m_runInfo.lodCache   << "\n"
+            << "# greedy="     << m_runInfo.greedy     << "\n";
+
+        // Saves the raw frame data
+        out << "frameIdx,frameTimeMs,cpuMs,gpuMs\n";
+        for (sizeT i = 0; i < m_samples.size(); i++)
+        {
+            const FrameSample& sample = m_samples[i];
+            out << i                  << ','
+                << sample.frameTimeMs << ','
+                << sample.cpuMs       << ','
+                << sample.gpuMs       << '\n';
+        }
+
+        // Save to file
+        out.flush();
+        if (!out)
+        {
+            Error("[BENCHMARK] CSV write failed — file may be incomplete");
+            return;
+        }
+
+        Success("[BENCHMARK] Benchmark of scene: '", m_runInfo.scenario,
+            "' has been successfully saved to file at: '", fullPath, "'");
     }
 }
 

@@ -94,7 +94,17 @@ void Benchmark::Update(float _deltaTime)
     {
         if (!m_bench->IsLogging())
         {
-            m_bench->RequestStartLogging();
+            RR::RunInfo info;
+
+            info.scenario   = "TestBench";
+            info.seed       = 0;
+            info.lod        = false;
+            info.async      = false;
+            info.scheduling = false;
+            info.lodCache   = false;
+            info.greedy     = false;
+
+            m_bench->RequestStartLogging(info);
         }
     }
 

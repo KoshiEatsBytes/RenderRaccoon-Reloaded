@@ -12,6 +12,18 @@
 
 namespace RR
 {
+    // Saved as part of the CSV header, is-per-run
+    struct RunInfo
+    {
+        std::string scenario = "unknown";
+        uint32_t    seed     = 0;
+        bool lod        = false;
+        bool async      = false;
+        bool scheduling = false;
+        bool lodCache   = false;
+        bool greedy     = false;
+    };
+
     class BenchmarkSubSystem : public ISubSystem
     {
     public:
@@ -25,7 +37,7 @@ namespace RR
         void DestroyGpuQueries();
 
         // Logging requests
-        void RequestStartLogging();
+        void RequestStartLogging(const RunInfo& _runInfo);
         void RequestStopLogging();
         bool IsLogging() const;
 
@@ -35,6 +47,8 @@ namespace RR
         void EndGpuTimer();
         void EndFrame();
 
+        std::pair<FrameStats, RunInfo> GetLastRunData() const;
+
     protected:
         bool Init() override;
         void Destroy() override;
@@ -42,16 +56,19 @@ namespace RR
     private:
         void BeginLogging();
         void FinishLogging();
+        void WriteCSV();
 
         // 60 mb allocated for benchmark samples, that's a 10-minute run at 8000 FPS
         static constexpr sizeT kSampleSize = 5000000;
         static constexpr int   kRing = 4;
         static constexpr float kWarmUpSeconds = 1.0f;
+        static constexpr int   kResultPrecision = 7;
 
         // log toggles
         bool m_logging        = false;
         bool m_startRequested = false;
         bool m_stopRequested  = false;
+        bool m_completed      = false;
 
         bool  m_captureThisFrame  = false;
         float m_warmUpSecondsLeft = 0.0f;
@@ -65,6 +82,10 @@ namespace RR
         std::array<sizeT, kRing>  m_sampleForSlot {};
         std::array<bool, kRing>   m_slotPending   {};
         long long m_frameCounter = 0;
+
+        // Run info
+        FrameStats m_frameStats;
+        RunInfo    m_runInfo;
 
         // Raw samples
         std::vector<FrameSample> m_samples;

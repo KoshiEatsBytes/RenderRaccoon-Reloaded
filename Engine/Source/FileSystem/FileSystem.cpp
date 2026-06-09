@@ -63,8 +63,27 @@ namespace RR
         return std::string(buffer.begin(), buffer.end());
     }
 
+    std::ofstream FileSystem::OpenOutputFile(const std::string& _relativePath, bool _binary) const
+    {
+        const fSysPath fullPath = GetOutputFolder() / _relativePath;
+        const auto mode = _binary ? (std::ios::out | std::ios::binary) : std::ios::out;
+
+        std::error_code error;
+        std::filesystem::create_directories(fullPath.parent_path(), error);
+        if (error)
+        {
+            Error("[FILESYSTEM - WRITE] Could not create directory '", fullPath.parent_path().string(),
+                  "': ", error.message());
+        }
+
+
+        std::ofstream out(fullPath, mode);
+        if (!out) Warn("[FILESYSTEM - WRITE] Could not open '", fullPath, "' for writing");
+        return out;
+    }
+
     std::vector<fSysPath> FileSystem::ListAssetFiles(const std::string &_subfolder,
-        const std::vector<std::string> &_extensions) const
+                                                     const std::vector<std::string> &_extensions) const
     {
         std::vector<fSysPath> result;
         const fSysPath root = GetAssetFolder();
@@ -119,4 +138,51 @@ namespace RR
 #endif
         return std::filesystem::weakly_canonical(GetExecutableFolder() / "Assets");
     }
+
+    fSysPath FileSystem::GetOutputFolder() const
+    {
+        return std::filesystem::weakly_canonical(GetExecutableFolder() / "Output");
+    }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
