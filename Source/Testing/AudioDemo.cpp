@@ -1,5 +1,5 @@
 
-#include "../AudioDemo.h"
+#include "AudioDemo.h"
 
 #include <cmath>
 

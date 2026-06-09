@@ -1,6 +1,7 @@
 
 #include <RR.h>
 
+#include "Benchmark/BenchmarkSubSystem.h"
 #include "Testing/AudioDemo.h"
 #include "Testing/DemoScene.h"
 #include "Testing/Game.h"
@@ -12,7 +13,7 @@ int main()
 
     RR::Engine& engine = RR::Engine::GetInstance();
     engine.GetAppManager().RequestSceneLoad<Game>();
-    engine.GetAppManager().AddSubSystem<TestSubSystem>();
+    engine.GetAppManager().AddSubSystem<RR::BenchmarkSubSystem>();
 
 
     if (engine.Init(1920, 1080, "RenderRaccoon", 5, 0))

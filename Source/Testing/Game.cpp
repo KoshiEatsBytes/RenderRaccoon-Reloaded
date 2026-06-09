@@ -1,13 +1,13 @@
 
 
-#include "../Game.h"
+#include "Game.h"
 
 #include "AudioDemo.h"
 #include "DemoScene.h"
 #include "Benchmark.h"
-#include "../MultiPitBenchmark.h"
-#include "../../Engine/Source/Helpers/GLTFLib.hpp"
-#include "../TestObject.h"
+#include "MultiPitBenchmark.h"
+#include "../Engine/Source/Helpers/GLTFLib.hpp"
+#include "TestObject.h"
 #include "GLFW/glfw3.h"
 #include "Physics/Collider.h"
 #include "Physics/RigidBody.h"

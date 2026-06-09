@@ -103,12 +103,12 @@ namespace RR
 
     void ApplicationManager::LateUpdate(float _deltaTime)
     {
+        if (m_activeScene) m_activeScene->LateUpdateInternal(_deltaTime);
+
         for (auto& subSystem : m_subSystems)
         {
             subSystem->LateUpdate(_deltaTime);
         }
-
-        if (m_activeScene) m_activeScene->LateUpdateInternal(_deltaTime);
 
         // Load pending scene
         LoadPendingScene();

@@ -1,5 +1,5 @@
 
-#include "../Player.h"
+#include "Player.h"
 
 #include "Bullet.h"
 #include "GLFW/glfw3.h"

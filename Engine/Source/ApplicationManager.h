@@ -65,8 +65,8 @@ namespace RR
          * @brief Adds a subsystem to the scene manager
          * @tparam T Type of the subSystem
          */
-        template <SubSystemType T>
-        void AddSubSystem()
+        template <SubSystemType T, typename... Args>
+        void AddSubSystem(Args&&... args)
         {
             if (m_pastInitialization)
             {
@@ -80,7 +80,7 @@ namespace RR
                 return;
             }
 
-            m_subSystems.push_back(std::make_unique<T>());
+            m_subSystems.push_back(std::make_unique<T>(std::forward<Args>(args)...));
         }
 
         /**

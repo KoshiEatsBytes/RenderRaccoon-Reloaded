@@ -1,15 +1,28 @@
-//
-// Created by Simon on 09/06/2026.
-//
 
-#ifndef RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H
-#define RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H
+#pragma once
+#include <vector>
+
+#include "ISubSystem.h"
+#include "Helpers/TypeInfo.h"
+#include "Benchmark/FrameStats.h"
 
 namespace RR
 {
-    class BenchmarkSubSystem
+    class BenchmarkSubSystem : public ISubSystem
     {
-    };
-} // RR
+    public:
+        SUBSYSTEM(BenchmarkSubSystem, RR::ISubSystem)
 
-#endif //RENDERRACCOON_RELOADED_BENCHMARKSUBSYSTEM_H
+        BenchmarkSubSystem();
+        ~BenchmarkSubSystem() override;
+
+    protected:
+        bool Init() override;
+        void Update(float _deltaTime) override;
+        void Destroy() override;
+
+    private:
+        std::vector<FrameSample> m_samples;
+        bool m_logging = false;
+    };
+}

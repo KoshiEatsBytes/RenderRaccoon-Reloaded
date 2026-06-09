@@ -3,10 +3,10 @@
 #include <vector>
 #include <cstddef>
 
-using sizeT = std::size_t;
-
 namespace RR
 {
+    using sizeT = std::size_t;
+
     // One frame raw timings
     struct FrameSample
     {
@@ -41,9 +41,7 @@ namespace RR
         int stutterCount = 0;
     };
 
-    static FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
-    static float MeanOfWorst(const std::vector<float>& _desc, float _percent);
-
+    FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
     constexpr float stutterThreshold = 2.0f;
 }
 

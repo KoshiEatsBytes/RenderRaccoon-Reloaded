@@ -5,6 +5,27 @@
 #include <cmath>
 #include <functional>
 
+namespace
+{
+    using sizeT = std::size_t;
+
+    float MeanOfWorst(const std::vector<float> &_desc, float _percent)
+    {
+        if (_desc.empty()) return 0.0f;
+
+        sizeT count = static_cast<sizeT>(std::ceil(_desc.size() * (_percent / 100.0f)));
+        count = std::clamp<sizeT>(count, 1, _desc.size()); // min 1 frame
+
+        double sum = 0.0;
+        for (sizeT i = 0; i < count; i++)
+        {
+            sum += _desc[i];
+        }
+
+        return static_cast<float>(sum / static_cast<double>(count));
+    }
+}
+
 namespace RR
 {
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples)
@@ -16,8 +37,8 @@ namespace RR
 
         std::vector<float> frameTimes;
         frameTimes.reserve(_samples.size());
-        double cpuSum = 0.0f;
-        double gpuSum = 0.0f;
+        double cpuSum = 0.0;
+        double gpuSum = 0.0;
 
         for (const auto& sample : _samples)
         {
@@ -40,7 +61,7 @@ namespace RR
         stats.maxFrameTimeMs = *max;
 
         // Populate standard deviation
-        double var = 0.0f;
+        double var = 0.0;
         for (float val : frameTimes)
         {
             const double deviation = val - stats.avgFrameTimeMs;
@@ -72,21 +93,5 @@ namespace RR
         stats.low01Ms = MeanOfWorst(descending, 0.1f);
 
         return stats;
-    }
-
-    float MeanOfWorst(const std::vector<float> &_desc, float _percent)
-    {
-        if (_desc.empty()) return 0.0f;
-
-        sizeT count = static_cast<sizeT>(std::ceil(_desc.size() * (_percent / 100.0f)));
-        count = std::clamp<sizeT>(count, 1, _desc.size()); // min 1 frame
-
-        double sum = 0.0f;
-        for (sizeT i = 0; i < count; i++)
-        {
-            sum += _desc[i];
-        }
-
-        return static_cast<float>(sum / static_cast<double>(count));
     }
 }
