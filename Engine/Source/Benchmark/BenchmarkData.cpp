@@ -82,10 +82,10 @@ namespace RR
         std::vector<float> descending = frameTimes;
         std::sort(descending.begin(), descending.end(), std::greater<float>());
 
-        stats.low10Ms = MeanOfWorst(descending, 10.f);
-        stats.low5Ms  = MeanOfWorst(descending, 5.0f);
-        stats.low1Ms  = MeanOfWorst(descending, 1.0f);
-        stats.low01Ms = MeanOfWorst(descending, 0.1f);
+        stats.low10Pc = MeanOfWorst(descending, 10.f);
+        stats.low5Pc  = MeanOfWorst(descending, 5.0f);
+        stats.low1Pc  = MeanOfWorst(descending, 1.0f);
+        stats.low01Pc = MeanOfWorst(descending, 0.1f);
 
         // Stutter
         // if the different between two frames is higher than the stutter delta, log

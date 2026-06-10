@@ -205,6 +205,17 @@ target_include_directories(imgui PUBLIC
 
 target_link_libraries(imgui PUBLIC glfw)
 
+# Add ImPlot library
+set(IMPLOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/implot")
+
+add_library(implot STATIC
+        ${IMPLOT_DIR}/implot.cpp
+        ${IMPLOT_DIR}/implot_items.cpp
+)
+
+target_include_directories(implot PUBLIC ${IMPLOT_DIR})
+target_link_libraries(implot PUBLIC imgui)
+
 # link libraries
 target_link_libraries(${PROJECT_NAME} PUBLIC
         glfw
@@ -215,6 +226,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         LinearMath
         miniaudio
         imgui
+        implot
 )
 
 # Copies assets over at build

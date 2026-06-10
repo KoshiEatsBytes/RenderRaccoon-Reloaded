@@ -50,10 +50,10 @@ namespace RR
 
         // Fps data
         float avgFps  = 0.0f;
-        float low10Ms = 0.0f;
-        float low5Ms  = 0.0f;
-        float low1Ms  = 0.0f;
-        float low01Ms = 0.0f;
+        float low10Pc = 0.0f;
+        float low5Pc  = 0.0f;
+        float low1Pc  = 0.0f;
+        float low01Pc = 0.0f;
 
         // Stutter
         unsigned int stutterCount = 0;

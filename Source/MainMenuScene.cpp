@@ -16,7 +16,7 @@ bool MainMenuScene::Init()
     // Test
     const auto sample = run.stats;
     RR::Log("[BENCHMARK] ", static_cast<int>(sample.frameCount), " frames  avg=", sample.avgFrameTimeMs,
-        "ms (", sample.avgFps, " fps)  1%low=", sample.low1Ms, "  0.1%low=", sample.low01Ms,
+        "ms (", sample.avgFps, " fps)  1%low=", sample.low1Pc, "  0.1%low=", sample.low01Pc,
         "  max=", sample.maxFrameTimeMs, "  stutters=", sample.stutterCount,
         "  cpu=", sample.avgCpuMs, "  gpu=", sample.avgGpuMs);
 

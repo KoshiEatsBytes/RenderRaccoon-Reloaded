@@ -3,8 +3,10 @@
 #include <GLFW/glfw3.h>
 #include <LinearMath/btThreads.h>
 
+
 #include "Engine.h"
 #include "ApplicationManager.h"
+#include "implot.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -150,6 +152,7 @@ namespace RR
         // Wire up ImGui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImPlot::CreateContext();
         ImGui::StyleColorsDark();
 
         // Initialize ImGui font
@@ -304,6 +307,7 @@ namespace RR
         // Clean-up ImGui
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
+        ImPlot::DestroyContext();
         ImGui::DestroyContext();
 
         // Clean-up glfw
