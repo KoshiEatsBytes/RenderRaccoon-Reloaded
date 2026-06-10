@@ -242,9 +242,9 @@ namespace RR
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void GraphicsAPI::SetClearColor(const float _r, const float _g, const float _b, const float _a)
+    void GraphicsAPI::SetClearColor(const vec4& _color)
     {
-        glClearColor(_r, _g, _b, _a);
+        glClearColor(_color.x, _color.y, _color.z, _color.w);
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------

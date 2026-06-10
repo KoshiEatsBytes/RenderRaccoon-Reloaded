@@ -224,7 +224,12 @@ namespace RR
             m_appManager.Update(deltaTime);
 
             // Drawing
-            m_graphicsAPI.SetClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+            const auto scene = m_appManager.GetActiveScene();
+            if (scene)
+                m_graphicsAPI.SetClearColor(scene->GetSceneClearColor());
+            else
+                m_graphicsAPI.SetClearColor();
+
             m_graphicsAPI.ClearBuffers();
 
             // Dynamically adjusts the aspect ratio
@@ -233,7 +238,7 @@ namespace RR
             glfwGetWindowSize(m_window, &width, &height);
             float aspect = static_cast<float>(width) / static_cast<float>(height);
 
-            if (const auto scene = m_appManager.GetActiveScene())
+            if (scene)
             {
                 if (const auto camObj = scene->GetMainCamera())
                 {

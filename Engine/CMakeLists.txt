@@ -111,6 +111,7 @@ set(PROJECT_SOURCE_FILES
         Source/Benchmark/BenchmarkData.h
         Source/Benchmark/BenchmarkSubSystem.cpp
         Source/Benchmark/BenchmarkSubSystem.h
+        Source/Benchmark/BenchmarkParser.hpp
 )
 
 # Compose application structure

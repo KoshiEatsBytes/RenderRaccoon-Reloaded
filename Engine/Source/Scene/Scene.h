@@ -40,6 +40,8 @@ namespace RR
         void EnqueueSpawn(GameObject* _object, GameObject* _parent);
 
         // Get/Sets
+        void SetSceneClearColor(const vec4& _color);
+        vec4 GetSceneClearColor() const;
         void SetCursorEnabled(bool _enabled);
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
@@ -83,6 +85,9 @@ namespace RR
         bool m_sceneStarted = false;
         std::vector<PendingSpawn>  m_spawnQueue;
         std::vector<GameObject*>   m_destroyQueue;
+
+        // Default scene color
+        vec4 m_sceneClearColor = {1.0f, 1.0f, 1.0f, 1.0f};
 
     public:
         // Templates ---------------------------------------------------------------------------------------------------

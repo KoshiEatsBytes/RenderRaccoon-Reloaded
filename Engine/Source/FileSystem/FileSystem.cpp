@@ -91,7 +91,7 @@ namespace RR
     std::vector<fSysPath> FileSystem::ListOutputFiles(const std::string& _subfolder,
         const std::vector<std::string>& _extensions) const
     {
-        return ListFilesIn(GetAssetFolder(),  _subfolder, _extensions);
+        return ListFilesIn(GetOutputFolder(),  _subfolder, _extensions);
     }
 
     std::string FileSystem::LoadOutputFileText(const std::string& _relativePath)

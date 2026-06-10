@@ -85,7 +85,6 @@ namespace RR
         {
             m_stopRequested     = false;
             m_completed         = true;
-            m_runInfo.completed = true;
             FinishLogging();
 
             Log("[BENCHMARK - STOP] Stopping benchmarking on current scene");
@@ -254,10 +253,14 @@ namespace RR
         const char* config = "Debug";
 #endif
 
+        // Update run info with last details
+        m_runInfo.completed = m_completed;
+        m_runInfo.config = config;
+
         // Save run details first
         out << "# config="     << config               << "\n"
             << "# frames="     << m_samples.size()     << "\n"
-            << "# completed="  << m_completed          << "\n"
+            << "# completed="  << m_runInfo.completed  << "\n"
             << "# scenario="   << m_runInfo.scenario   << "\n"
             << "# seed="       << m_runInfo.seed       << "\n"
             << "# lod="        << m_runInfo.lod        << "\n"

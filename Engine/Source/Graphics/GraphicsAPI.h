@@ -50,7 +50,7 @@ namespace RR
         void DrawMesh(Mesh* _mesh);
         void ClearBuffers();
 
-        void SetClearColor(float _r, float _g, float _b, float _a);
+        static void SetClearColor(const vec4& _color = {1.0f, 1.0f, 1.0, 1.0f});
 
     private:
         std::shared_ptr<ShaderProgram> m_defaultShaderProgram;

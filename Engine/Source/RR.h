@@ -52,3 +52,7 @@
 #include "Audio/SpatialAudio.h"
 #include "Audio/ComponentAudioTracker.h"
 #include "Audio/ManagerAudioTracker.h"
+
+// Benchmark
+#include "Benchmark/BenchmarkData.h"
+#include "Benchmark/BenchmarkParser.hpp"

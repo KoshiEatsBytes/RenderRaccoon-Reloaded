@@ -131,6 +131,16 @@ namespace RR
         });
     }
 
+    void Scene::SetSceneClearColor(const vec4& _color)
+    {
+        m_sceneClearColor = _color;
+    }
+
+    vec4 Scene::GetSceneClearColor() const
+    {
+        return m_sceneClearColor;
+    }
+
     void Scene::SetCursorEnabled(bool _enabled)
     {
         Engine::GetInstance().SetCursorMode(_enabled);

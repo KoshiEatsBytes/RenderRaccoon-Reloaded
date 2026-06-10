@@ -21,6 +21,7 @@ namespace RR
     struct RunInfo
     {
         std::string scenario = "unknown";
+        std::string config   = "debug";
         uint32_t seed  = 0;
         bool completed = false;
 

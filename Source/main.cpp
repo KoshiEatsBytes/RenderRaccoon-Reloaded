@@ -1,6 +1,7 @@
 
 #include <RR.h>
 
+#include "MainMenuScene.h"
 #include "Benchmark/BenchmarkSubSystem.h"
 #include "Testing/AudioDemo.h"
 #include "Testing/DemoScene.h"
@@ -12,7 +13,7 @@ int main()
     RR::PrintLogo();
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.GetAppManager().RequestSceneLoad<Game>();
+    engine.GetAppManager().RequestSceneLoad<MainMenuScene>();
     engine.GetAppManager().AddSubSystem<RR::BenchmarkSubSystem>();
 
 
