@@ -12,3 +12,7 @@ Engine/Source/ShowCase.cpp
 Engine/Source/ShowCase.h
 
 
+
+Source/ImGuiShowcaseScene.cpp
+
+Source/ImGuiShowcaseScene.h

@@ -28,6 +28,8 @@ set(PROJECT_SOURCE_FILES
         Source/Testing/Bullet.h
         Source/MainMenuScene.cpp
         Source/MainMenuScene.h
+        Source/ImGuiShowcaseScene.cpp
+        Source/ImGuiShowcaseScene.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

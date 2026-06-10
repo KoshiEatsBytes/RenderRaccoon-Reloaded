@@ -152,6 +152,16 @@ namespace RR
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
 
+        // Initialize ImGui font
+        ImGuiIO& io = ImGui::GetIO();
+        const std::string fontPath = (m_fileSystem.GetAssetFolder() / "Fonts/JetBrainsMono-Regular.ttf").string();
+        if (!io.Fonts->AddFontFromFileTTF(fontPath.c_str(), 18.0f))
+        {
+            Warn("[IMGUI] font not found, falling back to ProggyClean: ", fontPath);
+        }
+        float dpiScale = std::clamp(static_cast<float>(_width) / 1920.0f, 0.85f, 3.0f);
+        ImGui::GetStyle().FontScaleDpi = dpiScale;
+
         if (!ImGui_ImplGlfw_InitForOpenGL(m_window, true))
         {
             Error("[INITIALIZATION] Failed to initialize ImGui glfw for OpenGL");
@@ -317,7 +327,7 @@ namespace RR
 
     void Engine::SetCursorMode(bool _enable)
     {
-        auto enable = _enable ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL;
+        auto enable = _enable ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
         glfwSetInputMode(m_window, GLFW_CURSOR, enable);
     }
 
