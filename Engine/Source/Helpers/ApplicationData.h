@@ -1,5 +1,6 @@
 
 #pragma once
+#include <string>
 
 namespace RR
 {
@@ -17,8 +18,10 @@ namespace RR
         ApplicationData(ApplicationData&&) noexcept = delete;
         ApplicationData& operator=(ApplicationData&&) noexcept = delete;
 
-        // DATA HERE!!
-        int hello = {54};
+        // Device info — gathered once by the Engine at startup
+        std::string  gpuName;        
+        std::string  cpuName;       
+        unsigned int coreCount = 0;  
     };
 }
 

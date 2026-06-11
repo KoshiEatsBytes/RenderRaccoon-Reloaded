@@ -50,7 +50,8 @@ namespace RR
                     endOfLine = text.size();
                 }
 
-                const std::string_view line = Trim(text.substr(pos, endOfLine - pos));   // Trim also drops a trailing '\r'
+                // Trim also drops a trailing '\r'
+                const std::string_view line = Trim(text.substr(pos, endOfLine - pos));   
                 pos = endOfLine + 1;
 
                 if (line.empty()) continue;
@@ -64,14 +65,25 @@ namespace RR
                     const std::string_view key = Trim(line.substr(1, equal - 1));
                     const std::string_view val = Trim(line.substr(equal + 1));
 
-                    if      (key == "scenario")   runData.info.scenario   = std::string(val);
-                    else if (key == "config")     runData.info.config     = std::string(val);
-                    else if (key == "completed")  runData.info.completed  = (val == "1" || val == "true");
-                    else if (key == "lod")        runData.info.lod        = (val == "1");
-                    else if (key == "async")      runData.info.async      = (val == "1");
-                    else if (key == "scheduling") runData.info.scheduling = (val == "1");
-                    else if (key == "lodCache")   runData.info.lodCache   = (val == "1");
-                    else if (key == "greedy")     runData.info.greedy     = (val == "1");
+                    if      (key == "name")          runData.info.name          = std::string(val);
+                    else if (key == "scene")         runData.info.scene         = std::string(val);
+                    else if (key == "scenario")      runData.info.scene         = std::string(val);   
+                    else if (key == "config")        runData.info.config        = std::string(val);
+                    else if (key == "completed")     runData.info.completed     = (val == "1" || val == "true");
+                    else if (key == "lod")           runData.info.lod           = (val == "1");
+                    else if (key == "async")         runData.info.async         = (val == "1");
+                    else if (key == "scheduling")    runData.info.scheduling    = (val == "1");
+                    else if (key == "lodCache")      runData.info.lodCache      = (val == "1");
+                    else if (key == "greedy")        runData.info.greedy        = (val == "1");
+                    else if (key == "deterministic") runData.info.deterministic = (val == "1" || val == "true");
+                    else if (key == "gpu")           runData.info.gpuName       = std::string(val);
+                    else if (key == "cpu")           runData.info.cpuName       = std::string(val);
+                    else if (key == "cores")
+                    {
+                        unsigned long cores = 0;
+                        std::from_chars(val.data(), val.data() + val.size(), cores);
+                        runData.info.coreCount = static_cast<unsigned int>(cores);
+                    }
                     else if (key == "seed")
                     {
                         std::from_chars(val.data(), val.data() + val.size(), runData.info.seed);

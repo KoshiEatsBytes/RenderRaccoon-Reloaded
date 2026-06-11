@@ -2,6 +2,17 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <LinearMath/btThreads.h>
+#include <thread>
+#include <cstring>
+#include <string>
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
+    #define RR_HAS_CPUID 1
+    #if defined(_MSC_VER)
+        #include <intrin.h>
+    #else
+        #include <cpuid.h>
+    #endif
+#endif
 
 
 #include "Engine.h"
@@ -14,6 +25,48 @@
 #include "Helpers/Printer.hpp"
 #include "Scene/Component.h"
 #include "Scene/Components/CameraComponent.h"
+
+namespace
+{
+    std::string ReadGlString(GLenum _name)
+    {
+        const GLubyte* string = glGetString(_name);
+        return string ? reinterpret_cast<const char*>(string) : "unknown";
+    }
+
+    // CPU brand string via CPUID (x86 only "unknown" everywhere else)
+    std::string ReadCpuBrand()
+    {
+#if defined(RR_HAS_CPUID)
+        unsigned int regs[12] = {};
+    #if defined(_MSC_VER)
+        int cpui[4];
+        __cpuid(cpui, 0x80000000);
+        if (static_cast<unsigned int>(cpui[0]) < 0x80000004u) return "unknown";
+        __cpuidex(cpui, 0x80000002, 0); std::memcpy(&regs[0], cpui, 16);
+        __cpuidex(cpui, 0x80000003, 0); std::memcpy(&regs[4], cpui, 16);
+        __cpuidex(cpui, 0x80000004, 0); std::memcpy(&regs[8], cpui, 16);
+    #else
+        unsigned int maxExt = 0, ebx = 0, ecx = 0, edx = 0;
+        __get_cpuid(0x80000000u, &maxExt, &ebx, &ecx, &edx);
+        if (maxExt < 0x80000004u) return "unknown";
+        __get_cpuid(0x80000002u, &regs[0], &regs[1], &regs[2],  &regs[3]);
+        __get_cpuid(0x80000003u, &regs[4], &regs[5], &regs[6],  &regs[7]);
+        __get_cpuid(0x80000004u, &regs[8], &regs[9], &regs[10], &regs[11]);
+    #endif
+        char brand[49];
+        std::memcpy(brand, regs, 48);
+        brand[48] = '\0';
+
+        std::string s(brand);
+        const auto first = s.find_first_not_of(' ');
+        const auto last  = s.find_last_not_of(' ');
+        return (first == std::string::npos) ? "unknown" : s.substr(first, last - first + 1);
+#else
+        return "unknown";
+#endif
+    }
+}
 
 namespace RR
 {
@@ -132,7 +185,7 @@ namespace RR
         // Enable physics library multithreading
         m_btScheduler = btCreateDefaultTaskScheduler();
         btSetTaskScheduler(m_btScheduler);
-        m_btScheduler->setNumThreads(8);//static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
+        m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
         Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
 
         if (glewInit() != GLEW_OK)
@@ -149,6 +202,13 @@ namespace RR
             return false;
         }
 
+        // Gather device info 
+        m_appData.gpuName   = ReadGlString(GL_RENDERER);
+        m_appData.cpuName   = ReadCpuBrand();
+        m_appData.coreCount = std::thread::hardware_concurrency();
+        Log("[INIT] Device — CPU: ", m_appData.cpuName, " | GPU: ", m_appData.gpuName,
+            " | logical cores: ", m_appData.coreCount);
+
         // Wire up ImGui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -162,7 +222,7 @@ namespace RR
         {
             Warn("[IMGUI] font not found, falling back to ProggyClean: ", fontPath);
         }
-        float dpiScale = std::clamp(static_cast<float>(_width) / 1920.0f, 0.85f, 3.0f);
+        float dpiScale = std::clamp(static_cast<float>(_width) / 1920.0f, 0.5f, 3.0f);
         ImGui::GetStyle().FontScaleDpi = dpiScale;
 
         if (!ImGui_ImplGlfw_InitForOpenGL(m_window, true))

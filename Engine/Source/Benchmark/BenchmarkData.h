@@ -20,16 +20,23 @@ namespace RR
     // Saved as part of the CSV header, is-per-run
     struct RunInfo
     {
-        std::string scenario = "unknown";
+        std::string name  = "";          
+        std::string scene = "unknown";   
         std::string config   = "debug";
         uint32_t seed  = 0;
         bool completed = false;
+        bool deterministic = false; 
 
         bool lod        = false;
         bool async      = false;
         bool scheduling = false;
         bool lodCache   = false;
         bool greedy     = false;
+
+        // Test platform 
+        std::string  gpuName   = "unknown";
+        std::string  cpuName   = "unknown";
+        unsigned int coreCount = 0;
     };
 
     // Data container for run data constructed from raw samples

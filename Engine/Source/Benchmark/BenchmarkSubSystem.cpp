@@ -23,8 +23,21 @@ namespace RR
         localtime_r(&time, &tm);
 #endif
         char buf[32];
-        std::strftime(buf, sizeof(buf), "bench_%Y-%m-%d_%H-%M-%S", &tm);
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d_%H-%M-%S", &tm);
         return buf;
+    }
+
+    // Make a run name safe to embed in a filename 
+    // Copy paste from stack overflow, idk whats going on here
+    static std::string SanitizeForFilename(const std::string& _s)
+    {
+        std::string out;
+        for (char c : _s)
+        {
+            const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-';
+            out += ok ? c : '_';
+        }
+        return out;
     }
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
@@ -59,6 +72,11 @@ namespace RR
         m_startRequested = true;
         m_runInfo = _runInfo;
         m_runInfo.completed = false;
+
+        // Save device info
+        m_runInfo.gpuName   = m_appData.gpuName;
+        m_runInfo.cpuName   = m_appData.cpuName;
+        m_runInfo.coreCount = m_appData.coreCount;
     }
 
     void BenchmarkSubSystem::RequestStopLogging()
@@ -238,7 +256,8 @@ namespace RR
     void BenchmarkSubSystem::WriteCSV()
     {
         // get save path from FileSys
-        const std::string relPath = "Benchmarks/" + MakeTimestampName() + ".csv";
+        const std::string prefix  = SanitizeForFilename(m_runInfo.name.empty() ? "bench" : m_runInfo.name);
+        const std::string relPath = "Benchmarks/" + prefix + "_" + MakeTimestampName() + ".csv";
         const std::string fullPath = Engine::GetInstance().GetFileSystem().GetOutputFolder().string() + relPath;
 
         std::ofstream out = Engine::GetInstance().GetFileSystem().OpenOutputFile(relPath);
@@ -258,16 +277,21 @@ namespace RR
         m_runInfo.config = config;
 
         // Save run details first
-        out << "# config="     << config               << "\n"
-            << "# frames="     << m_samples.size()     << "\n"
-            << "# completed="  << m_runInfo.completed  << "\n"
-            << "# scenario="   << m_runInfo.scenario   << "\n"
-            << "# seed="       << m_runInfo.seed       << "\n"
-            << "# lod="        << m_runInfo.lod        << "\n"
-            << "# async="      << m_runInfo.async      << "\n"
-            << "# scheduling=" << m_runInfo.scheduling << "\n"
-            << "# lodCache="   << m_runInfo.lodCache   << "\n"
-            << "# greedy="     << m_runInfo.greedy     << "\n";
+        out << "# config="        << config                  << "\n"
+            << "# frames="        << m_samples.size()        << "\n"
+            << "# completed="     << m_runInfo.completed     << "\n"
+            << "# name="          << m_runInfo.name          << "\n"
+            << "# scene="         << m_runInfo.scene         << "\n"
+            << "# seed="          << m_runInfo.seed          << "\n"
+            << "# lod="           << m_runInfo.lod           << "\n"
+            << "# async="         << m_runInfo.async         << "\n"
+            << "# scheduling="    << m_runInfo.scheduling    << "\n"
+            << "# lodCache="      << m_runInfo.lodCache      << "\n"
+            << "# greedy="        << m_runInfo.greedy        << "\n"
+            << "# deterministic=" << m_runInfo.deterministic << "\n"
+            << "# gpu="           << m_runInfo.gpuName       << "\n"
+            << "# cpu="           << m_runInfo.cpuName       << "\n"
+            << "# cores="         << m_runInfo.coreCount     << "\n";
 
         // Saves the raw frame data
         out << "frameIdx,frameTimeMs,cpuMs,gpuMs\n";
@@ -288,7 +312,7 @@ namespace RR
             return;
         }
 
-        Success("[BENCHMARK] Benchmark of scene: '", m_runInfo.scenario,
+        Success("[BENCHMARK] Benchmark of scene: '", m_runInfo.scene,
             "' has been successfully saved to file at: '", fullPath, "'");
     }
 }

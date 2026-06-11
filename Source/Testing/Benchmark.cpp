@@ -96,7 +96,8 @@ void Benchmark::Update(float _deltaTime)
         {
             RR::RunInfo info;
 
-            info.scenario   = "TestBench";
+            info.name       = "manual";
+            info.scene      = "TestBench";
             info.seed       = 0;
             info.lod        = false;
             info.async      = false;
