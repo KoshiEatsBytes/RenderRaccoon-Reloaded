@@ -26,8 +26,8 @@ set(PROJECT_SOURCE_FILES
         Source/Testing/DemoScene.h
         Source/Testing/Bullet.cpp
         Source/Testing/Bullet.h
-        Source/MainMenuScene.cpp
-        Source/MainMenuScene.h
+        Source/ArtefactMenu.cpp
+        Source/ArtefactMenu.h
         Source/ImGuiShowcaseScene.cpp
         Source/ImGuiShowcaseScene.h
 )

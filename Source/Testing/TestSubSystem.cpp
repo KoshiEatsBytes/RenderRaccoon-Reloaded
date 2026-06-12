@@ -8,7 +8,6 @@ bool TestSubSystem::Init()
 {
     RR::Log("SubSistem initialized correctly!");
 
-    RR::Log(m_appData.hello);
 
     return true;
 }
