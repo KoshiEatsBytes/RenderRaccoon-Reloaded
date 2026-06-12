@@ -36,7 +36,8 @@ namespace RR
         }
 
     public:
-        static BenchmarkRun ParseBenchmarkCsv(const std::string& _text)
+        // _headerOnly = stop at the first data row. Cheap metadata-only parse for building run
+        static BenchmarkRun ParseBenchmarkCsv(const std::string& _text, bool _headerOnly = false)
         {
             BenchmarkRun runData;
             const std::string_view text = _text;
@@ -92,10 +93,13 @@ namespace RR
                     {
                         unsigned long frameNum = 0;
                         std::from_chars(val.data(), val.data() + val.size(), frameNum);
-                        runData.samples.reserve(frameNum);
+                        if (!_headerOnly) runData.samples.reserve(frameNum);
                     }
                     continue;
                 }
+
+                // metadata block is over
+                if (_headerOnly) break;
 
                 // skip column header
                 if (line.rfind("frameIdx", 0) == 0) continue;

@@ -169,6 +169,7 @@ void ArtefactMenu::DrawTopBar()
     if (!ImGui::BeginMainMenuBar())
     {
         if (idle) ImGui::PopFont();
+        ImGui::PopStyleVar();   
         return;
     }
 
@@ -190,11 +191,11 @@ void ArtefactMenu::DrawTopBar()
         if (m_view == TopView::ANALYZER)
         {
             m_view = TopView::NONE;
-            m_runListDirty = true;
         }
         else
         {
             m_view = TopView::ANALYZER;
+            m_runListDirty = true;   
         }
     }
     if (SHARED::TabButton("COMPARE", m_view == TopView::COMPARE))
@@ -202,11 +203,11 @@ void ArtefactMenu::DrawTopBar()
         if (m_view == TopView::COMPARE)
         {
             m_view = TopView::NONE;
-            m_runListDirty = true;
         }
         else
         {
             m_view = TopView::COMPARE;
+            m_runListDirty = true;   // same: refresh on open
         }
     }
 
@@ -255,7 +256,6 @@ namespace BT
         }
 
         // button size data
-        const float lineHeight = ImGui::GetTextLineHeight();
         const ImVec2 btMin     = ImGui::GetItemRectMin();
         const ImVec2 btMax     = ImGui::GetItemRectMax();
         const float btWidth    = btMax.x - btMin.x;
@@ -270,6 +270,7 @@ namespace BT
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         const ImU32 color    = ImGui::GetColorU32(ImGuiCol_Text);
         ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * _fSize);
+        const float lineHeight = ImGui::GetTextLineHeight();
 
         // Resize button and text, and centre text when going newline BECAUSE IM GUI DOESN'T FUCKING SUPPORT IT
         float btHeight = btMin.y + (btMax.y - btMin.y - static_cast<float>(lines) * lineHeight) * 0.5f;
@@ -329,9 +330,8 @@ void ArtefactMenu::DrawBenchmarkPanel()
         {
             m_selectedBenchmark = 2;
         }
-
-        ImGui::End();
     }
+    ImGui::End();
 }
 
 void ArtefactMenu::DrawMethodologyPanel()
@@ -475,15 +475,15 @@ void ArtefactMenu::DrawDescription(float _height)
 
             case 1:
                 context = "This is the custom benchmark settings panel. \n"
-                          "From here you can choose set of combinations to test on various scenes, "
-                          "however custom benchmarks can be analyzed and compared but wont count"
+                          "From here you can choose a set of combinations to test on various scenes, "
+                          "however custom benchmarks can be analyzed and compared but wont count "
                           "as valid, as data wont be the same between devices and users.";
                 break;
 
             case 2:
-                context = "This is the free roam panel. \nFeel free to pick the optimizations"
+                context = "This is the free roam panel. \nFeel free to pick the optimizations "
                           "you want to see in action and roam around the map to assess visually, "
-                          "no logging will happen, this is purely to try the optimizations";
+                          "no logging will happen, this is purely to try the optimizations.";
                 break;
 
             default:
@@ -499,7 +499,7 @@ void ArtefactMenu::DrawDescription(float _height)
         ImGui::Spacing();
 
         ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_descFontSize);
-        ImGui::TextWrapped(context.c_str());
+        ImGui::TextWrapped("%s", context.c_str());
         ImGui::PopFont();
 
     }
@@ -552,7 +552,8 @@ void ArtefactMenu::DrawCustomSeed()
 
     ImGui::TextUnformatted("Insert seed:");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    ImGui::InputTextWithHint("##seed", m_seedBuffer, m_seedBuffer,
+    // param order is (label, hint, buffer) - the hint only shows while the buffer is empty
+    ImGui::InputTextWithHint("##seed", "e.g. 1234567890", m_seedBuffer,
         sizeof(m_seedBuffer), ImGuiInputTextFlags_CharsDecimal);
 
     ImGui::Spacing();
@@ -883,33 +884,41 @@ void ArtefactMenu::DrawAnalyzerPanel()
                         m_selectedRunIndex == index))
                     {
                         m_selectedRunIndex = index;
-                        auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
 
-                        RR::BenchmarkRun runData = RR::BenchmarkParser::ParseBenchmarkCsv(
-                            fileSys.LoadOutputFileText(m_runFiles[index].relPath));
+                        // Re-clicking an open run should not stack an identical tile on top
+                        const bool alreadyOpen = std::ranges::any_of(m_openResults,
+                            [&](const ResultTile& _tile) { return _tile.label == m_runFiles[index].name; });
 
-                        // Populate a result window
-                        ResultTile window;
-                        window.id    = m_nextResultId++;
-                        window.label = m_runFiles[index].name;
-
-                        window.frameTimes.reserve(runData.samples.size());
-
-                        for (const RR::FrameSample& sample : runData.samples)
+                        if (!alreadyOpen)
                         {
-                            window.frameTimes.push_back(sample.frameTimeMs);
-                        }
-                        window.runData = std::move(runData);
-                        m_openResults.push_back(std::move(window));
+                            auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
 
-                        // Cap max windows at 2
-                        if (m_openResults.size() > SHARED::kMaxOpenWindows)
-                        {
-                            m_openResults.erase(m_openResults.begin());
-                            for (ResultTile& wind : m_openResults)
+                            RR::BenchmarkRun runData = RR::BenchmarkParser::ParseBenchmarkCsv(
+                                fileSys.LoadOutputFileText(m_runFiles[index].relPath));
+
+                            // Populate a result window
+                            ResultTile window;
+                            window.id    = m_nextResultId++;
+                            window.label = m_runFiles[index].name;
+
+                            window.frameTimes.reserve(runData.samples.size());
+
+                            for (const RR::FrameSample& sample : runData.samples)
                             {
-                                wind.placed = false;
-                                wind.userMoved = false;
+                                window.frameTimes.push_back(sample.frameTimeMs);
+                            }
+                            window.runData = std::move(runData);
+                            m_openResults.push_back(std::move(window));
+
+                            // Cap max windows at 2
+                            if (static_cast<int>(m_openResults.size()) > SHARED::kMaxOpenWindows)
+                            {
+                                m_openResults.erase(m_openResults.begin());
+                                for (ResultTile& wind : m_openResults)
+                                {
+                                    wind.placed    = false;
+                                    wind.userMoved = false;
+                                }
                             }
                         }
                     }
@@ -917,21 +926,21 @@ void ArtefactMenu::DrawAnalyzerPanel()
                     ImGui::PopFont();
                 }
             }
-            ImGui::EndChild();
-
-            SHARED::CenteredText("SORT", m_resultTitleFontSize);
-            ImGui::Separator();
-            ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_sortItemFontSize);
-            ImGui::Checkbox("Valid Only",         &m_filterValidOnly);
-            ImGui::Checkbox("Deterministic Only", &m_filterDeterministicOnly);
-
-            // Sort list
-            if (SHARED::TabButton("ASCENDING",  m_sortAscending,  ImVec2(-FLT_MIN, 0.0f)))
-                m_sortAscending = true;
-            if (SHARED::TabButton("DESCENDING", !m_sortAscending, ImVec2(-FLT_MIN, 0.0f)))
-                m_sortAscending = false;
-            ImGui::PopFont();
         }
+        ImGui::EndChild();
+
+        SHARED::CenteredText("SORT", m_resultTitleFontSize);
+        ImGui::Separator();
+        ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_sortItemFontSize);
+        ImGui::Checkbox("Valid Only",         &m_filterValidOnly);
+        ImGui::Checkbox("Deterministic Only", &m_filterDeterministicOnly);
+
+        // Sort list
+        if (SHARED::TabButton("ASCENDING",  m_sortAscending,  ImVec2(-FLT_MIN, 0.0f)))
+            m_sortAscending = true;
+        if (SHARED::TabButton("DESCENDING", !m_sortAscending, ImVec2(-FLT_MIN, 0.0f)))
+            m_sortAscending = false;
+        ImGui::PopFont();
     }
     ImGui::End();
 }
@@ -1178,6 +1187,12 @@ void ArtefactMenu::DrawComparePanel()
         ImGui::TextColored(ImVec4(0.95f, 0.55f, 0.35f, 1.0f),
                            "   (!) Mixed scene/seed - curves are not directly comparable");
     }
+    else if (m_compareSlots.empty())
+    {
+        // gentle empty-state hint so the view explains itself
+        ImGui::SameLine();
+        ImGui::TextDisabled("   add up to %d runs to compare", m_maxCompareSlotOpen);
+    }
     ImGui::PopFont();
 
     // Spreadsheet tags
@@ -1261,12 +1276,14 @@ void ArtefactMenu::DrawComparePanel()
                 ImGui::Dummy(ImVec2(height, height));
             }
 
-            // baseline button
+            // baseline button (greyed out until the slot actually has data)
             ImGui::TableNextColumn();
-            if (ImGui::RadioButton("##base", isBase) && slot.loaded)
+            ImGui::BeginDisabled(!slot.loaded);
+            if (ImGui::RadioButton("##base", isBase))
             {
                 m_compareBaselineId = slot.id;
             }
+            ImGui::EndDisabled();
 
             // file dropdown
             ImGui::TableNextColumn();
@@ -1386,7 +1403,7 @@ void ArtefactMenu::DrawComparePanel()
             }
             else
             {
-                for (int col = 0; col < 16; col++) ImGui::TableNextColumn();   // empty metric / tech / scene cells (don't shadow the row index i)
+                for (int col = 0; col < 16; col++) ImGui::TableNextColumn();   // empty metric / tech / scene cells
             }
 
             ImGui::TableNextColumn();
@@ -1429,8 +1446,7 @@ void ArtefactMenu::DrawComparePanel()
         ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
         ImPlot::SetupLegend(ImPlotLocation_NorthWest);
 
-        // While nothing is loaded, pin the axes to a sane default - otherwise the log Y
-        // autofits a degenerate range and the labels read 1e-306
+        // While nothing is loaded, pin the axes to a sane default
         if (!anyLoaded)
             ImPlot::SetupAxesLimits(0.0, 1.0, 0.1, 100.0, ImPlotCond_Always);
 
@@ -1472,7 +1488,10 @@ void ArtefactMenu::RefreshRunList()
     for (const auto& path : files)
     {
         const std::string relPath = path.string();
-        RR::BenchmarkRun runInfo = RR::BenchmarkParser::ParseBenchmarkCsv(fileSys.LoadOutputFileText(relPath));
+
+        // header-only parse: the list needs metadata
+        RR::BenchmarkRun runInfo = RR::BenchmarkParser::ParseBenchmarkCsv(
+            fileSys.LoadOutputFileText(relPath), true);
 
         // Load parsed result to vector
         m_runFiles.push_back({ relPath, path.filename().string(), runInfo.info });

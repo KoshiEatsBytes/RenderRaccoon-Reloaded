@@ -78,7 +78,6 @@ private:
     struct CompareSlot
     {
         int id = 0;
-        bool visible = true;
         bool loaded  = false;
 
         std::string relPath;
