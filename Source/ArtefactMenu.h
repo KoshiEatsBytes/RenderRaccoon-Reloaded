@@ -77,9 +77,9 @@ private:
     // Slot for comapre view, up to 7
     struct CompareSlot
     {
-        bool visible = true;
-        bool loaded  = true;
         int id = 0;
+        bool visible = true;
+        bool loaded  = false;
 
         std::string relPath;
         std::string name;
@@ -140,9 +140,9 @@ private:
 
     // Floating result windows
     std::vector<ResultTile> m_openResults;
-    int m_nextResultId = 0;
-    float m_tileGapPix = 4.0f;
-    float m_tileSliceFactor = 0.5f; // half the screen
+    int m_nextResultId              = 0;
+    float m_tileGapPix              = 4.0f;
+    float m_tileSliceFactor         = 0.5f; // half the screen
     float m_tileColorFactorInactive = 0.30f;
     float m_tileColorFactorActive   = 0.50f;
     float m_metadataFontSize        = 1.0f;
@@ -150,14 +150,21 @@ private:
     float m_statsFontSize           = 1.0f;
     float m_togglesFontSize         = 1.0f;
     float m_metricGapSize           = 16.0f;
-    float m_graphLineWeight         = 1.5f;
+    float m_graphLineWeightAnalyze  = 1.5f;
 
     // COMPARE TAB VIEW ------------------------------------------------------------------------------------------------
     std::vector<CompareSlot> m_compareSlots;
-    bool m_compareFitPending = true;
-    bool m_compareShowDelta  = false;
-    int  m_compareBaselineId = -1;
-    int  m_nextCompareId     = 0;
+    bool  m_compareFitPending      = true;
+    bool  m_compareShowDelta       = false;
+    int   m_compareBaselineId      = -1;
+    int   m_nextCompareId          = 0;
+    int   m_maxCompareSlotOpen     = 7;
+    float m_tableControlWidth      = 8.0f;
+    float m_tableBaseWidth         = 6.0f;
+    float m_graphLineWeightCompare = 1.5f;
+    float m_compareCtrlFontSize    = 1.0f;
+    float m_compareTableFontSize   = 1.0f;
+    float m_compareGraphFontSize   = 1.0f;
 };
 
 

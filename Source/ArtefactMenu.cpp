@@ -49,7 +49,10 @@ void ArtefactMenu::OnGui()
         DrawAnalyzerPanel();
         DrawResultWindows();
     }
-
+    else if (m_view == TopView::COMPARE)
+    {
+        DrawComparePanel();
+    }
 }
 
 // PRIVATE -------------------------------------------------------------------------------------------------------------
@@ -136,9 +139,13 @@ namespace SHARED
         // Run name, fall back to scene if invalid
         std::string out = !_name.empty() ? _name : (_scene.empty() ? "run" : _scene);
 
-        // Drop year
+        // Timestamp = the LAST six digit groups (Y M D H M S)
         if (nums.size() >= 6)
-            out += " " + nums[1] + "/" + nums[2] + " " + nums[3] + ":" + nums[4] + ":" + nums[5];
+        {
+            const std::size_t n = nums.size();
+            out += " " + nums[n - 5] + "/" + nums[n - 4]
+                 + " " + nums[n - 3] + ":" + nums[n - 2] + ":" + nums[n - 1];
+        }
 
         return out;
     }
@@ -983,7 +990,7 @@ void ArtefactMenu::DrawResultWindows()
                 m_metadataFontSize,
                 m_pcInfoFontSize,
                 m_metricGapSize,
-                m_graphLineWeight,
+                m_graphLineWeightAnalyze,
                 m_statsFontSize,
                 m_togglesFontSize);
 
@@ -1013,9 +1020,445 @@ void ArtefactMenu::DrawResultWindows()
     });
 }
 
+// COMPARE TAB ---------------------------------------------------------------------------------------------------------
+
+namespace CT
+{
+    enum CompareCol
+    {
+        COL_FPS = 1,
+        COL_L10,
+        COL_L5,
+        COL_L1,
+        COL_L01,
+        COL_FT_AVG,
+        COL_FT_MIN,
+        COL_FT_MAX,
+        COL_FT_STD,
+        COL_STUT
+    };
+
+    float CompareMetric(const RR::FrameStats& _st, int _column)
+    {
+        const auto lowFps = [](float ms) {
+            return ms > 0.0f ? 1000.0f / ms : 0.0f;
+        };
+
+        switch (_column)
+        {
+            case COL_FPS:    return _st.avgFps;
+            case COL_L10:    return lowFps(_st.low10Pc);
+            case COL_L5:     return lowFps(_st.low5Pc);
+            case COL_L1:     return lowFps(_st.low1Pc);
+            case COL_L01:    return lowFps(_st.low01Pc);
+            case COL_FT_AVG: return _st.avgFrameTimeMs;
+            case COL_FT_MIN: return _st.minFrameTimeMs;
+            case COL_FT_MAX: return _st.maxFrameTimeMs;
+            case COL_FT_STD: return _st.stdDeviationMs;
+            case COL_STUT:   return static_cast<float>(_st.stutterCount);
+            default:         return 0.0f;
+        }
+    }
+
+    // Colors the value green/red based on whether it's better or worse than the base,
+    void CompareCell(float _value, float _base, bool _higherIsBetter, bool _isBaseRow, bool _showDelta, const char* _fmt)
+    {
+        ImGui::TableNextColumn();
+
+        // compare if a base one exists
+        const bool haveBase = (_base > 0.0f) && !_isBaseRow;
+
+        ImVec4 color = SHARED::kValueColor;
+        float  relDelta = 0.0f;
+
+        if (haveBase)
+        {
+            // Calculate relative difference
+            relDelta = (_value - _base) / _base;
+
+            // Only colorise if the difference is significant
+            const float absDelta = relDelta < 0.0f ? -relDelta : relDelta;
+            if (absDelta >= 0.005f)
+            {
+                const bool isBetter = _higherIsBetter ? (_value > _base) : (_value < _base);
+                color = isBetter
+                    ? ImVec4(0.45f, 0.85f, 0.45f, 1.0f)
+                    : ImVec4(0.95f, 0.45f, 0.45f, 1.0f);
+            }
+        }
+
+        if (haveBase && _showDelta)
+            ImGui::TextColored(color, "%+.0f%%", relDelta * 100.0f);
+        else
+            ImGui::TextColored(color, _fmt, _value);
+    }
+}
+
 void ArtefactMenu::DrawComparePanel()
 {
+    if (m_runListDirty) RefreshRunList();
+
+    const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos (viewPort->WorkPos);
+    ImGui::SetNextWindowSize(viewPort->WorkSize);
+
+    if (!ImGui::Begin("##compare_panel", nullptr, SHARED::kPanelFlags))
+    {
+        ImGui::End();
+        return;
+    }
+
+    auto lowFps = [](float _ms) {
+        return _ms > 0.0f ? 1000.0f / _ms : 0.0f;
+    };
+
+    // Resolve baseline, if it was removed fall back to first loaded
+    const RR::FrameStats* base = nullptr;
+
+    for (const CompareSlot& slot : m_compareSlots)
+    {
+        // break if found
+        if (slot.loaded && slot.id == m_compareBaselineId)
+        {
+            base = &slot.runData.stats;
+            break;
+        }
+    }
+
+    // No baseline, found first loaded slot
+    if (!base)
+    {
+        m_compareBaselineId = -1;
+        for (const CompareSlot& slot : m_compareSlots)
+        {
+            if (slot.loaded)
+            {
+                m_compareBaselineId = slot.id;
+                base = &slot.runData.stats;
+                break;
+            }
+        }
+    }
+
+    bool mixed = false;
+    const RR::RunInfo* ref = nullptr;
+    // Check if the loaded compare slots have mismatched scenes or seeds
+    for (const CompareSlot& slot : m_compareSlots)
+    {
+        if (!slot.loaded) continue;
+
+        if (!ref)
+        {
+            ref = &slot.runData.info;
+        }
+        else if (slot.runData.info.scene != ref->scene ||
+                 slot.runData.info.seed != ref->seed)
+        {
+            mixed = true;
+            break;
+        }
+    }
+
+    ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareCtrlFontSize);
+
+    // Add Compare Slot
+    if (static_cast<int>(m_compareSlots.size()) < m_maxCompareSlotOpen &&
+        ImGui::Button("+ Add run"))
+    {
+        CompareSlot slot;
+        slot.id = m_nextCompareId++;
+        m_compareSlots.push_back(slot);
+    }
+    // Warn if runs should not be compared
+    ImGui::SameLine();
+    ImGui::Checkbox("Show % vs baseline", &m_compareShowDelta);
+    if (mixed)
+    {
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.95f, 0.55f, 0.35f, 1.0f),
+                           "   (!) Mixed scene/seed - curves are not directly comparable");
+    }
+    ImGui::PopFont();
+
+    // Spreadsheet tags
+    constexpr ImGuiTableFlags tFlags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                       ImGuiTableFlags_Sortable | ImGuiTableFlags_Resizable |
+                                       ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_SizingStretchProp;
+
+    int removeIdx = -1;
+    ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareTableFontSize);
+    if (ImGui::BeginTable("##compare_tbl", 20, tFlags))
+    {
+        // narrow cols non resizable
+        const float controlWidth = ImGui::GetFrameHeight() + m_tableControlWidth;
+        const float baseWidth = ImGui::CalcTextSize("Base").x + ImGui::GetStyle().CellPadding.x * 2.0f + m_tableBaseWidth;
+        ImGui::TableSetupColumn("##vis", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
+        ImGui::TableSetupColumn("Base",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, baseWidth);
+        ImGui::TableSetupColumn("Result", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch, 3.0f);
+        ImGui::TableSetupColumn("FPS",  ImGuiTableColumnFlags_DefaultSort, 1.0f, CT::COL_FPS);
+        ImGui::TableSetupColumn("10%",  0, 1.0f, CT::COL_L10);
+        ImGui::TableSetupColumn("5%",   0, 1.0f, CT::COL_L5);
+        ImGui::TableSetupColumn("1%",   0, 1.0f, CT::COL_L1);
+        ImGui::TableSetupColumn("0.1%", 0, 1.0f, CT::COL_L01);
+        ImGui::TableSetupColumn("ms",   0, 1.0f, CT::COL_FT_AVG);
+        ImGui::TableSetupColumn("Min",  0, 1.0f, CT::COL_FT_MIN);
+        ImGui::TableSetupColumn("Max",  0, 1.0f, CT::COL_FT_MAX);
+        ImGui::TableSetupColumn("Std",  0, 1.0f, CT::COL_FT_STD);
+        ImGui::TableSetupColumn("Stut", 0, 1.0f, CT::COL_STUT);
+        ImGui::TableSetupColumn("LOD", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("MT",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("SS",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("LC",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("Scene", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch, 2.0f);
+        ImGui::TableSetupColumn("##rm", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
+        ImGui::TableHeadersRow();
+
+        // sort the slots by the clicked column
+        if (ImGuiTableSortSpecs* specs = ImGui::TableGetSortSpecs())
+        {
+            if (specs->SpecsDirty && specs->SpecsCount > 0)
+            {
+                const ImGuiTableColumnSortSpecs& spec = specs->Specs[0];
+                const bool asc = spec.SortDirection == ImGuiSortDirection_Ascending;
+
+                std::ranges::stable_sort(m_compareSlots,
+                    [&](const CompareSlot& slotA, const CompareSlot& slotB)
+                    {
+                        if (slotA.loaded != slotB.loaded)
+                            return slotA.loaded;
+
+                        if (!slotA.loaded)
+                            return false;
+
+                        const float va = CT::CompareMetric(slotA.runData.stats, static_cast<int>(spec.ColumnUserID));
+                        const float vb = CT::CompareMetric(slotB.runData.stats, static_cast<int>(spec.ColumnUserID));
+                        return asc ? (va < vb) : (va > vb);
+                    });
+
+                specs->SpecsDirty = false;
+            }
+        }
+
+        for (int i = 0; i < static_cast<int>(m_compareSlots.size()); ++i)
+        {
+            CompareSlot& slot  = m_compareSlots[i];
+            const ImVec4 color = SHARED::RunColor(slot.id);
+            const bool   isBase = slot.id == m_compareBaselineId;
+
+            ImGui::PushID(slot.id);
+            ImGui::TableNextRow();
+
+            // colour swatch - tags the entry to the graphline
+            ImGui::TableNextColumn();
+            {
+                const ImVec2 pos = ImGui::GetCursorScreenPos();
+                const float  height = ImGui::GetFrameHeight();
+                ImGui::GetWindowDrawList()->AddRectFilled(
+                    pos, ImVec2(pos.x + height, pos.y + height),
+                    ImGui::ColorConvertFloat4ToU32(color), 3.0f);
+
+                ImGui::Dummy(ImVec2(height, height));
+            }
+
+            // baseline button
+            ImGui::TableNextColumn();
+            if (ImGui::RadioButton("##base", isBase) && slot.loaded)
+            {
+                m_compareBaselineId = slot.id;
+            }
+
+            // file dropdown
+            ImGui::TableNextColumn();
+            ImGui::SetNextItemWidth(-FLT_MIN);
+            std::string preview;
+            if (slot.name.empty())
+            {
+                preview = "(select run)";
+            }
+            else
+            {
+                preview = SHARED::PrettyName(slot.name,
+                    slot.runData.info.name,
+                    slot.runData.info.scene);
+            }
+
+            // Combo drop down with file
+            if (ImGui::BeginCombo("##file", preview.c_str()))
+            {
+                // sort by validity
+                ImGui::Checkbox("Valid Only", &m_filterValidOnly);
+                ImGui::SameLine();
+                ImGui::Checkbox("Deterministic Only", &m_filterDeterministicOnly);
+
+                // Sort buttons in drop down menu
+                if (SHARED::TabButton("Asc",  m_sortAscending))
+                {
+                    m_sortAscending = true;
+                }
+                ImGui::SameLine();
+
+                if (SHARED::TabButton("Desc", !m_sortAscending))
+                {
+                    m_sortAscending = false;
+                }
+                ImGui::Separator();
+
+                // Add to drop down, skip if requirements not met
+                std::vector<int> shown;
+                for (int run = 0; run < static_cast<int>(m_runFiles.size()); ++run)
+                {
+                    const RR::RunInfo& runInfo = m_runFiles[run].info;
+
+                    if (m_filterValidOnly && !(runInfo.completed && runInfo.config != "Debug")) continue;
+                    if (m_filterDeterministicOnly && !runInfo.deterministic) continue;
+                    shown.push_back(run);
+                }
+
+                std::ranges::sort(shown, [this](int a, int b) {
+                    if (m_sortAscending)
+                    {
+                        return m_runFiles[a].name < m_runFiles[b].name;
+                    }
+                    return m_runFiles[a].name > m_runFiles[b].name;
+                });
+
+                // Display entries as selectables and add if clicked
+                for (int index : shown)
+                {
+                    if (ImGui::Selectable(SHARED::PrettyName(m_runFiles[index].name,
+                        m_runFiles[index].info.name, m_runFiles[index].info.scene).c_str()))
+                    {
+                        // Load in selected
+                        auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+
+                        slot.relPath = m_runFiles[index].relPath;
+                        slot.name    = m_runFiles[index].name;
+                        slot.runData = RR::BenchmarkParser::ParseBenchmarkCsv(fileSys.LoadOutputFileText(slot.relPath));
+
+                        slot.frameTimes.clear();
+                        slot.frameTimes.reserve(slot.runData.samples.size());
+
+                        for (const RR::FrameSample& sample : slot.runData.samples)
+                        {
+                            slot.frameTimes.push_back(sample.frameTimeMs);
+                        }
+
+                        slot.loaded = true;
+                        m_compareFitPending = true;
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            if (slot.loaded)
+            {
+                // if show delta show difference
+                const RR::FrameStats& st = slot.runData.stats;
+                const bool showDelta = m_compareShowDelta;
+
+                // this is truly a wall of code
+                CT::CompareCell(st.avgFps,          base ? base->avgFps          : 0.0f, true,  isBase, showDelta, "%.0f");
+                CT::CompareCell(lowFps(st.low10Pc), base ? lowFps(base->low10Pc) : 0.0f, true,  isBase, showDelta, "%.0f");
+                CT::CompareCell(lowFps(st.low5Pc),  base ? lowFps(base->low5Pc)  : 0.0f, true,  isBase, showDelta, "%.0f");
+                CT::CompareCell(lowFps(st.low1Pc),  base ? lowFps(base->low1Pc)  : 0.0f, true,  isBase, showDelta, "%.0f");
+                CT::CompareCell(lowFps(st.low01Pc), base ? lowFps(base->low01Pc) : 0.0f, true,  isBase, showDelta, "%.0f");
+                CT::CompareCell(st.avgFrameTimeMs,  base ? base->avgFrameTimeMs  : 0.0f, false, isBase, showDelta, "%.2f");
+                CT::CompareCell(st.minFrameTimeMs,  base ? base->minFrameTimeMs  : 0.0f, false, isBase, showDelta, "%.2f");
+                CT::CompareCell(st.maxFrameTimeMs,  base ? base->maxFrameTimeMs  : 0.0f, false, isBase, showDelta, "%.2f");
+                CT::CompareCell(st.stdDeviationMs,  base ? base->stdDeviationMs  : 0.0f, false, isBase, showDelta, "%.2f");
+                CT::CompareCell(static_cast<float>(st.stutterCount), base ? static_cast<float>(base->stutterCount) : 0.0f,    false, isBase, showDelta, "%.0f");
+
+                const RR::RunInfo& info = slot.runData.info;
+                auto techniques = [](bool _on) {
+                    ImGui::TableNextColumn();
+                    if (_on) ImGui::TextColored(ImVec4(0.45f, 0.85f, 0.45f, 1.0f), "X");
+                };
+
+                techniques(info.lod);
+                techniques(info.async);
+                techniques(info.scheduling);
+                techniques(info.lodCache);
+                techniques(info.greedy);
+
+                ImGui::TableNextColumn();
+                ImGui::TextColored(SHARED::kLabelColor, "%s", info.scene.c_str());
+            }
+            else
+            {
+                for (int col = 0; col < 16; col++) ImGui::TableNextColumn();   // empty metric / tech / scene cells (don't shadow the row index i)
+            }
+
+            ImGui::TableNextColumn();
+            if (ImGui::Button("X", ImVec2(-FLT_MIN, 0.0f))) removeIdx = i;
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+    }
+    ImGui::PopFont();
+
+    // If none to remove, skip
+    if (removeIdx >= 0)
+    {
+        m_compareSlots.erase(m_compareSlots.begin() + removeIdx);
+        m_compareFitPending = true;
+    }
+
+    // overlay graph every visible run's frame-time line, color-matched to its row
+    bool anyLoaded = false;
+    for (const CompareSlot& slot : m_compareSlots)
+    {
+        if (slot.loaded && !slot.frameTimes.empty())
+        {
+            anyLoaded = true;
+            break;
+        }
+    }
+
+    ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareGraphFontSize);
+    if (m_compareFitPending)
+    {
+        ImPlot::SetNextAxesToFit();
+        m_compareFitPending = false;
+    }
+    if (ImPlot::BeginPlot("##overlay", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
+    {
+        ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, 0);
+        ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+        ImPlot::SetupLegend(ImPlotLocation_NorthWest);
+
+        // While nothing is loaded, pin the axes to a sane default - otherwise the log Y
+        // autofits a degenerate range and the labels read 1e-306
+        if (!anyLoaded)
+            ImPlot::SetupAxesLimits(0.0, 1.0, 0.1, 100.0, ImPlotCond_Always);
+
+        for (const CompareSlot& slot : m_compareSlots)
+        {
+            if (!slot.loaded || slot.frameTimes.empty()) continue;
+
+            ImPlotSpec spec;
+            spec.LineColor  = SHARED::RunColor(slot.id);
+            spec.LineWeight = m_graphLineWeightCompare;
+
+            const std::string label = SHARED::PrettyName(slot.name, slot.runData.info.name,
+                slot.runData.info.scene) + "##" + std::to_string(slot.id);
+
+            const int    frameNum = static_cast<int>(slot.frameTimes.size());
+            const double xScale   = frameNum > 1 ? 1.0 / (frameNum - 1) : 1.0;
+
+            ImPlot::PlotLine(label.c_str(),
+                slot.frameTimes.data(),
+                frameNum, xScale, 0.0, spec);
+        }
+        ImPlot::EndPlot();
+    }
+    ImGui::PopFont();
+    ImGui::End();
 }
+
+// MISC ----------------------------------------------------------------------------------------------------------------
 
 void ArtefactMenu::RefreshRunList()
 {
