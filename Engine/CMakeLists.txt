@@ -112,6 +112,11 @@ set(PROJECT_SOURCE_FILES
         Source/Benchmark/BenchmarkSubSystem.cpp
         Source/Benchmark/BenchmarkSubSystem.h
         Source/Benchmark/BenchmarkParser.hpp
+        Source/Voxels/Chunk.cpp
+        Source/Voxels/Chunk.h
+        Source/Voxels/ChunkData.h
+        Source/Voxels/ChunkManager.cpp
+        Source/Voxels/ChunkManager.h
 )
 
 # Compose application structure

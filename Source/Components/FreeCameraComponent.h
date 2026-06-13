@@ -6,6 +6,16 @@
 
 namespace RR
 {
+    // Holds movement for a camera frame
+    struct CameraIntent
+    {
+        vec3  moveAxis {0.0f};
+        bool  sprint     = false;
+        float lookDeltaX = 0.0f;
+        float lookDeltaY = 0.0f;
+        float sensScroll = 0.0f;
+    };
+
     class FreeCameraComponent : public CameraComponent
     {
     public:
@@ -16,6 +26,9 @@ namespace RR
 
         void Init() override;
         void PreUpdate(float _deltaTime) override;
+
+        void ApplyIntent(const CameraIntent &_in, float _deltaTime);
+        CameraIntent GatherLiveIntent() const;
 
         quat GetOrientation() const;
         float GetPitch() const;

@@ -3,6 +3,7 @@
 
 #include "Scenes/ArtefactMenu.h"
 #include "Benchmark/BenchmarkSubSystem.h"
+#include "Scenes/FreeRoam.h"
 #include "Testing/AudioDemo.h"
 #include "Testing/DemoScene.h"
 #include "Testing/Game.h"
@@ -13,7 +14,7 @@ int main()
     RR::PrintLogo();
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.GetAppManager().RequestSceneLoad<ArtefactMenu>();
+    engine.GetAppManager().RequestSceneLoad<FreeRoam>();
     engine.GetAppManager().AddSubSystem<RR::BenchmarkSubSystem>();
 
 
