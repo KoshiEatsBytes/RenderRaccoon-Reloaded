@@ -12,7 +12,7 @@ namespace RR
     class AudioSourceComponent : public Component
     {
     public:
-        COMPONENT(AudioSourceComponent)
+        COMPONENT(AudioSourceComponent, Component)
 
         AudioSourceComponent() = default;
         ~AudioSourceComponent() override = default;

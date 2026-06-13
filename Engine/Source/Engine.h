@@ -35,6 +35,9 @@ namespace RR
         static void CursorPositionCallBack(GLFWwindow* _window,
             double xPos, double yPos);
 
+        static void ScrollCallBack(GLFWwindow* _window,
+            double _xOffset, double _yOffset);
+
     public:
         // Delete copy
         Engine(const Engine&) = delete;

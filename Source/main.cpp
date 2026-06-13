@@ -1,8 +1,7 @@
 
 #include <RR.h>
 
-#include "ImGuiShowcaseScene.h"
-#include "ArtefactMenu.h"
+#include "Scenes/ArtefactMenu.h"
 #include "Benchmark/BenchmarkSubSystem.h"
 #include "Testing/AudioDemo.h"
 #include "Testing/DemoScene.h"

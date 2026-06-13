@@ -8,7 +8,7 @@ namespace RR
     class LightComponent : public Component
     {
     public:
-        COMPONENT(LightComponent);
+        COMPONENT(LightComponent, Component);
 
         LightComponent();
         ~LightComponent() override;

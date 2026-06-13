@@ -63,8 +63,25 @@ namespace RR
     {
     }
 
-    // PRIVATE ---------------------------------------------------------------------------------------------------------
+    // RTTI ------------------------------------------------------------------------------------------------------------
 
-    // Init component ID
-    sizeT Component::nextID = 1;
+    const TypeInfo& Component::StaticType()
+    {
+        static constexpr TypeInfo info {"Component", nullptr};
+        return info;
+    }
+
+    bool Component::IsA(const TypeInfo& _target) const
+    {
+        for (const TypeInfo* t = &GetType(); t != nullptr; t = t->base)
+        {
+            if (t == &_target) return true;
+        }
+        return false;
+    }
+
+    const TypeInfo& Component::GetType() const
+    {
+        return StaticType();
+    }
 }

@@ -176,11 +176,9 @@ namespace RR
         template<ComponentType T>
         T* FindComponentByType()
         {
-            sizeT typeID = Component::StaticTypeID<T>();
-
             for (auto& component : m_components)
             {
-                if (component->GetTypeID() == typeID)
+                if (component->IsA(T::StaticType()))
                 {
                     return static_cast<T*>(component.get());
                 }
@@ -198,10 +196,9 @@ namespace RR
         std::vector<T*> FindComponentsByType()
         {
             std::vector<T*> result;
-            sizeT typeID = Component::StaticTypeID<T>();
             for (auto& component : m_components)
             {
-                if (component->GetTypeID() == typeID)
+                if (component->IsA(T::StaticType()))
                 {
                     result.push_back(static_cast<T*>(component.get()));
                 }

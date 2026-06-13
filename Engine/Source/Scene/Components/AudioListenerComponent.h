@@ -8,7 +8,7 @@ namespace RR
     class AudioListenerComponent : public Component
     {
     public:
-        COMPONENT(AudioListenerComponent)
+        COMPONENT(AudioListenerComponent, Component)
 
         AudioListenerComponent() = default;
         ~AudioListenerComponent() override = default;

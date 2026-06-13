@@ -104,4 +104,19 @@ namespace RR
 
         return m_mousePosChanged;
     }
+
+    void InputManager::SetScrollDelta(float _delta)
+    {
+        m_scrollDelta += _delta;
+    }
+
+    float InputManager::GetScrollDelta() const
+    {
+        return m_scrollDelta;
+    }
+
+    void InputManager::ResetScrollDelta()
+    {
+        m_scrollDelta = 0;
+    }
 }

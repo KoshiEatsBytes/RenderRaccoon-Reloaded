@@ -6,14 +6,17 @@
 #include <algorithm>
 #include <string>
 
-#include "ArtefactMenu.h"
+#include "Scenes/ArtefactMenu.h"
+
+#include "FreeRoam.h"
 #include "imgui.h"
 #include "implot.h"
+#include "Testing/DemoScene.h"
 
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
-ArtefactMenu::ArtefactMenu() : Scene("Main Menu Scene") {}
+ArtefactMenu::ArtefactMenu() : Scene("Main Menu") {}
 
 ArtefactMenu::~ArtefactMenu()
 = default;
@@ -139,7 +142,7 @@ namespace SHARED
         // Run name, fall back to scene if invalid
         std::string out = !_name.empty() ? _name : (_scene.empty() ? "run" : _scene);
 
-        // Timestamp = the LAST six digit groups (Y M D H M S)
+        // Timestamp six digit groups (Y M D H M S)
         if (nums.size() >= 6)
         {
             const std::size_t n = nums.size();
@@ -195,7 +198,7 @@ void ArtefactMenu::DrawTopBar()
         else
         {
             m_view = TopView::ANALYZER;
-            m_runListDirty = true;   
+            m_runListDirty = true;
         }
     }
     if (SHARED::TabButton("COMPARE", m_view == TopView::COMPARE))
@@ -425,8 +428,9 @@ void ArtefactMenu::DrawMethodologyPanel()
                     break;
 
                 case 2:
-                    RR::Log("Pressed enter free roam");
                     // When pressed on Enter Free Roam
+                    RR::Log("Entering Free Roam");
+                    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<DemoScene>();
                     break;
 
                 default:

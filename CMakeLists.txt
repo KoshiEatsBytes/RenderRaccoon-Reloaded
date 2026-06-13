@@ -26,10 +26,12 @@ set(PROJECT_SOURCE_FILES
         Source/Testing/DemoScene.h
         Source/Testing/Bullet.cpp
         Source/Testing/Bullet.h
-        Source/ArtefactMenu.cpp
-        Source/ArtefactMenu.h
-        Source/ImGuiShowcaseScene.cpp
-        Source/ImGuiShowcaseScene.h
+        Source/Scenes/ArtefactMenu.cpp
+        Source/Scenes/ArtefactMenu.h
+        Source/Components/FreeCameraComponent.cpp
+        Source/Components/FreeCameraComponent.h
+        Source/Scenes/FreeRoam.cpp
+        Source/Scenes/FreeRoam.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

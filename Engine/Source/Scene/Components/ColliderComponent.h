@@ -12,7 +12,7 @@ namespace RR
     class ColliderComponent : public Component
     {
     public:
-        COMPONENT(ColliderComponent)
+        COMPONENT(ColliderComponent, Component)
 
         ColliderComponent();
         ColliderComponent(const std::shared_ptr<Collider>& _col);

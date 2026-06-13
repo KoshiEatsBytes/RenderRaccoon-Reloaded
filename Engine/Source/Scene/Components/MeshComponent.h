@@ -13,7 +13,7 @@ namespace RR
     class MeshComponent : public Component
     {
     public:
-        COMPONENT(MeshComponent)
+        COMPONENT(MeshComponent, Component)
 
         MeshComponent();
         MeshComponent(const std::shared_ptr<Material>& _material,

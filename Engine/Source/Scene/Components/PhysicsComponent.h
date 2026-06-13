@@ -10,7 +10,7 @@ namespace RR
     class PhysicsComponent : public Component
     {
     public:
-        COMPONENT(PhysicsComponent)
+        COMPONENT(PhysicsComponent, Component)
 
         PhysicsComponent();
         PhysicsComponent(BodyType _type, float _mass = 0.0f, float _friction = 0.5f);

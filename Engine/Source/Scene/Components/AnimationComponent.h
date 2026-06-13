@@ -8,7 +8,7 @@ namespace RR
     class AnimationComponent : public Component
     {
     public:
-        COMPONENT(AnimationComponent);
+        COMPONENT(AnimationComponent, Component);
 
         AnimationComponent();
         ~AnimationComponent() override;

@@ -5,6 +5,7 @@
 #include <thread>
 #include <cstring>
 #include <string>
+
 #if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
     #define RR_HAS_CPUID 1
     #if defined(_MSC_VER)
@@ -143,6 +144,12 @@ namespace RR
         inputManager.SetMousePositionChanged(true);
     }
 
+    void Engine::ScrollCallBack(GLFWwindow* _window, double _xOffset, double _yOffset)
+    {
+        auto& inputManager = GetInstance().GetInputManager();
+        inputManager.SetScrollDelta(static_cast<float>(_yOffset));
+    }
+
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
     Engine& Engine::GetInstance()
@@ -179,6 +186,7 @@ namespace RR
         glfwSetKeyCallback(m_window, KeyCallBack);
         glfwSetMouseButtonCallback(m_window, MouseButtonCallBack);
         glfwSetCursorPosCallback(m_window, CursorPositionCallBack);
+        glfwSetScrollCallback(m_window, ScrollCallBack);
 
         glfwMakeContextCurrent(m_window);
 
@@ -351,6 +359,7 @@ namespace RR
             // Mouse moved this frame
             m_inputManager.SetMousePositionChanged(false);
             m_inputManager.m_mousePosOld = m_inputManager.m_mousePosCurrent;
+            m_inputManager.ResetScrollDelta();
 
             // Late Update before new frame and audio
             m_appManager.LateUpdate(deltaTime);

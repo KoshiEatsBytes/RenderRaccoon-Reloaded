@@ -10,7 +10,7 @@ namespace RR
     class PlayerControllerComponent : public Component
     {
     public:
-        COMPONENT(PlayerControllerComponent)
+        COMPONENT(PlayerControllerComponent, Component)
 
         PlayerControllerComponent();
         PlayerControllerComponent(float _capsuleHeight, float _capsuleRadius);

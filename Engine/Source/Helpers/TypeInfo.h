@@ -31,5 +31,15 @@ namespace RR
     const RR::TypeInfo& GetType() const override { return StaticType(); }
 
 
+#define COMPONENT(ClassName, BaseClass)                                   \
+    static const RR::TypeInfo& StaticType()                               \
+    {                                                                     \
+        static const RR::TypeInfo info{ #ClassName,                       \
+                                        &BaseClass::StaticType() };       \
+        return info;                                                      \
+    }                                                                     \
+    const RR::TypeInfo& GetType() const override { return StaticType(); }
+
+
 
 

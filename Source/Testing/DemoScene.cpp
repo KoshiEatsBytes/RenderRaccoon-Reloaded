@@ -3,6 +3,7 @@
 
 #include "Game.h"
 #include "Player.h"
+#include "Components/FreeCameraComponent.h"
 #include "GLFW/glfw3.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
@@ -19,10 +20,15 @@ bool DemoScene::Init()
     m_material = RR::Material::Load("Materials/Checker.json");
 
     // PLAYER — the Player class already wires camera, controller, listener, audio (shoot/step/jump) and a gun.
-    auto player = CreateObject<Player>("MainPlayer");
-    if (auto* pcc = player->FindComponentByType<RR::PlayerControllerComponent>())
-        pcc->Teleport(vec3(0.0f, 2.0f, -7.0f));
-    SetMainCamera(player);
+    // auto player = CreateObject<Player>("MainPlayer");
+    // if (auto* pcc = player->FindComponentByType<RR::PlayerControllerComponent>())
+    //     pcc->Teleport(vec3(0.0f, 2.0f, -7.0f));
+    // SetMainCamera(player);
+
+    auto cam = CreateObject("FlyCam");
+    cam->AddComponent<RR::FreeCameraComponent>();
+    cam->SetPosition(vec3(0,5,10));
+    SetMainCamera(cam);
 
     // LIGHT
     auto light     = CreateObject("Light");

@@ -14,11 +14,6 @@ namespace RR
     CameraComponent::~CameraComponent()
     = default;
 
-    void CameraComponent::Init()
-    {
-        Component::Init();
-    }
-
     void CameraComponent::Update(float _deltaTime)
     {
     }

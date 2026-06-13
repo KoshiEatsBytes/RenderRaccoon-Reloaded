@@ -8,12 +8,11 @@ namespace RR
     class CameraComponent : public Component
     {
     public:
-        COMPONENT(CameraComponent);
+        COMPONENT(CameraComponent, Component);
 
         CameraComponent();
         ~CameraComponent() override;
 
-        void Init() override;
         void Update(float _deltaTime) override;
 
         mat4 GetViewMatrix() const;
