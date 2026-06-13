@@ -27,7 +27,6 @@ bool DemoScene::Init()
 
     auto cam = CreateObject("FlyCam");
     cam->AddComponent<RR::FreeCameraComponent>();
-    cam->SetPosition(vec3(0,5,10));
     SetMainCamera(cam);
 
     // LIGHT

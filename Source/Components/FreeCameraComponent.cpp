@@ -41,11 +41,12 @@ namespace RR
         m_orientation = glm::normalize(yaw * pitch);
         m_owner->SetWorldRotation(m_orientation);
 
-        // mouse wheel bound sensitivity
+        // mouse wheel bound to sensitivity
         float scroll = m_inputManager.GetScrollDelta();
         if (scroll != 0.0f)
         {
-           Log(scroll);
+            float step = scroll > 0 ? m_sensStep : m_sensStep * -1.f;
+            m_sens = std::clamp(m_sens + step, m_sensMin, m_sensMax);
         }
 
         // Movement intent, all axis

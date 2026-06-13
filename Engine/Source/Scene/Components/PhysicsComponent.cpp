@@ -306,7 +306,7 @@ namespace RR
         Rebuild();
     }
 
-    void PhysicsComponent::SetType(BodyType _type)
+    void PhysicsComponent::SetRigidbodyType(BodyType _type)
     {
         m_type = _type;
         Rebuild();
@@ -324,7 +324,7 @@ namespace RR
         Rebuild();
     }
 
-    BodyType PhysicsComponent::GetType() const
+    BodyType PhysicsComponent::GetRigidbodyType() const
     {
         return m_type;
     }

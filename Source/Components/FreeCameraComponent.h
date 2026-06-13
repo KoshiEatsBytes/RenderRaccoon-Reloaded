@@ -27,10 +27,10 @@ namespace RR
     private:
         InputManager& m_inputManager;
 
-        quat m_orientation {0.0f, 0.0f, 0.0f, 0.0f};
-        float m_sensStep = 0.01f;
-        float m_sensMin  = 0.001;
-        float m_sensMax  = 1.0;
+        quat m_orientation {1.0f, 0.0f, 0.0f, 0.0f};
+        float m_sensStep = 0.002f;
+        float m_sensMin  = 0.001f;
+        float m_sensMax  = 1.0f;
         float m_sens     = 0.05f;
 
         float m_moveSpeed   = 8.f;

@@ -44,11 +44,11 @@ namespace RR
         vec3 GetAngularVelocity() const;
 
         void SetParameters(BodyType _type, float _mass, float _friction);
-        void SetType(BodyType _type);
+        void SetRigidbodyType(BodyType _type);
         void SetMass(float _mass);
         void SetFriction(float _friction);
 
-        BodyType GetType() const;
+        BodyType GetRigidbodyType() const;
         float GetMass() const;
         float GetFriction() const;
 
