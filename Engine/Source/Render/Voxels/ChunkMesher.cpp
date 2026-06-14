@@ -33,7 +33,7 @@ namespace RR
 
     // UV paired with corners above
     static constexpr float kFaceUV[4][2] = {
-        {0,0},{1,0},{1,1},{0,1}
+        {0,1},{1,1},{1,0},{0,0}
     };
 
     // helper to check if a block is of a solid type
@@ -41,7 +41,7 @@ namespace RR
     {
         return GetBlockInfo(_id).solid;
     }
-
+`
     // Is the neighbor cell solid?
     static bool NeighbourSolid(const Chunk& _chunk, const ChunkBorders& _borders, int _nx, int _ny, int _nz)
     {

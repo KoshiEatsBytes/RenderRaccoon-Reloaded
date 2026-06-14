@@ -7,6 +7,10 @@
 #include "Render/Voxels/ChunkMesher.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkData.h"
+#include "Render/Mesh.h"
+#include "Render/RenderQueue.h"
+#include "Engine.h"
+#include "GLFW/glfw3.h"
 
 FreeRoam::FreeRoam() : Scene("Free Roam") {}
 
@@ -119,6 +123,42 @@ static bool RunMesherProofs()
     return allOk;
 }
 
+static std::shared_ptr<RR::Mesh> BuildTestQuad()
+{
+    // 2x2 quad at z = -3, facing +Z (toward the spawn camera, which looks -Z), layer = GRASS_TOP.
+    const float L = static_cast<float>(RR::CHUNK::BlockTex::GRASS_TOP);   // slice 0
+
+    std::vector<float> verts = {
+        // pos                 normal         uv        layer
+        -1.f,-1.f,-3.f,   0.f, 0.f, 1.f,   0.f, 0.f,   L,   // bottom-left
+         1.f,-1.f,-3.f,   0.f, 0.f, 1.f,   1.f, 0.f,   L,   // bottom-right
+         1.f, 1.f,-3.f,   0.f, 0.f, 1.f,   1.f, 1.f,   L,   // top-right
+        -1.f, 1.f,-3.f,   0.f, 0.f, 1.f,   0.f, 1.f,   L,   // top-left
+    };
+    std::vector<std::uint32_t> indices = { 0,1,2, 0,2,3 };   // CCW from the front
+
+    return std::make_shared<RR::Mesh>(RR::VoxelVertexLayout(), verts, indices);
+}
+
+static void FillTestSlab(RR::Chunk& _c)
+{
+    using namespace RR::CHUNK;
+    const BlockId grass = static_cast<BlockId>(Block::GRASS);
+    const BlockId dirt  = static_cast<BlockId>(Block::DIRT);
+    const BlockId stone = static_cast<BlockId>(Block::STONE);
+
+    for (int z = 0; z < kSizeZ; ++z)
+        for (int x = 0; x < kSizeX; ++x)
+        {
+            _c.Set(x, 0, z, stone);
+            _c.Set(x, 1, z, stone);
+            _c.Set(x, 2, z, dirt);
+            _c.Set(x, 3, z, dirt);
+            _c.Set(x, 4, z, grass);
+        }
+    _c.state = State::GENERATED;
+}
+
 bool FreeRoam::Init()
 {
     SetCursorEnabled(false);
@@ -132,21 +172,46 @@ bool FreeRoam::Init()
 
     RunMesherProofs();
 
-    auto voxelMat = RR::Material::Load("Materials/Voxel.json");
-    RR::InfoLog("[VOXEL MAT] loaded=", voxelMat != nullptr);
+    m_voxelMat = RR::Material::Load("Materials/Voxel.json");
 
-    auto arr = voxelMat->GetTextureArray("uBlockTex");
+    auto arr = m_voxelMat->GetTextureArray("uBlockTex");
     assert(arr && arr->GetLayerCount() == CHUNK::Tex::COUNT);
+
+    m_testChunk = std::make_unique<RR::Chunk>(RR::CHUNK::Coord{0, -3});
+    FillTestSlab(*m_testChunk);
+
+    const RR::ChunkBorders air{};
+    RR::MeshData data = RR::MeshChunk(*m_testChunk, air);
+    RR::InfoLog("[CHUNK MESH] quads=", data.indices.size() / 6, " verts=", data.vertices.size() / 9);
+
+    m_testChunk->mesh  = std::make_unique<RR::Mesh>(data.layout, data.vertices, data.indices);
+    m_testChunk->state = RR::CHUNK::State::MESHED;
 
     return true;
 }
 
 void FreeRoam::PreUpdate(float _deltaTime)
 {
+    auto& input = RR::Engine::GetInstance().GetInputManager();
+
+    if (input.IsKeyPressed(GLFW_KEY_ESCAPE))
+        RR::Engine::GetInstance().SetShouldClose(true);
 }
 
 void FreeRoam::Update(float _deltaTime)
 {
+    if (!m_voxelMat || !m_testChunk || !m_testChunk->mesh) return;
+
+    const auto& coord = m_testChunk->coord;
+
+    RR::RenderCommand cmd;
+    cmd.material    = m_voxelMat.get();
+    cmd.mesh        = m_testChunk->mesh.get();
+    cmd.modelMatrix = glm::translate(mat4(1.0f),
+    vec3(coord.x * RR::CHUNK::kSizeX, 0.0f, coord.z * RR::CHUNK::kSizeZ));
+    cmd.color       = vec3(1.0f);
+
+    RR::Engine::GetInstance().GetRenderQueue().Submit(cmd);
 }
 
 void FreeRoam::LateUpdate(float _deltaTime)

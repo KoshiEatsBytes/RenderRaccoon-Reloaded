@@ -78,21 +78,31 @@ namespace RR::CHUNK
         std::uint16_t faceLayer[6] = {};
     };
 
+    // Face order is EAST, WEST, UP, DOWN, SOUTH, NORT
+    constexpr BlockInfo UniformBlock(BlockTex _tex, bool _solid = true)
+    {
+        return { _solid, { _tex, _tex, _tex, _tex, _tex, _tex } };
+    }
+    constexpr BlockInfo SidedBlock(BlockTex _side, BlockTex _top, BlockTex _bottom)
+    {
+        return { true, { _side, _side, _top, _bottom, _side, _side } };
+    }
+
     // Block info table
     inline constexpr std::array<BlockInfo, static_cast<std::size_t>(Block::COUNT)> kBlocks = {
         {
             /* Air     */ { false, {} },
-            /* Grass   */ { true,  {} },
-            /* Dirt    */ { true,  {} },
-            /* Stone   */ { true,  {} },
-            /* Bedrock */ { true,  {} },
-            /* Diorite */ { true,  {} },
-            /* Granite */ { true,  {} },
-            /* Sand    */ { true,  {} },
-            /* Snow    */ { true,  {} },
-            /* Water   */ { true,  {} },
-            /* OakLog  */ { true,  {} },
-            /* Leaves  */ { true,  {} },
+            /* Grass   */ SidedBlock  (GRASS_SIDE, GRASS_TOP, DIRT),
+            /* Dirt    */ UniformBlock(DIRT),
+            /* Stone   */ UniformBlock(STONE),
+            /* Bedrock */ UniformBlock(BEDROCK),
+            /* Diorite */ UniformBlock(DIORITE),
+            /* Granite */ UniformBlock(GRANITE),
+            /* Sand    */ UniformBlock(SAND),
+            /* Snow    */ UniformBlock(SNOW),
+            /* Water   */ UniformBlock(WATER),
+            /* OakLog  */ SidedBlock  (OAK_LOG_SIDE, OAK_LOG_END, OAK_LOG_END),
+            /* Leaves  */ UniformBlock(OAK_LEAVES),
         }
     };
 

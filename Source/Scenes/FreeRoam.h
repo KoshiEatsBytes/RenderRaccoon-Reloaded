@@ -2,6 +2,11 @@
 #pragma once
 #include "RR.h"
 
+namespace RR
+{
+    struct Chunk;
+}
+
 class FreeRoam : public RR::Scene
 {
 public:
@@ -17,5 +22,8 @@ protected:
 
 private:
     RR::GameObject* m_cam = nullptr;
+
+    std::shared_ptr<RR::Material> m_voxelMat;
+    std::unique_ptr<RR::Chunk>    m_testChunk;
 };
 
