@@ -132,13 +132,11 @@ bool FreeRoam::Init()
 
     RunMesherProofs();
 
-    auto arr = RR::TextureArray::Load({
-    "Textures/Blocks/Grass/grass_block_top.png",
-    "Textures/Blocks/dirt.png",
-    "Textures/Blocks/stone.png",
-    });
+    auto voxelMat = RR::Material::Load("Materials/Voxel.json");
+    RR::InfoLog("[VOXEL MAT] loaded=", voxelMat != nullptr);
 
-    RR::InfoLog("[TEXARRAY] id=", arr ? arr->GetTextureID() : 0, " layers=", arr ? arr->GetLayerCount() : -1);
+    auto arr = voxelMat->GetTextureArray("uBlockTex");
+    assert(arr && arr->GetLayerCount() == CHUNK::Tex::COUNT);
 
     return true;
 }

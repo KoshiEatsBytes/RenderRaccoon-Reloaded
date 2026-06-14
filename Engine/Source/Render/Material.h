@@ -22,7 +22,9 @@ namespace RR
         static std::shared_ptr<Material> Load(const std::string& _path);
 
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
+
         ShaderProgram* GetShaderProgram() const;
+        std::shared_ptr<TextureArray> GetTextureArray(const std::string& _name) const;
 
         void SetParam(const std::string& _name, float _v0);
         void SetParam(const std::string& _name, float _v0, float _v1);

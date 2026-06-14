@@ -43,6 +43,25 @@ namespace RR::CHUNK
         COUNT
     };
 
+    // block texture
+    enum BlockTex : std::uint16_t
+    {
+        GRASS_TOP,
+        GRASS_SIDE,
+        DIRT,
+        STONE,
+        BEDROCK,
+        DIORITE,
+        GRANITE,
+        SAND,
+        SNOW,
+        WATER,
+        OAK_LOG_SIDE,
+        OAK_LOG_END,
+        OAK_LEAVES,
+        COUNT
+    };
+
     enum class Face : std::uint8_t
     {
         EAST,

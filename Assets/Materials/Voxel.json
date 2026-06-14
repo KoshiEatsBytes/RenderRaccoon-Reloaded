@@ -1,0 +1,30 @@
+{
+  "Shaders":
+  {
+    "Vertex": "Shaders/Voxel/Voxel.vert",
+    "Fragment": "Shaders/Voxel/Voxel.frag"
+  },
+  "Params":
+  {
+    "TextureArrays": [
+      {
+        "Name": "uBlockTex",
+        "Layers": [
+          { "Path": "Textures/Blocks/Grass/grass_block_top.png",  "Tint": [0.56, 0.74, 0.35] },
+          { "Path": "Textures/Blocks/Grass/grass_block_side.png" },
+          { "Path": "Textures/Blocks/dirt.png" },
+          { "Path": "Textures/Blocks/stone.png" },
+          { "Path": "Textures/Blocks/bedrock.png" },
+          { "Path": "Textures/Blocks/diorite.png" },
+          { "Path": "Textures/Blocks/granite.png" },
+          { "Path": "Textures/Blocks/sand.png" },
+          { "Path": "Textures/Blocks/snow.png" },
+          { "Path": "Textures/Blocks/Water/water_still_1.png",    "Tint": [0.25, 0.46, 0.90] },
+          { "Path": "Textures/Blocks/Tree/oak_log_side.png" },
+          { "Path": "Textures/Blocks/Tree/oak_log_top_bottom.png" },
+          { "Path": "Textures/Blocks/Tree/oak_leaves.png",        "Tint": [0.30, 0.60, 0.25] }
+        ]
+      }
+    ]
+  }
+}

@@ -255,6 +255,17 @@ namespace RR
         return m_shaderProgram.get();
     }
 
+    std::shared_ptr<TextureArray> Material::GetTextureArray(const std::string& _name) const
+    {
+        if (!m_textureArrays.contains(_name))
+        {
+            Warn("[MATERIAL] Tried getting a non existent texture array: '", "'");
+            return nullptr;
+        }
+
+        return m_textureArrays.at(_name);
+    }
+
     void Material::SetParam(const std::string &_name, const float _v0)
     {
         m_floatParams[_name] = _v0;
