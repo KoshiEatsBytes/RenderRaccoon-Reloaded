@@ -132,6 +132,13 @@ bool FreeRoam::Init()
 
     RunMesherProofs();
 
+    auto arr = RR::TextureArray::Load({
+    "Textures/Blocks/Grass/grass_block_top.png",
+    "Textures/Blocks/dirt.png",
+    "Textures/Blocks/stone.png",
+    });
+
+    RR::InfoLog("[TEXARRAY] id=", arr ? arr->GetTextureID() : 0, " layers=", arr ? arr->GetLayerCount() : -1);
 
     return true;
 }

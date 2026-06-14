@@ -75,7 +75,15 @@ namespace RR
         std::array<CHUNK::BlockId, CHUNK::kSizeX * CHUNK::kSizeY> m_north{};
     };
 
-    // The voxel vertex layout: pos(3) normal(3) uv(2) layer(1)
+    // Voxel vertex attribute locations
+    namespace VoxelAttrib
+    {
+        inline constexpr GLuint Position = 0;
+        inline constexpr GLuint Normal   = 1;
+        inline constexpr GLuint UV       = 2;
+        inline constexpr GLuint Layer    = 3;
+    }
+
     VertexLayout VoxelVertexLayout();
 
     // Pure mesher, automatically culls hiding faces

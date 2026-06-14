@@ -8,6 +8,7 @@
 namespace RR
 {
     class Texture;
+    class TextureArray;
     class ShaderProgram;
 
     class Material
@@ -27,6 +28,7 @@ namespace RR
         void SetParam(const std::string& _name, float _v0, float _v1);
         void SetParam(const std::string& _name, const vec3& _v0);
         void SetParam(const std::string& _name, const std::shared_ptr<Texture>& _texture);
+        void SetParam(const std::string& _name, const std::shared_ptr<TextureArray>& _texArray);
 
     private:
         std::shared_ptr<ShaderProgram> m_shaderProgram;
@@ -34,6 +36,7 @@ namespace RR
         std::unordered_map<std::string, std::pair<float, float>> m_float2Params;
         std::unordered_map<std::string, vec3> m_float3Params;
         std::unordered_map<std::string, std::shared_ptr<Texture>> m_textures;
+        std::unordered_map<std::string, std::shared_ptr<TextureArray>> m_textureArrays;
     };
 }
 

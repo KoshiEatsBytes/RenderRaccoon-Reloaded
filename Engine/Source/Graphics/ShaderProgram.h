@@ -8,6 +8,7 @@
 namespace RR
 {
     class Texture;
+    class TextureArray;
 
     /**
      * @brief Copy deleted as this ensure each shader is created and destroyed
@@ -33,6 +34,7 @@ namespace RR
         void SetUniform(const std::string& _name, const mat4& _mat);
 
         void SetTexture(const std::string& _name, Texture* _texture);
+        void SetTextureArray(const std::string& _name, TextureArray* _textureArray);
 
     private:
         // Use a cache to avoid redundant openGL call

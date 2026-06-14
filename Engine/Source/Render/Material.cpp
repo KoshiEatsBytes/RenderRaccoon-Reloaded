@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "Graphics/ShaderProgram.h"
 #include "Graphics/Texture.h"
+#include "Graphics/TextureArray.h"
 #include "Helpers/Printer.hpp"
 
 using nJson = nlohmann::json;
@@ -52,9 +53,15 @@ namespace RR
         }
 
         // Set textures
-        for (auto& [name, texture]: m_textures)
+        for (auto& [name, texture] : m_textures)
         {
             m_shaderProgram->SetTexture(name, texture.get());
+        }
+
+        // Set Texture array
+        for (auto& [name, texArray] : m_textureArrays)
+        {
+            m_shaderProgram->SetTextureArray(name, texArray.get());
         }
     }
 
@@ -181,6 +188,50 @@ namespace RR
                     result->SetParam(name, texture);
                 }
             }
+
+            // Texture array param loop
+            if (paramsObj.contains("TextureArrays"))
+            {
+                for (auto& param : paramsObj["TextureArrays"])
+                {
+                    std::string name = param.value("Name", "");
+                    const auto& layers = param["Layers"];
+
+                    // Get texture array paths
+                    std::vector<std::string> texPaths;
+                    for (auto& layer : layers)
+                    {
+                        texPaths.push_back(layer.value("Path", ""));
+                    }
+
+                    // Load tex array and discard if not valid
+                    auto arrayTex = TextureArray::Load(texPaths);
+                    if (!arrayTex)
+                    {
+                        Warn("[MATERIAL - LOAD] Skipping texture array '", name, "' in '", _path, "' - failed to load");
+                        continue;
+                    }
+                    result->SetParam(name, arrayTex);
+
+                    // Per layer tint
+                    const int layerCount = arrayTex->GetLayerCount();
+                    for (int i = 0; i < layerCount; i++)
+                    {
+                        vec3 tint(1.0f);
+
+                        // if that specific entry contrains a tint
+                        if (i < static_cast<int>(layers.size()) && layers[i].contains("Tint"))
+                        {
+                            auto t = layers[i]["Tint"];
+                            tint = vec3(t[0].get<float>(),
+                                        t[1].get<float>(),
+                                        t[2].get<float>());
+                        }
+
+                        result->SetParam("uTint[" + std::to_string(i)+ "]", tint);
+                    }
+                }
+            }
         }
 
         return result;
@@ -219,7 +270,7 @@ namespace RR
         m_float3Params[_name] = _v0;
     }
 
-    void Material::SetParam(const std::string &_name, const std::shared_ptr<Texture>& _texture)
+    void Material::SetParam(const std::string& _name, const std::shared_ptr<Texture>& _texture)
     {
         if (!_texture)
         {
@@ -228,6 +279,17 @@ namespace RR
         }
 
         m_textures[_name] = _texture;
+    }
+
+    void Material::SetParam(const std::string& _name, const std::shared_ptr<TextureArray>& _texArray)
+    {
+        if (!_texArray)
+        {
+            Error("[MATERIAL] Tried setting an INVALID texture array to a material");
+            return;
+        }
+
+        m_textureArrays[_name] = _texArray;
     }
 }
 

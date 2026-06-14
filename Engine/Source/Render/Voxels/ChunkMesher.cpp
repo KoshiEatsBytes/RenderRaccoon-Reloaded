@@ -73,10 +73,10 @@ namespace RR
     VertexLayout VoxelVertexLayout()
     {
         VertexLayout layout;
-        layout.elements.push_back({0, 3, GL_FLOAT, 0});                  // position
-        layout.elements.push_back({1, 3, GL_FLOAT, sizeof(float) * 3});  // normal
-        layout.elements.push_back({2, 2, GL_FLOAT, sizeof(float) * 6});  // uv
-        layout.elements.push_back({3, 1, GL_FLOAT, sizeof(float) * 8});  // layer
+        layout.elements.push_back({VoxelAttrib::Position, 3, GL_FLOAT, 0});
+        layout.elements.push_back({VoxelAttrib::Normal,   3, GL_FLOAT, sizeof(float) * 3});
+        layout.elements.push_back({VoxelAttrib::UV,       2, GL_FLOAT, sizeof(float) * 6});
+        layout.elements.push_back({VoxelAttrib::Layer,    1, GL_FLOAT, sizeof(float) * 8});
         layout.stride = sizeof(float) * 9;
         return layout;
     }

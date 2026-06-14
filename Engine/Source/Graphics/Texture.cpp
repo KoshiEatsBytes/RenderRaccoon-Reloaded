@@ -106,7 +106,7 @@ namespace RR
         return nullptr;
     }
 
-    GLuint Texture::GetID() const
+    GLuint Texture::GetTextureID() const
     {
         return m_textureID;
     }

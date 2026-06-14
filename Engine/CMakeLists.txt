@@ -117,6 +117,8 @@ set(PROJECT_SOURCE_FILES
         Source/Voxels/ChunkData.h
         Source/Voxels/ChunkManager.cpp
         Source/Voxels/ChunkManager.h
+        Source/Graphics/TextureArray.cpp
+        Source/Graphics/TextureArray.h
 )
 
 # Compose application structure

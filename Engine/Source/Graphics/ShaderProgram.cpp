@@ -3,6 +3,7 @@
 
 #include "ShaderProgram.h"
 #include "Graphics/Texture.h"
+#include "Graphics/TextureArray.h"
 
 namespace RR
 {
@@ -80,14 +81,38 @@ namespace RR
 
     void ShaderProgram::SetTexture(const std::string& _name, Texture* _texture)
     {
+        if (!_texture) return;
+
         // In this case location of the sampler
         auto location = GetUniformLocation(_name);
 
         // unitIndex is the location of the texture slot
         glActiveTexture(GL_TEXTURE0 + m_currentTextureUnit);
-        glBindTexture(GL_TEXTURE_2D, _texture->GetID());
+        glBindTexture(GL_TEXTURE_2D, _texture->GetTextureID());
         glUniform1i(location, m_currentTextureUnit);
+
+        m_currentTextureUnit++;
+    }
+
+    void ShaderProgram::SetTextureArray(const std::string& _name, TextureArray* _textureArray)
+    {
+        if (!_textureArray) return;
+
+        // sampler 2d array uniform
+        auto location = GetUniformLocation(_name);
+
+        // bind array to next free texture unit
+        glActiveTexture(GL_TEXTURE0 + m_currentTextureUnit);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, _textureArray->GetTextureID());
+        glUniform1i(location, m_currentTextureUnit);
+
+        m_currentTextureUnit++;
     }
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 }
+
+
+
+
+

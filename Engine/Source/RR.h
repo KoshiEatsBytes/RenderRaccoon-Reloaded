@@ -27,6 +27,7 @@
 #include "Graphics/GraphicsAPI.h"
 #include "Graphics/VertexLayout.h"
 #include "Graphics/Texture.h"
+#include "Graphics/TextureArray.h"
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Render/RenderQueue.h"
