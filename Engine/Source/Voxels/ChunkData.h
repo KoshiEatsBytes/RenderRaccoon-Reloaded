@@ -45,12 +45,12 @@ namespace RR::CHUNK
 
     enum class Face : std::uint8_t
     {
-        POS_X,
-        NEG_X,
-        POS_Y,
-        NEG_Y,
-        POS_Z,
-        NEG_Z
+        EAST,
+        WEST,
+        UP,
+        DOWN,
+        SOUTH,
+        NORTH
     };
 
     struct BlockInfo

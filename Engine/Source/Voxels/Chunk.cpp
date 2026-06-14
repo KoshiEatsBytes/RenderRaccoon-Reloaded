@@ -6,10 +6,9 @@ namespace RR
 {
     Chunk::Chunk(CHUNK::Coord _coord)
         : coord(_coord)
-    {
-
-    }
+    {}
 
     Chunk::~Chunk()
     = default;
 }
+

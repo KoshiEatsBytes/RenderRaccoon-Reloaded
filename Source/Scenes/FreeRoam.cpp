@@ -3,6 +3,8 @@
 #include "FreeRoam.h"
 
 #include "Components/FreeCameraComponent.h"
+#include "Render/MeshData.h"
+#include "Render/Voxels/ChunkMesher.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkData.h"
 
@@ -74,6 +76,49 @@ static bool ProveDeterministicFill()
     return true;
 }
 
+static std::size_t QuadCount(const RR::MeshData& _m)
+{
+    return _m.indices.size() / 6;
+}
+
+static void FillBox(RR::Chunk& _c, int _ox,int _oy,int _oz, int _ax,int _ay,int _az, RR::CHUNK::BlockId _id)
+{
+    for (int z = 0; z < _az; ++z)
+        for (int x = 0; x < _ax; ++x)
+            for (int y = 0; y < _ay; ++y)
+                _c.Set(_ox + x, _oy + y, _oz + z, _id);
+}
+
+static bool RunMesherProofs()
+{
+    const RR::ChunkBorders air{};                                        // STEP 2: no neighbours -> all air
+    const RR::CHUNK::BlockId stone = static_cast<RR::CHUNK::BlockId>(RR::CHUNK::Block::STONE);
+
+    struct Case { int a, b, c; };
+    const Case cases[] = { {1,1,1}, {2,1,1}, {3,3,3} };              // expected 6, 10, 54
+
+    bool allOk = true;
+    for (const auto& k : cases)
+    {
+        auto chunk = std::make_unique<RR::Chunk>(RR::CHUNK::Coord{0, 0});
+        FillBox(*chunk, 2, 2, 2, k.a, k.b, k.c,  stone);
+
+        const std::size_t got      = QuadCount(MeshChunk(*chunk, air));
+        const std::size_t expected = 2 * (k.a * k.b + k.b * k.c + k.c * k.a);
+
+        if (got != expected)
+        {
+            RR::Error("[MESH] proof FAILED: ", k.a, "x", k.b, "x", k.c, " -> ", got, " quads (expected ", expected, ")");
+            allOk = false;
+        }
+        else
+        {
+            RR::Success("[MESH] ", k.a, "x", k.b, "x", k.c, " solid box -> ", got, " quads (shell only).");
+        }
+    }
+    return allOk;
+}
+
 bool FreeRoam::Init()
 {
     SetCursorEnabled(false);
@@ -84,6 +129,8 @@ bool FreeRoam::Init()
 
     ProveVoxelIndex();
     ProveDeterministicFill();
+
+    RunMesherProofs();
 
 
     return true;
