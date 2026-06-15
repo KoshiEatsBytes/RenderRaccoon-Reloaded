@@ -10,7 +10,7 @@
       {
         "Name": "uBlockTex",
         "Layers": [
-          { "Path": "Textures/Blocks/Grass/grass_block_top.png",  "Tint": [0.56, 0.74, 0.35] },
+          { "Path": "Textures/Blocks/Grass/grass_block_top.png",          "Tint": [0.56, 0.74, 0.35] },
           { "Path": "Textures/Blocks/Grass/grass_block_side.png" },
           { "Path": "Textures/Blocks/dirt.png" },
           { "Path": "Textures/Blocks/stone.png" },
@@ -19,10 +19,24 @@
           { "Path": "Textures/Blocks/granite.png" },
           { "Path": "Textures/Blocks/sand.png" },
           { "Path": "Textures/Blocks/snow.png" },
-          { "Path": "Textures/Blocks/Water/water_still_1.png",    "Tint": [0.25, 0.46, 0.90] },
-          { "Path": "Textures/Blocks/Tree/oak_log_side.png" },
-          { "Path": "Textures/Blocks/Tree/oak_log_top_bottom.png" },
-          { "Path": "Textures/Blocks/Tree/oak_leaves.png",        "Tint": [0.30, 0.60, 0.25] }
+          { "Path": "Textures/Blocks/Water/water_still_1.png",            "Tint": [0.25, 0.46, 0.90] },
+          { "Path": "Textures/Blocks/Oak Tree/oak_log_side.png" },
+          { "Path": "Textures/Blocks/Oak Tree/oak_log_top_bottom.png" },
+          { "Path": "Textures/Blocks/Oak Tree/oak_leaves.png",            "Tint": [0.30, 0.60, 0.25] },
+          { "Path": "Textures/Blocks/Spruce Tree/spruce_log.png" },
+          { "Path": "Textures/Blocks/Spruce Tree/spruce_log_top.png" },
+          { "Path": "Textures/Blocks/Spruce Tree/spruce_leaves.png",      "Tint": [0.38, 0.55, 0.36] },
+          { "Path": "Textures/Blocks/Grass/grass_block_snow_top.png" },
+          { "Path": "Textures/Blocks/Grass/grass_block_snow_side.png" },
+          { "Path": "Textures/Blocks/Podzol/podzol_top.png" },
+          { "Path": "Textures/Blocks/Podzol/podzol_side.png" },
+          { "Path": "Textures/Blocks/red_sand.png" },
+          { "Path": "Textures/Blocks/Cactus/cactus_side.png" },
+          { "Path": "Textures/Blocks/Cactus/cactus_top.png" },
+          { "Path": "Textures/Blocks/Cactus/cactus_bottom.png" },
+          { "Path": "Textures/Blocks/Ores/coal_ore.png" },
+          { "Path": "Textures/Blocks/Ores/iron_ore.png" },
+          { "Path": "Textures/Blocks/Ores/copper_ore.png" }
         ]
       }
     ]
