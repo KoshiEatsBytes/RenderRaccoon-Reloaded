@@ -41,7 +41,8 @@ bool FreeRoam::Init()
     SetCursorEnabled(false);
 
     m_cam = CreateObject("FlyCam");
-    m_cam->AddComponent<RR::FreeCameraComponent>();
+    auto camComp = m_cam->AddComponent<RR::FreeCameraComponent>();
+    camComp->SetSprintSpeed(26.f);
     SetMainCamera(m_cam);
 
     m_voxelMat = RR::Material::Load("Materials/Voxel.json");
@@ -49,12 +50,10 @@ bool FreeRoam::Init()
     auto arr = m_voxelMat->GetTextureArray("uBlockTex");
     assert(arr && arr->GetLayerCount() == CHUNK::Tex::COUNT);
 
-    // FreeRoam::Init  (keep the material load + assert; drop the single-chunk build)
     RR::ChunkGenerator gen = [](RR::Chunk& c) {
         FillTestSlab(c);
     };
     m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat);
-    m_chunkManager->GenerateGrid(2);   // 5x5 = 25 chunks
 
     return true;
 }
@@ -69,7 +68,11 @@ void FreeRoam::PreUpdate(float _deltaTime)
 
 void FreeRoam::Update(float _deltaTime)
 {
-    if (m_chunkManager) m_chunkManager->SubmitDraws();
+    if (!m_chunkManager || !m_cam) return;
+    const vec3 camPos = vec3(m_cam->GetWorldTransform()[3]);
+
+    m_chunkManager->Update(camPos);
+    m_chunkManager->SubmitDraws();
 }
 
 void FreeRoam::LateUpdate(float _deltaTime)

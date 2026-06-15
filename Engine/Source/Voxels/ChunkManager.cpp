@@ -20,11 +20,23 @@ namespace RR
     ChunkManager::~ChunkManager()
     = default;
 
+    void ChunkManager::Update(const vec3& _cameraPos)
+    {
+        // Updates which chunks are drawing from camera pos
+        const CHUNK::Coord centre = WorldToChunk(_cameraPos);
+        if (m_lastCoords == centre) return;
+
+        EnsureGenerated(centre);
+        EnsureMeshed(centre);
+        UnloadFar(centre);
+        m_lastCoords = centre;
+    }
+
     // Generate and mesh radius of chunk around the camera,
     // this is effectively the "render distacne"
     void ChunkManager::GenerateGrid(int _radius)
     {
-        // generate borders before meshing
+        // generate all chunks before meshing
         for (int z = -_radius; z <= _radius; z++)
         {
             for (int x = -_radius; x <= _radius; x++)
@@ -65,6 +77,24 @@ namespace RR
 
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
+    void ChunkManager::UnloadFar(CHUNK::Coord _centre)
+    {
+        const int range = m_meshRadius + 2;
+
+        // Form an outer rings where chunks that fell out are unloaded
+        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        {
+            const int dist = std::max(std::abs(it->first.x - _centre.x),
+                                      std::abs(it->first.z - _centre.z));
+
+            // erase out of bound chunk
+            if (dist > range)
+                it = m_chunks.erase(it);
+            else
+                ++it;
+        }
+    }
+
     void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
     {
         auto chunk = std::make_unique<Chunk>(_coord);
@@ -83,12 +113,58 @@ namespace RR
         _chunk.state = CHUNK::STATE::MESHED;
     }
 
+    void ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
+    {
+        const int range = m_meshRadius + 1;
+        for (int z = _centre.z - range; z <= _centre.z + range; ++z)
+        {
+            for (int x = _centre.x - range; x <= _centre.x + range; ++x)
+            {
+                // Skip if already generated
+                if (!GetChunk({x, z}))
+                {
+                    GenerateChunk({x, z});
+                }
+            }
+        }
+    }
+
+    void ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
+    {
+        const int range = m_meshRadius;
+        for (int z = _centre.z - range; z <= _centre.z + range; ++z)
+        {
+            for (int x = _centre.x - range; x <= _centre.x + range; ++x)
+            {
+                Chunk* chunk = GetChunk({x, z});
+
+                // Only mesh if chunk is logged generated but not meshed
+                if (!chunk || chunk->state != CHUNK::STATE::GENERATED) continue;
+                // Skip if neighbors are not generated yet
+                if (!NeighboursGenerated({x, z})) continue;
+
+                // Mesh
+                BuildChunkMesh(*chunk);
+            }
+        }
+    }
+
+    // Check neighboring chunks, if all generated return true
+    bool ChunkManager::NeighboursGenerated(CHUNK::Coord _coord)
+    {
+        return GetChunk({_coord.x + 1, _coord.z}) &&
+               GetChunk({_coord.x - 1, _coord.z}) &&
+               GetChunk({_coord.x, _coord.z + 1}) &&
+               GetChunk({_coord.x, _coord.z - 1});
+    }
+
     // Returns chunk if present
     Chunk* ChunkManager::GetChunk(CHUNK::Coord _coord)
     {
-        if (m_chunks.contains(_coord))
+        auto it = m_chunks.find(_coord);
+        if (it != m_chunks.end())
         {
-            return m_chunks.at(_coord).get();
+            return it->second.get();
         }
 
         return nullptr;
@@ -151,5 +227,14 @@ namespace RR
         }
 
         return borders;
+    }
+
+    CHUNK::Coord ChunkManager::WorldToChunk(const vec3& _pos)
+    {
+        // floor-divide to prevent neg cords from 0ing
+        return{
+            static_cast<int>(std::floor(_pos.x / CHUNK::kSizeX)),
+            static_cast<int>(std::floor(_pos.z / CHUNK::kSizeZ))
+        };
     }
 }

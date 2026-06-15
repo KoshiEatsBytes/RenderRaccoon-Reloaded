@@ -37,6 +37,9 @@ namespace RR
         void SetPitch(float _pitch);
         void SetYaw(float _yaw);
 
+        void SetSpeed(float _speed);
+        void SetSprintSpeed(float _speed);
+
     private:
         InputManager& m_inputManager;
 

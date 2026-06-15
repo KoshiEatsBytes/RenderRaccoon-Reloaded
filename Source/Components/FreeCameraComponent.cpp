@@ -135,4 +135,14 @@ namespace RR
     {
         m_yaw = std::fmod(_yaw, 360.0f);;
     }
+
+    void FreeCameraComponent::SetSpeed(float _speed)
+    {
+        m_moveSpeed = _speed;
+    }
+
+    void FreeCameraComponent::SetSprintSpeed(float _speed)
+    {
+        m_sprintSpeed = _speed;
+    }
 }
