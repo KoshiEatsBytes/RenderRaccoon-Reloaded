@@ -76,12 +76,80 @@ namespace RR
 
     void ChunkManager::BuildChunkMesh(Chunk& _chunk)
     {
-        // For now all air
-        const ChunkBorders air {};
-
-        MeshData data = MeshChunk(_chunk, air);
-
+        const ChunkBorders borders = GatherBorders(_chunk.coord);
+        MeshData data = MeshChunk(_chunk, borders);
+        
         _chunk.mesh  = std::make_unique<Mesh>(data.layout, data.vertices, data.indices);
         _chunk.state = CHUNK::STATE::MESHED;
+    }
+
+    // Returns chunk if present
+    Chunk* ChunkManager::GetChunk(CHUNK::Coord _coord)
+    {
+        if (m_chunks.contains(_coord))
+        {
+            return m_chunks.at(_coord).get();
+        }
+
+        return nullptr;
+    }
+
+    // Fetches chunk next to the given coords and returns their relevant borders
+    ChunkBorders ChunkManager::GatherBorders(CHUNK::Coord _coord)
+    {
+        using namespace CHUNK;
+
+        ChunkBorders borders {}; // all air default
+
+        // EAST BORDERS
+        if (Chunk* cEast = GetChunk({_coord.x + 1, _coord.z}))
+        {
+            for (int z = 0; z < kSizeZ; z++)
+            {
+                for (int y = 0; y < kSizeY; y++)
+                {
+                    borders.SetBorderVoxel(ChunkBorders::BORDER::EAST,
+                        cEast->At(0, y, z), 0, y, z);
+                }
+            }
+        }
+        // WEST BORDERS
+        if (Chunk* cWest = GetChunk({_coord.x - 1, _coord.z}))
+        {
+            for (int z = 0; z < kSizeZ; z++)
+            {
+                for (int y = 0; y < kSizeY; y++)
+                {
+                    borders.SetBorderVoxel(ChunkBorders::BORDER::WEST,
+                        cWest->At(kSizeX - 1, y, z), 0, y, z);
+                }
+            }
+        }
+        // SOUTH BORDERS
+        if (Chunk* cSouth = GetChunk({_coord.x, _coord.z + 1}))
+        {
+            for (int x = 0; x < kSizeX; x++)
+            {
+                for (int y = 0; y < kSizeY; y++)
+                {
+                    borders.SetBorderVoxel(ChunkBorders::BORDER::SOUTH,
+                        cSouth->At(x, y, 0), x, y, 0);
+                }
+            }
+        }
+        // NORTH BORDERS
+        if (Chunk* cNorth = GetChunk({_coord.x, _coord.z - 1}))
+        {
+            for (int x = 0; x < kSizeX; x++)
+            {
+                for (int y = 0; y < kSizeY; y++)
+                {
+                    borders.SetBorderVoxel(ChunkBorders::BORDER::NORTH,
+                        cNorth->At(x, y, kSizeZ - 1), x, y, 0);
+                }
+            }
+        }
+
+        return borders;
     }
 }

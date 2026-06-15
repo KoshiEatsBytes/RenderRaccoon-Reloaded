@@ -11,7 +11,7 @@ namespace RR
     // air by default unless populated
     struct ChunkBorders
     {
-        enum class Border
+        enum class BORDER
         {
             WEST,
             EAST,
@@ -25,20 +25,20 @@ namespace RR
             return _lateral * CHUNK::kSizeY + _y;
         }
 
-        CHUNK::BlockId GetBorderVoxel(Border _border, int _x, int _y, int _z) const
+        CHUNK::BlockId GetBorderVoxel(BORDER _border, int _x, int _y, int _z) const
         {
             switch (_border)
             {
-                case Border::EAST:
+                case BORDER::EAST:
                     return m_east[Index(_z, _y)];
 
-                case Border::WEST:
+                case BORDER::WEST:
                     return m_west[Index(_z, _y)];
 
-                case Border::SOUTH:
+                case BORDER::SOUTH:
                     return m_south[Index(_x, _y)];
 
-                case Border::NORTH:
+                case BORDER::NORTH:
                     return m_north[Index(_x, _y)];
 
                 default:
@@ -46,23 +46,23 @@ namespace RR
             }
         }
 
-        void SetBorderVoxel(Border _border, CHUNK::BlockId _id, int _x, int _y, int _z)
+        void SetBorderVoxel(BORDER _border, CHUNK::BlockId _id, int _x, int _y, int _z)
         {
             switch (_border)
             {
-                case Border::EAST:
+                case BORDER::EAST:
                     m_east[Index(_z, _y)] = _id;
                     return;
 
-                case Border::WEST:
+                case BORDER::WEST:
                     m_west[Index(_z, _y)] = _id;
                     return;
 
-                case Border::SOUTH:
+                case BORDER::SOUTH:
                     m_south[Index(_x, _y)] = _id;
                     return;
 
-                case Border::NORTH:
+                case BORDER::NORTH:
                     m_north[Index(_x, _y)] = _id;
                     return;
             }

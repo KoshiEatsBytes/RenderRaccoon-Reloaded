@@ -52,16 +52,16 @@ namespace RR
 
         // check West if negative x
         if (_nx < 0)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::Border::WEST, _nx, _ny, _nz));
+            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::WEST, _nx, _ny, _nz));
         // East if positive x
         if (_nx >= kSizeX)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::Border::EAST, _nx, _ny, _nz));
+            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::EAST, _nx, _ny, _nz));
         // North if negative Z
         if (_nz < 0)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::Border::NORTH, _nx, _ny, _nz));
+            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::NORTH, _nx, _ny, _nz));
         // South if positive z
         if (_nz >= kSizeZ)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::Border::SOUTH, _nx, _ny, _nz));
+            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::SOUTH, _nx, _ny, _nz));
 
         // If an interior cell has been requested
         return IsSolid(_chunk.At(_nx, _ny, _nz));
