@@ -41,7 +41,7 @@ namespace RR
     {
         return GetBlockInfo(_id).solid;
     }
-`
+
     // Is the neighbor cell solid?
     static bool NeighbourSolid(const Chunk& _chunk, const ChunkBorders& _borders, int _nx, int _ny, int _nz)
     {
@@ -115,6 +115,19 @@ namespace RR
 
                         const float layer = info.faceLayer[face];
 
+                        // Applies deterministic rotation on top and bottom face
+                        int rot = 0;
+                        const bool rotatable = (face == static_cast<int>(Face::UP)    ||
+                                                face == static_cast<int>(Face::DOWN)) &&
+                                                IsTexRotatable(static_cast<BlockTex>(info.faceLayer[face]));
+
+                        if (rotatable)
+                        {
+                            const int wx = _chunk.coord.x * kSizeX + x;
+                            const int wz = _chunk.coord.z * kSizeZ + z;
+                            rot = FaceRotation(wx, wz);
+                        }
+
                         // Build vertex array, each voxel face has 4 vertices
                         for (int corner = 0; corner < 4; corner++)
                         {
@@ -127,8 +140,8 @@ namespace RR
                             chunkMesh.vertices.push_back(kFaceNormal[face][1]);
                             chunkMesh.vertices.push_back(kFaceNormal[face][2]);
                             // UV
-                            chunkMesh.vertices.push_back(kFaceUV[corner][0]);
-                            chunkMesh.vertices.push_back(kFaceUV[corner][1]);
+                            chunkMesh.vertices.push_back(kFaceUV[(corner + rot) & 3][0]);
+                            chunkMesh.vertices.push_back(kFaceUV[(corner + rot) & 3][1]);
 
                             chunkMesh.vertices.push_back(layer);
                         }

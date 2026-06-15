@@ -15,13 +15,7 @@ namespace RR::CHUNK
     // A chunk is 64kb of memory
     inline constexpr int kVoxelsPerChunk = kSizeX * kSizeZ * kSizeY;
 
-    // Current state of a chunk
-    enum class State : std::uint8_t
-    {
-        EMPTY,
-        GENERATED,
-        MESHED
-    };
+    // BLOCKS ----------------------------------------------------------------------------------------------------------
 
     // Block Repository
     enum class Block : BlockId
@@ -61,6 +55,31 @@ namespace RR::CHUNK
         OAK_LEAVES,
         COUNT
     };
+
+    // Specifies which faces can be seamlessly rotated on the Y axis
+    inline constexpr bool kTexRotatable[] =
+        {
+        true,  // GRASS_TOP
+        false, // GRASS_SIDE
+        true,  // DIRT
+        false, // STONE
+        false, // BEDROCK
+        false, // DIORITE
+        false, // GRANITE
+        true,  // SAND
+        true,  // SNOW
+        false, // WATER
+        false, // OAK SIDE
+        false, // OAK END
+        false, // OAK LEAVES
+        };
+    static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BlockTex::COUNT),
+        "kTexRotatable needs exactly one entry per BlockTex");
+
+    inline constexpr bool IsTexRotatable(BlockTex _tex)
+    {
+        return kTexRotatable[static_cast<std::size_t>(_tex)];
+    }
 
     enum class Face : std::uint8_t
     {
@@ -120,6 +139,37 @@ namespace RR::CHUNK
     {
         return kBlocks[_block];
     }
+
+    // Integer has for block rotation, deterministic on every machine
+    inline std::uint32_t Hash(int _wx, int _wz)
+    {
+        std::uint32_t hash = static_cast<std::uint32_t>(_wx) * 0x9e3779b1u
+                           ^ static_cast<std::uint32_t>(_wz) * 0x85ebca77u;
+
+        hash ^= hash >> 16;
+        hash *= 0x7feb352du;
+        hash ^= hash >> 15;
+        hash *= 0x846ca68bu;
+        hash ^= hash >> 16;
+
+        return hash;
+    }
+
+    // 90-step rotation index for faces
+    inline int FaceRotation(int _wx, int _wz)
+    {
+        return static_cast<int>(Hash(_wx, _wz) & 3u);
+    }
+
+    // CHUNKS ----------------------------------------------------------------------------------------------------------
+
+    // Current state of a chunk
+    enum class State : std::uint8_t
+    {
+        EMPTY,
+        GENERATED,
+        MESHED
+    };
 
     struct Coord
     {

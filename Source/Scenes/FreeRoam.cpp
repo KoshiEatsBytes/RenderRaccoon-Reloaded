@@ -123,6 +123,18 @@ static bool RunMesherProofs()
     return allOk;
 }
 
+static void ProveFaceRotation()
+{
+    int hist[4] = {0,0,0,0};
+    for (int z = 0; z < 64; ++z)
+        for (int x = 0; x < 64; ++x)
+            hist[RR::CHUNK::FaceRotation(x, z)]++;
+
+    const bool deterministic = RR::CHUNK::FaceRotation(123, -456) == RR::CHUNK::FaceRotation(123, -456);
+    RR::InfoLog("[ROT] /4096 -> 0:", hist[0], " 1:", hist[1], " 2:", hist[2],
+                " 3:", hist[3], " det=", deterministic);
+}
+
 static std::shared_ptr<RR::Mesh> BuildTestQuad()
 {
     // 2x2 quad at z = -3, facing +Z (toward the spawn camera, which looks -Z), layer = GRASS_TOP.
@@ -186,6 +198,8 @@ bool FreeRoam::Init()
 
     m_testChunk->mesh  = std::make_unique<RR::Mesh>(data.layout, data.vertices, data.indices);
     m_testChunk->state = RR::CHUNK::State::MESHED;
+
+    ProveFaceRotation();
 
     return true;
 }
