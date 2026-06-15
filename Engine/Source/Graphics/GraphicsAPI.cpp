@@ -226,6 +226,11 @@ namespace RR
         _mesh->UnBind();
     }
 
+    void GraphicsAPI::UnbindVertexArray()
+    {
+        glBindVertexArray(0);
+    }
+
     void GraphicsAPI::DrawMesh(Mesh *_mesh)
     {
         if (!_mesh)

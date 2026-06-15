@@ -71,9 +71,8 @@ namespace RR
         }
 
         // Unbinds last mesh
-        if (!m_commands.empty())
-            _graphicsAPI.UnBindMesh(m_commands.back().mesh);
-
+        _graphicsAPI.UnbindVertexArray();
+        
         m_commands.clear();
     }
 }

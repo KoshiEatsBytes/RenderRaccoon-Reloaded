@@ -47,6 +47,7 @@ namespace RR
         void BindMaterial(Material* _material);
         void BindMesh(Mesh* _mesh);
         void UnBindMesh(Mesh* _mesh);
+        void UnbindVertexArray();          
         void DrawMesh(Mesh* _mesh);
         void ClearBuffers();
 
