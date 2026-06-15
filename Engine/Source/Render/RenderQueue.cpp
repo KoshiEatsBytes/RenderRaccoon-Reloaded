@@ -35,34 +35,44 @@ namespace RR
     void RenderQueue::Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData,
         const std::vector<LightData>& _lights)
     {
+        // comparison tool for material, dont bind same material twice
+        Material* lastMaterial = nullptr;
+
         for (auto& command : m_commands)
         {
-            auto shaderProgram = command.material->GetShaderProgram();
+            ShaderProgram* shaderProgram = command.material->GetShaderProgram();
 
-            // material
-            _graphicsAPI.BindMaterial(command.material);
+            if (command.material != lastMaterial)
+            {
+                _graphicsAPI.BindMaterial(command.material);
+
+                // Update camera if material changes
+                shaderProgram->SetUniform("uView",      _camData.viewMatrix);
+                shaderProgram->SetUniform("uProj",      _camData.projMatrix);
+                shaderProgram->SetUniform("uCameraPos", _camData.position);
+
+                // Render lights, 1 for now
+                if (!_lights.empty())
+                {
+                    auto& light = _lights[0];
+                    shaderProgram->SetUniform("uLight.color",     light.color);
+                    shaderProgram->SetUniform("uLight.direction", glm::normalize(-light.position));
+                }
+
+                lastMaterial = command.material;
+            }
+            // Per call sets
             shaderProgram->SetUniform("uModel", command.modelMatrix);
             shaderProgram->SetUniform("uColor", command.color);
 
-            // Camera
-            shaderProgram->SetUniform("uView", _camData.viewMatrix);
-            shaderProgram->SetUniform("uProj", _camData.projMatrix);
-            shaderProgram->SetUniform("uCameraPos", _camData.position);
-
-            // Lights
-            // for now only use 1 light
-            if (!_lights.empty())
-            {
-                auto& light = _lights[0];
-                shaderProgram->SetUniform("uLight.color", light.color);
-                shaderProgram->SetUniform("uLight.direction", glm::normalize(-light.position));
-            }
-
-            // Mesh
-            _graphicsAPI.BindMesh  (command.mesh);
-            _graphicsAPI.DrawMesh  (command.mesh);
-            _graphicsAPI.UnBindMesh(command.mesh);
+            // Bind and draw meshes
+            _graphicsAPI.BindMesh(command.mesh);
+            _graphicsAPI.DrawMesh(command.mesh);
         }
+
+        // Unbinds last mesh
+        if (!m_commands.empty())
+            _graphicsAPI.UnBindMesh(m_commands.back().mesh);
 
         m_commands.clear();
     }
