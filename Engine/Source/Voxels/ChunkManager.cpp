@@ -1,6 +1,9 @@
 
 #include "ChunkManager.h"
 
+#include <cmath>
+#include <algorithm>
+
 #include "Render/Mesh.h"
 #include "Render/RenderQueue.h"
 #include "Render/Voxels/ChunkMesher.h"
@@ -24,33 +27,13 @@ namespace RR
     {
         // Updates which chunks are drawing from camera pos
         const CHUNK::Coord centre = WorldToChunk(_cameraPos);
-        if (m_lastCoords == centre) return;
+        if (m_lastCoords == centre && !m_firstFrame) return;
 
         EnsureGenerated(centre);
         EnsureMeshed(centre);
         UnloadFar(centre);
         m_lastCoords = centre;
-    }
-
-    // Generate and mesh radius of chunk around the camera,
-    // this is effectively the "render distacne"
-    void ChunkManager::GenerateGrid(int _radius)
-    {
-        // generate all chunks before meshing
-        for (int z = -_radius; z <= _radius; z++)
-        {
-            for (int x = -_radius; x <= _radius; x++)
-            {
-                // Nothing to check if the chunk has already been generated?
-                GenerateChunk({x, z});
-            }
-        }
-
-        // Mesh
-        for (auto& [coord, chunk] : m_chunks)
-        {
-            BuildChunkMesh(*chunk);
-        }
+        m_firstFrame = false;
     }
 
     void ChunkManager::SubmitDraws()

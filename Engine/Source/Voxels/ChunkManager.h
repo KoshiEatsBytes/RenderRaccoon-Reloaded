@@ -18,8 +18,6 @@ namespace RR
         ~ChunkManager();
 
         void Update(const vec3& _cameraPos);
-
-        void GenerateGrid(int _radius);
         void SubmitDraws();
 
     private:
@@ -39,7 +37,8 @@ namespace RR
         std::shared_ptr<Material> m_material;
         ChunkGenerator            m_generator;
 
-        CHUNK::Coord m_lastCoords {4345345, 34534543};
-        int m_meshRadius = 12;
+        CHUNK::Coord m_lastCoords;
+        bool m_firstFrame = true;
+        int m_meshRadius  = 12;
     };
 }

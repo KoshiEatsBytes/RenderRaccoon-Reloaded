@@ -20,6 +20,7 @@ protected:
     void Update(float _deltaTime) override;
     void LateUpdate(float _deltaTime) override;
     void Destroy() override;
+    void OnGui() override;
 
 private:
     RR::GameObject* m_cam = nullptr;

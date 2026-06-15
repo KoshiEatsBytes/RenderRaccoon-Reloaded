@@ -12,6 +12,7 @@
 #include "Engine.h"
 #include "GLFW/glfw3.h"
 #include "Voxels/ChunkManager.h"
+#include "imgui.h"
 
 FreeRoam::FreeRoam() : Scene("Free Roam") {}
 
@@ -81,4 +82,28 @@ void FreeRoam::LateUpdate(float _deltaTime)
 
 void FreeRoam::Destroy()
 {
+}
+
+void FreeRoam::OnGui()
+{
+    // Passive FPS readout pinned to the top-right corner
+    const ImGuiViewport* vp = ImGui::GetMainViewport();
+    const float pad = 10.0f;
+    const ImVec2 pos(vp->WorkPos.x + vp->WorkSize.x - pad, vp->WorkPos.y + pad);
+    ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.5f);
+
+    constexpr ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration   | ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav          | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoInputs;      
+
+    if (ImGui::Begin("##fps_overlay", nullptr, flags))
+    {
+        const ImGuiIO& io = ImGui::GetIO();
+        ImGui::Text("FPS  %.1f", io.Framerate);
+        ImGui::Text("%.3f ms/frame", 1000.0f / io.Framerate);
+    }
+    ImGui::End();
 }
