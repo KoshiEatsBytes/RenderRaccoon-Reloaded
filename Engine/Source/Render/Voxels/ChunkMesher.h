@@ -42,7 +42,7 @@ namespace RR
                     return m_north[Index(_x, _y)];
 
                 default:
-                    return static_cast<CHUNK::BlockId>(CHUNK::Block::AIR);
+                    return static_cast<CHUNK::BlockId>(CHUNK::BLOCK::AIR);
             }
         }
 

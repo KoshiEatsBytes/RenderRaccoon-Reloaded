@@ -27,7 +27,7 @@ namespace RR
 
         // Position and state of the chunk
         CHUNK::Coord coord;
-        CHUNK::State state = CHUNK::State::EMPTY;
+        CHUNK::STATE state = CHUNK::STATE::EMPTY;
 
         // Chunk contents and mesh
         std::array<CHUNK::BlockId, CHUNK::kVoxelsPerChunk> voxels {};

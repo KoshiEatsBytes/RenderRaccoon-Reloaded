@@ -5,6 +5,7 @@
 namespace RR
 {
     struct Chunk;
+    class ChunkManager;
 }
 
 class FreeRoam : public RR::Scene
@@ -24,6 +25,6 @@ private:
     RR::GameObject* m_cam = nullptr;
 
     std::shared_ptr<RR::Material> m_voxelMat;
-    std::unique_ptr<RR::Chunk>    m_testChunk;
+    std::unique_ptr<RR::ChunkManager> m_chunkManager;
 };
 

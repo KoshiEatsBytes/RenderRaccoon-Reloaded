@@ -18,7 +18,7 @@ namespace RR::CHUNK
     // BLOCKS ----------------------------------------------------------------------------------------------------------
 
     // Block Repository
-    enum class Block : BlockId
+    enum class BLOCK : BlockId
     {
         AIR = 0,
 
@@ -38,7 +38,7 @@ namespace RR::CHUNK
     };
 
     // block texture
-    enum BlockTex : std::uint16_t
+    enum BLOCKTEX : std::uint16_t
     {
         GRASS_TOP,
         GRASS_SIDE,
@@ -73,15 +73,15 @@ namespace RR::CHUNK
         false, // OAK END
         false, // OAK LEAVES
         };
-    static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BlockTex::COUNT),
+    static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
         "kTexRotatable needs exactly one entry per BlockTex");
 
-    inline constexpr bool IsTexRotatable(BlockTex _tex)
+    inline constexpr bool IsTexRotatable(BLOCKTEX _tex)
     {
         return kTexRotatable[static_cast<std::size_t>(_tex)];
     }
 
-    enum class Face : std::uint8_t
+    enum class FACE : std::uint8_t
     {
         EAST,
         WEST,
@@ -98,17 +98,17 @@ namespace RR::CHUNK
     };
 
     // Face order is EAST, WEST, UP, DOWN, SOUTH, NORT
-    constexpr BlockInfo UniformBlock(BlockTex _tex, bool _solid = true)
+    constexpr BlockInfo UniformBlock(BLOCKTEX _tex, bool _solid = true)
     {
         return { _solid, { _tex, _tex, _tex, _tex, _tex, _tex } };
     }
-    constexpr BlockInfo SidedBlock(BlockTex _side, BlockTex _top, BlockTex _bottom)
+    constexpr BlockInfo SidedBlock(BLOCKTEX _side, BLOCKTEX _top, BLOCKTEX _bottom)
     {
         return { true, { _side, _side, _top, _bottom, _side, _side } };
     }
 
     // Block info table
-    inline constexpr std::array<BlockInfo, static_cast<std::size_t>(Block::COUNT)> kBlocks = {
+    inline constexpr std::array<BlockInfo, static_cast<std::size_t>(BLOCK::COUNT)> kBlocks = {
         {
             /* Air     */ { false, {} },
             /* Grass   */ SidedBlock  (GRASS_SIDE, GRASS_TOP, DIRT),
@@ -126,10 +126,10 @@ namespace RR::CHUNK
     };
 
     // Generate compiler error if a block is not added to the info table
-    static_assert(kBlocks.size() == static_cast<std::size_t>(Block::COUNT));
+    static_assert(kBlocks.size() == static_cast<std::size_t>(BLOCK::COUNT));
 
     // Fetch info table
-    inline const BlockInfo& GetBlockInfo(Block _block)
+    inline const BlockInfo& GetBlockInfo(BLOCK _block)
     {
         return kBlocks[static_cast<std::size_t>(_block)];
     }
@@ -164,7 +164,7 @@ namespace RR::CHUNK
     // CHUNKS ----------------------------------------------------------------------------------------------------------
 
     // Current state of a chunk
-    enum class State : std::uint8_t
+    enum class STATE : std::uint8_t
     {
         EMPTY,
         GENERATED,

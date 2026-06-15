@@ -117,9 +117,9 @@ namespace RR
 
                         // Applies deterministic rotation on top and bottom face
                         int rot = 0;
-                        const bool rotatable = (face == static_cast<int>(Face::UP)    ||
-                                                face == static_cast<int>(Face::DOWN)) &&
-                                                IsTexRotatable(static_cast<BlockTex>(info.faceLayer[face]));
+                        const bool rotatable = (face == static_cast<int>(FACE::UP)    ||
+                                                face == static_cast<int>(FACE::DOWN)) &&
+                                                IsTexRotatable(static_cast<BLOCKTEX>(info.faceLayer[face]));
 
                         if (rotatable)
                         {
