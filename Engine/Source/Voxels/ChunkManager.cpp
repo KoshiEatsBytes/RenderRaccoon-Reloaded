@@ -25,9 +25,9 @@ namespace RR
     void ChunkManager::GenerateGrid(int _radius)
     {
         // generate borders before meshing
-        for (int z = _radius; z <= _radius; z++)
+        for (int z = -_radius; z <= _radius; z++)
         {
-            for (int x = -_radius; x < _radius; x++)
+            for (int x = -_radius; x <= _radius; x++)
             {
                 // Nothing to check if the chunk has already been generated?
                 GenerateChunk({x, z});
@@ -50,7 +50,7 @@ namespace RR
             if (!chunk->mesh) continue;
 
             auto chunkMatrix = glm::translate(mat4(1.0f),
-                vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));;
+                vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
 
             // Create and submit render command for that chunk
             RenderCommand command;
