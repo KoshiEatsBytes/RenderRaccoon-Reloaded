@@ -5,6 +5,7 @@
 #include "Voxels/ChunkData.h"
 #include "Noise.hpp"
 #include "WorldGenConfig.h"
+#include "Biome.hpp"
 
 namespace WORLDGEN
 {
@@ -33,7 +34,11 @@ namespace WORLDGEN
         {
             for (int x = 0; x < kSizeX; ++x)
             {
+                const int wx = ox + x;
+                const int wz = oz + z;
                 const int terrHeight = TerrainHeight(ox + x, oz + z, _config);
+                // select biome for current column
+                const BiomeParams& bParams = GetBiome(SelectBiome(wx, wz, _config));
 
                 for (int y = 0; y <= terrHeight && y < kSizeY; y++)
                 {
@@ -47,10 +52,10 @@ namespace WORLDGEN
                         block = BLOCK::STONE;
                     }
                     else if (y <  terrHeight) {
-                        block = BLOCK::DIRT;
+                        block = bParams.subsurface;
                     }
                     else {
-                        block = BLOCK::GRASS;
+                        block = bParams.surface;
                     }
 
                     _chunk.Set(x, y, z, static_cast<BlockId>(block));

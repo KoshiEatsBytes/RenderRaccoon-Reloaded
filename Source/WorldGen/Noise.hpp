@@ -55,6 +55,7 @@ namespace WORLDGEN
     // Fractal brownian motion
     inline float FBM(float _x, float _z, uInt32 _seed, int _octaves)
     {
+        if (_octaves <= 0) _octaves = 1;
         float sum  = 0.0f;
         float amp  = 1.0f;
         float freq = 1.0f;

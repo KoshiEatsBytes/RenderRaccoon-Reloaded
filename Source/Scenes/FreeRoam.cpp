@@ -13,6 +13,7 @@
 #include "GLFW/glfw3.h"
 #include "Voxels/ChunkManager.h"
 #include "imgui.h"
+#include "WorldGen/Biome.hpp"
 #include "WorldGen/Noise.hpp"
 #include "WorldGen/WorldGen.hpp"
 #include "WorldGen/WorldGenConfig.h"
@@ -28,7 +29,7 @@ bool FreeRoam::Init()
 
     m_cam = CreateObject("FlyCam");
     auto camComp = m_cam->AddComponent<RR::FreeCameraComponent>();
-    camComp->SetSprintSpeed(26.f);
+    camComp->SetSprintSpeed(80.f);
     m_cam->SetPosition(vec3(0.f, 100.f, 0.f));
     SetMainCamera(m_cam);
 
@@ -43,6 +44,13 @@ bool FreeRoam::Init()
         WORLDGEN::GenerateColumn(c, config);
     };
     m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat);
+
+    int hist[(int)WORLDGEN::BIOME::COUNT] = {};
+    for (int z = 0; z < 1024; z += 4)
+        for (int x = 0; x < 1024; x += 4)
+            hist[(int)WORLDGEN::SelectBiome(x, z, config)]++;
+    RR::InfoLog("[BIOME] plains=", hist[0], " forest=", hist[1], " desert=", hist[2],
+                " redDesert=", hist[3], " taiga=", hist[4], " tundra=", hist[5]);
 
     return true;
 }
