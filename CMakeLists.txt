@@ -35,6 +35,7 @@ set(PROJECT_SOURCE_FILES
         Source/WorldGen/Noise.hpp
         Source/WorldGen/WorldGen.hpp
         Source/WorldGen/WorldGenConfig.h
+        Source/WorldGen/Biome.hpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

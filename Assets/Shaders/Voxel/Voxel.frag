@@ -7,7 +7,7 @@ flat in float vLayer;
 flat in float vShade;
 
 uniform sampler2DArray uBlockTex;
-uniform vec3 uTint[32]; // size = tex::count
+uniform vec3 uTint[64]; // size = tex::count
 
 void main()
 {

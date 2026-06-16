@@ -36,7 +36,14 @@
           { "Path": "Textures/Blocks/Cactus/cactus_bottom.png" },
           { "Path": "Textures/Blocks/Ores/coal_ore.png" },
           { "Path": "Textures/Blocks/Ores/iron_ore.png" },
-          { "Path": "Textures/Blocks/Ores/copper_ore.png" }
+          { "Path": "Textures/Blocks/Ores/copper_ore.png" },
+          { "Path": "Textures/Blocks/ice.png" },
+          { "Path": "Textures/Blocks/Sandstone/sandstone.png" },
+          { "Path": "Textures/Blocks/Sandstone/sandstone_top.png" },
+          { "Path": "Textures/Blocks/Sandstone/sandstone_bottom.png" },
+          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone.png" },
+          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone_top.png" },
+          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone_bottom.png" }
         ]
       }
     ]

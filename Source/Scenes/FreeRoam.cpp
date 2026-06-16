@@ -35,7 +35,7 @@ bool FreeRoam::Init()
     m_voxelMat = RR::Material::Load("Materials/Voxel.json");
 
     auto arr = m_voxelMat->GetTextureArray("uBlockTex");
-    assert(arr && arr->GetLayerCount() == CHUNK::BLOCKTEX::COUNT);
+    assert(arr && arr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
 
     WORLDGEN::WorldGenConfig config;
 

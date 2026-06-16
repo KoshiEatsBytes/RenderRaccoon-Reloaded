@@ -42,6 +42,9 @@ namespace RR::CHUNK
         COAL_ORE,
         IRON_ORE,
         COPPER_ORE,
+        ICE,
+        SANDSTONE,
+        RED_SANDSTONE,
 
         COUNT
     };
@@ -76,6 +79,14 @@ namespace RR::CHUNK
         COAL_ORE,
         IRON_ORE,
         COPPER_ORE,
+        ICE,
+        SANDSTONE_TOP,
+        SANDSTONE_SIDE,
+        SANDSTONE_BOTTOM,
+        RED_SANDSTONE_TOP,
+        RED_SANDSTONE_SIDE,
+        RED_SANDSTONE_BOTTOM,
+
         COUNT
     };
 
@@ -108,6 +119,13 @@ namespace RR::CHUNK
         false, // COAL_ORE
         false, // IRON_ORE
         false, // COPPER_ORE
+        false, // ICE
+        false, // SANDSTONE TOP
+        false, // SANDSTONE SIDE
+        false, // SANDSTONE BOTTOM
+        false, // RED SANDSTONE TOP
+        false, // RED SANDSTONE SIDE
+        false, // RED SANDSTONE BOTTOM
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -147,27 +165,30 @@ namespace RR::CHUNK
     // Block info table
     inline constexpr std::array<BlockInfo, static_cast<std::size_t>(BLOCK::COUNT)> kBlocks = {
         {
-            /* Air        */ { false, {} },
-            /* Grass      */ SidedBlock  (GRASS_SIDE, GRASS_TOP, DIRT),
-            /* Dirt       */ UniformBlock(DIRT),
-            /* Stone      */ UniformBlock(STONE),
-            /* Bedrock    */ UniformBlock(BEDROCK),
-            /* Diorite    */ UniformBlock(DIORITE),
-            /* Granite    */ UniformBlock(GRANITE),
-            /* Sand       */ UniformBlock(SAND),
-            /* Snow       */ UniformBlock(SNOW),
-            /* Water      */ UniformBlock(WATER),
-            /* OakLog     */ SidedBlock  (OAK_LOG_SIDE, OAK_LOG_END, OAK_LOG_END),
-            /* Leaves     */ UniformBlock(OAK_LEAVES),
-            /* SpruceLog  */ SidedBlock  (SPRUCE_LOG_SIDE, SPRUCE_LOG_END, SPRUCE_LOG_END),
-            /* SpruceLeaf */ UniformBlock(SPRUCE_LEAVES),
-            /* SnowyGrass */ SidedBlock  (SNOWY_GRASS_SIDE, SNOWY_GRASS_TOP, DIRT),
-            /* Podzol     */ SidedBlock  (PODZOL_SIDE, PODZOL_TOP, DIRT),
-            /* RedSand    */ UniformBlock(RED_SAND),
-            /* Cactus     */ SidedBlock  (CACTUS_SIDE, CACTUS_TOP, CACTUS_BOTTOM),
-            /* CoalOre    */ UniformBlock(COAL_ORE),
-            /* IronOre    */ UniformBlock(IRON_ORE),
-            /* CopperOre  */ UniformBlock(COPPER_ORE),
+            /* Air           */ { false, {} },
+            /* Grass         */ SidedBlock  (GRASS_SIDE, GRASS_TOP, DIRT),
+            /* Dirt          */ UniformBlock(DIRT),
+            /* Stone         */ UniformBlock(STONE),
+            /* Bedrock       */ UniformBlock(BEDROCK),
+            /* Diorite       */ UniformBlock(DIORITE),
+            /* Granite       */ UniformBlock(GRANITE),
+            /* Sand          */ UniformBlock(SAND),
+            /* Snow          */ UniformBlock(SNOW),
+            /* Water         */ UniformBlock(WATER),
+            /* OakLog        */ SidedBlock  (OAK_LOG_SIDE, OAK_LOG_END, OAK_LOG_END),
+            /* Leaves        */ UniformBlock(OAK_LEAVES),
+            /* SpruceLog     */ SidedBlock  (SPRUCE_LOG_SIDE, SPRUCE_LOG_END, SPRUCE_LOG_END),
+            /* SpruceLeaf    */ UniformBlock(SPRUCE_LEAVES),
+            /* SnowyGrass    */ SidedBlock  (SNOWY_GRASS_SIDE, SNOWY_GRASS_TOP, DIRT),
+            /* Podzol        */ SidedBlock  (PODZOL_SIDE, PODZOL_TOP, DIRT),
+            /* RedSand       */ UniformBlock(RED_SAND),
+            /* Cactus        */ SidedBlock  (CACTUS_SIDE, CACTUS_TOP, CACTUS_BOTTOM),
+            /* CoalOre       */ UniformBlock(COAL_ORE),
+            /* IronOre       */ UniformBlock(IRON_ORE),
+            /* CopperOre     */ UniformBlock(COPPER_ORE),
+            /* Ice           */ UniformBlock(ICE),
+            /* Sandstone     */ SidedBlock  (SANDSTONE_SIDE, SANDSTONE_TOP, SANDSTONE_BOTTOM),
+            /* Red Sandstone */ SidedBlock  (RED_SANDSTONE_SIDE, RED_SANDSTONE_TOP, RED_SANDSTONE_BOTTOM)
         }
     };
 
