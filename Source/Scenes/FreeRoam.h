@@ -1,6 +1,8 @@
 
 #pragma once
 #include "RR.h"
+#include "Components/FreeCameraComponent.h"
+#include "WorldGen/WorldGenConfig.h"
 
 namespace RR
 {
@@ -14,6 +16,8 @@ public:
     explicit FreeRoam();
     ~FreeRoam() override;
 
+    void Regenerate();
+
 protected:
     bool Init() override;
     void PreUpdate(float _deltaTime) override;
@@ -24,8 +28,15 @@ protected:
 
 private:
     RR::GameObject* m_cam = nullptr;
+    RR::FreeCameraComponent* m_camComp = nullptr;
 
     std::shared_ptr<RR::Material> m_voxelMat;
     std::unique_ptr<RR::ChunkManager> m_chunkManager;
+    WORLDGEN::WorldGenConfig m_genConfig;
+    WORLDGEN::WorldGenConfig m_draftConfig;
+
+    bool m_uiMode     = false;
+    bool m_tabWasDown = false;
+
 };
 

@@ -40,10 +40,14 @@ namespace RR
         void SetSpeed(float _speed);
         void SetSprintSpeed(float _speed);
 
+        void SetDiscardInput(bool _discard);
+        bool GetDiscardInput() const;
+
     private:
         InputManager& m_inputManager;
 
         quat m_orientation {1.0f, 0.0f, 0.0f, 0.0f};
+        bool  m_discard  = false;
         float m_sensStep = 0.002f;
         float m_sensMin  = 0.001f;
         float m_sensMax  = 1.0f;

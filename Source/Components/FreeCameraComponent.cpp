@@ -20,6 +20,8 @@ namespace RR
 
     void FreeCameraComponent::PreUpdate(float _deltaTime)
     {
+        if (m_discard) return;
+
         ApplyIntent(GatherLiveIntent(), _deltaTime);
     }
 
@@ -144,5 +146,15 @@ namespace RR
     void FreeCameraComponent::SetSprintSpeed(float _speed)
     {
         m_sprintSpeed = _speed;
+    }
+
+    void FreeCameraComponent::SetDiscardInput(bool _discard)
+    {
+        m_discard = _discard;
+    }
+
+    bool FreeCameraComponent::GetDiscardInput() const
+    {
+        return m_discard;
     }
 }
