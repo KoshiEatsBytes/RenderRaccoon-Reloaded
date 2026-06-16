@@ -1,6 +1,7 @@
 
 #pragma once
 #include <cstdint>
+#include <algorithm>
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkData.h"
 #include "Noise.hpp"
@@ -12,14 +13,66 @@ namespace WORLDGEN
     // Surface Y for world column
     inline int TerrainHeight(int _wx, int _wz, const WorldGenConfig& _config)
     {
-        uInt32      seed    = _config.seed;
-        const float scale   = _config.heightScale;
-        const int   base    = _config.heightBase;
-        const int   amp     = _config.heightAmp;
-        const int   octaves = _config.heightOctaves;
+        const float noise = FBM(
+            _wx / _config.heightScale,
+            _wz / _config.heightScale,
+            _config.seed,
+            _config.heightOctaves);
+        int height = _config.heightBase + static_cast<int>(noise * _config.heightAmp);
 
-        const float val = FBM(_wx / scale, _wz / scale, seed, octaves);
-        return base + static_cast<int>(val * amp);
+        // Cliffs
+        const float cliffNoise = FBM(
+            _wx / _config.cliffScale,
+            _wz / _config.cliffScale,
+            _config.seed + _config.cliffSub,
+            _config.cliffOctaves);
+
+        const int level = static_cast<int>(cliffNoise * _config.cliffLevels);
+        height += level * _config.cliffStep;
+
+        return height;
+    }
+
+    inline int WaterCarve(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
+    {
+        int carveDepth = 0;
+
+        // FBM noise is used to trace the river path
+        const float riverNoise = FBM(
+            _wx / _config.riverScale,
+            _wz / _config.riverScale,
+            _config.seed + 601u,
+            _config.riverNoiseOct);
+
+        const float distFromCentre = std::abs(riverNoise - 0.5f) * 2.0f;
+
+        if (distFromCentre < _config.riverWidth)
+        {
+            // blend from 0 to 1 to shape a channel
+            const float bankBlend  = distFromCentre / _config.riverWidth;
+            const int   riverCarve = static_cast<int>(_config.riverDepth * (1.0f - bankBlend));
+            carveDepth = std::max(carveDepth, riverCarve);
+        }
+
+        // Ponds - plain taiga only
+        if (_biome == BIOME::PLAINS || _biome == BIOME::TAIGA)
+        {
+            const float pondNoise = FBM(
+                _wx / _config.pondScale,
+                _wz / _config.pondScale,
+                _config.seed + 602u,
+                _config.pondNoiseOct);
+
+            if (pondNoise < _config.pondThreshold)
+            {
+                // Blend from 0 to 1 to shape a bowl
+                const float pondBlend = pondNoise / _config.pondThreshold;
+                const int   pondCarve = static_cast<int>(_config.pondDepth * (1.0f - pondBlend));
+                carveDepth = std::max(carveDepth, pondCarve);
+            }
+        }
+
+        return carveDepth;
     }
 
     // Returns what kind of stone in the strata is present
@@ -56,7 +109,8 @@ namespace WORLDGEN
         using namespace RR::CHUNK;
         const int ox = _chunk.coord.x * kSizeX;
         const int oz = _chunk.coord.z * kSizeZ;
-        const int dirtDepth = _config.dirtDepth;
+        const int dirtDepth  = _config.dirtDepth;
+        const int waterLevel = _config.waterLevel;
 
         for (int z = 0; z < kSizeZ; ++z)
         {
@@ -64,11 +118,22 @@ namespace WORLDGEN
             {
                 const int wx = ox + x;
                 const int wz = oz + z;
-                const int terrHeight = TerrainHeight(ox + x, oz + z, _config);
-                // select biome for current column
-                const BiomeParams& bParams = GetBiome(SelectBiome(wx, wz, _config));
+                // Get Biome
+                const BIOME biome = SelectBiome(wx, wz, _config);
+                const BiomeParams& bParams = GetBiome(biome);
+                // Get Land Height
+                const int land  = TerrainHeight(wx, wz, _config);
+                const int carve = WaterCarve(wx, wz, biome, _config);
+                const int terrHeight = land - carve;
 
-                for (int y = 0; y <= terrHeight && y < kSizeY; y++)
+                int waterTop = waterLevel;
+                if (carve > 0) {
+                waterTop = std::max(waterTop, land - 1);
+                }
+                const bool underWater = (terrHeight < waterTop);
+
+                // Solid column
+                for (int y = 0; y <= terrHeight && y < kSizeY; ++y)
                 {
                     BLOCK block;
 
@@ -80,16 +145,25 @@ namespace WORLDGEN
                         block = StoneAt(wx, y, wz, _config);
                     }
                     else if (y <  terrHeight) {
-                        //block = bParams.subsurface;
-                        block = BLOCK::AIR;
+                        block = bParams.subsurface;
                     }
                     else {
-                        //block = bParams.surface;
-                        block = BLOCK::AIR;
-                        
+                        block = underWater ? bParams.subsurface : bParams.surface;
                     }
 
                     _chunk.Set(x, y, z, static_cast<BlockId>(block));
+                }
+
+                // If liquid - ice in frozen biomes
+                if (underWater)
+                {
+                    const bool frozen  = (biome == BIOME::TAIGA || biome == BIOME::TUNDRA);
+                    const BLOCK liquid = frozen ? BLOCK::ICE : BLOCK::WATER;
+
+                    for (int y = terrHeight + 1; y <= waterTop && y < kSizeY; ++y)
+                    {
+                        _chunk.Set(x,y,z, static_cast<BlockId>(liquid));
+                    }
                 }
             }
         }
