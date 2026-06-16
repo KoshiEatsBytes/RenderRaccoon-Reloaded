@@ -33,6 +33,8 @@ set(PROJECT_SOURCE_FILES
         Source/Scenes/FreeRoam.cpp
         Source/Scenes/FreeRoam.h
         Source/WorldGen/Noise.hpp
+        Source/WorldGen/WorldGen.hpp
+        Source/WorldGen/WorldGenConfig.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

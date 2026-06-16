@@ -19,6 +19,7 @@ namespace RR
 
         void Update(const vec3& _cameraPos);
         void SubmitDraws();
+        void Clear();
 
     private:
         void UnloadFar(CHUNK::Coord _centre);

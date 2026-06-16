@@ -4,7 +4,7 @@
 #include <cmath>
 #include "Voxels/ChunkData.h"
 
-namespace WorldGen
+namespace WORLDGEN
 {
     using uInt32 = std::uint32_t;
 

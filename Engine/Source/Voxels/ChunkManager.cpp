@@ -58,6 +58,13 @@ namespace RR
         }
     }
 
+    void ChunkManager::Clear()
+    {
+        // Triggers regeneration from scratch
+        m_chunks.clear();
+        m_firstFrame = true;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
