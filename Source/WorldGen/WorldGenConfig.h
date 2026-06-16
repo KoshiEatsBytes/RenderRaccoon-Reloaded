@@ -23,11 +23,20 @@ namespace WORLDGEN
         int humidityOctaves    = 3;
         int rarityOctaves      = 2;
 
-        float TundraHumidThreshold = 0.5f;
-        float PlainsHumidThreshold = 0.5f;
-        float redDesertRarity      = 0.85f; // 1 is rarest
-        float tempCold             = 0.40f;
-        float tempHot              = 0.60f;
-        float temperate            = 0.5f;
+        float TundraHumidThresh = 0.5f;
+        float PlainsHumidThresh = 0.5f;
+        float redDesertRarity   = 0.85f; // 1 is rarest
+        float tempCold          = 0.40f;
+        float tempHot           = 0.60f;
+        float temperate         = 0.5f;
+
+        // STRATA & ORES
+        float strataScale   = 22.0f;   // diorite/granite clump size
+        float dioriteThresh = 0.78f;
+        float graniteThresh = 0.78f;
+        float oreScale      = 11.0f;   // ore clump size
+        float coalThresh    = 0.85f;
+        float ironThresh    = 0.87f;
+        float copperThresh  = 0.86f;
     };
 }

@@ -22,6 +22,34 @@ namespace WORLDGEN
         return base + static_cast<int>(val * amp);
     }
 
+    // Returns what kind of stone in the strata is present
+    inline BLOCK StoneAt(int _wx, int _wy, int _wz, const WorldGenConfig& _config)
+    {
+        const uInt32 seed = _config.seed;
+
+        // Ores: rare, smaller
+        const float oreSc = _config.oreScale;
+        if (ValueNoise3(_wx/oreSc, _wy/oreSc, _wz/oreSc, seed + 401u) > _config.coalThresh)
+            return BLOCK::COAL_ORE;
+
+        if (ValueNoise3(_wx/oreSc, _wy/oreSc, _wz/oreSc, seed + 402u) > _config.ironThresh)
+            return BLOCK::IRON_ORE;
+
+        if (ValueNoise3(_wx/oreSc, _wy/oreSc, _wz/oreSc, seed + 403u) > _config.copperThresh)
+            return BLOCK::COPPER_ORE;
+
+        // Strata bigger, common (diorite/granite)
+        const float strataSc = _config.strataScale;
+        if (ValueNoise3(_wx/strataSc, _wy/strataSc, _wz/strataSc, seed + 501u) > _config.dioriteThresh)
+            return BLOCK::DIORITE;
+
+        if (ValueNoise3(_wx/strataSc, _wy/strataSc, _wz/strataSc, seed + 502u) > _config.graniteThresh)
+            return BLOCK::GRANITE;
+
+        // Default to stone
+        return BLOCK::STONE;
+    }
+
     // generate column of the given chunk
     inline void GenerateColumn(RR::Chunk& _chunk, const WorldGenConfig& _config)
     {
@@ -49,13 +77,16 @@ namespace WORLDGEN
                         block = BLOCK::BEDROCK;
                     }
                     else if (y <  terrHeight - dirtDepth) {
-                        block = BLOCK::STONE;
+                        block = StoneAt(wx, y, wz, _config);
                     }
                     else if (y <  terrHeight) {
-                        block = bParams.subsurface;
+                        //block = bParams.subsurface;
+                        block = BLOCK::AIR;
                     }
                     else {
-                        block = bParams.surface;
+                        //block = bParams.surface;
+                        block = BLOCK::AIR;
+                        
                     }
 
                     _chunk.Set(x, y, z, static_cast<BlockId>(block));
@@ -63,4 +94,6 @@ namespace WORLDGEN
             }
         }
     }
+
+
 }

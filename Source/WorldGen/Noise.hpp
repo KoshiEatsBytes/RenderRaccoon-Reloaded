@@ -72,6 +72,44 @@ namespace WORLDGEN
 
         return sum / norm;
     }
+
+    inline float HashFloat3(int _x, int _y, int _z, uInt32 _seed)
+    {
+        uInt32 hash = RR::CHUNK::Hash(_x, _z);
+        hash ^= static_cast<uInt32>(_y) * 0x9e3779b1u;   // fold in y
+        hash ^= _seed;
+        hash *= 0x85ebca77u;
+        hash ^= hash >> 15;
+
+        return static_cast<float>(hash) / static_cast<float>(0xFFFFFFFFu);
+    }
+
+    // get noise value - but 3D!
+    inline float ValueNoise3(float _x, float _y, float _z, uInt32 _seed)
+    {
+        const int x0 = static_cast<int>(std::floor(_x));
+        const int y0 = static_cast<int>(std::floor(_y));
+        const int z0 = static_cast<int>(std::floor(_z));
+        const float fx = Smooth(_x - x0);
+        const float fy = Smooth(_y - y0);
+        const float fz = Smooth(_z - z0);
+
+        const float c000 = HashFloat3(x0, y0, z0, _seed);
+        const float c100 = HashFloat3(x0+1, y0, z0, _seed);
+        const float c010 = HashFloat3(x0, y0+1, z0,  _seed);
+        const float c110 = HashFloat3(x0+1, y0+1, z0, _seed);
+        const float c001 = HashFloat3(x0, y0, z0+1, _seed);
+        const float c101 = HashFloat3(x0+1, y0, z0+1, _seed);
+        const float c011 = HashFloat3(x0, y0+1, z0+1, _seed);
+        const float c111 = HashFloat3(x0+1, y0+1, z0+1, _seed);
+
+        const float x00 = Lerp(c000,c100,fx);
+        const float x10 = Lerp(c010,c110,fx);
+        const float x01 = Lerp(c001,c101,fx);
+        const float x11 = Lerp(c011,c111,fx);
+
+        return Lerp(Lerp(x00,x10,fy), Lerp(x01,x11,fy), fz);   // trilinear
+    }
 }
 
 
