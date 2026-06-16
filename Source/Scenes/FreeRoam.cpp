@@ -13,6 +13,7 @@
 #include "GLFW/glfw3.h"
 #include "Voxels/ChunkManager.h"
 #include "imgui.h"
+#include "WorldGen/Noise.hpp"
 
 FreeRoam::FreeRoam() : Scene("Free Roam") {}
 
@@ -49,12 +50,21 @@ bool FreeRoam::Init()
     m_voxelMat = RR::Material::Load("Materials/Voxel.json");
 
     auto arr = m_voxelMat->GetTextureArray("uBlockTex");
-    assert(arr && arr->GetLayerCount() == CHUNK::Tex::COUNT);
+    assert(arr && arr->GetLayerCount() == CHUNK::BLOCKTEX::COUNT);
 
     RR::ChunkGenerator gen = [](RR::Chunk& c) {
         FillTestSlab(c);
     };
     m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat);
+
+    float mn = 1e9f, mx = -1e9f, maxStep = 0.0f, prev = WorldGen::FBM(0,0,1337,4);
+    for (int i = 1; i < 2000; ++i)
+    {
+        float v = WorldGen::FBM(i * 0.01f, 0.0f, 1337, 4);
+        mn = std::min(mn, v);  mx = std::max(mx, v);
+        maxStep = std::max(maxStep, std::abs(v - prev));  prev = v;
+    }
+    RR::InfoLog("[NOISE] min=", mn, " max=", mx, " maxStep=", maxStep);
 
     return true;
 }

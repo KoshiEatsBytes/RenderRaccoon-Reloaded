@@ -32,6 +32,7 @@ set(PROJECT_SOURCE_FILES
         Source/Components/FreeCameraComponent.h
         Source/Scenes/FreeRoam.cpp
         Source/Scenes/FreeRoam.h
+        Source/WorldGen/Noise.hpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
