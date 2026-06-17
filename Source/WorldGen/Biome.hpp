@@ -25,7 +25,7 @@ namespace WORLDGEN
         /* RED_DESERT */ { BLOCK::RED_SAND,      BLOCK::RED_SANDSTONE, false },
         /* TAIGA      */ { BLOCK::PODZOL,        BLOCK::DIRT,          false },
         /* TUNDRA     */ { BLOCK::SNOWY_GRASS,   BLOCK::DIRT,          false },
-        /* MOUNTAINS  */ { BLOCK::SNOW,          BLOCK::STONE,         true  },
+        /* MOUNTAINS  */ { BLOCK::GRASS,         BLOCK::STONE,         true  },
         /* SAVANNA    */ { BLOCK::SAVANNA_GRASS, BLOCK::DIRT,          false },
     };
     static_assert(std::size(kBiomes) == static_cast<std::size_t>(BIOME::COUNT));

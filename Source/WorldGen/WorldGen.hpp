@@ -10,8 +10,115 @@
 
 namespace WORLDGEN
 {
+    struct BlendSums
+    {
+        int base = 0;
+        int amp = 0;
+        int mtn = 0;
+    };
+
     // Surface height of a world column: per biome base
-    inline int TerrainHeight(int _wx, int _wz, const BiomeGrid& _grid, const WorldGenConfig& _config)
+    // DEPRECATED
+    // inline int TerrainHeight(int _wx, int _wz, const BiomeGrid& _grid, const WorldGenConfig& _config)
+    // {
+    //     const float noise = FBM(
+    //         _wx / _config.heightScale,
+    //         _wz / _config.heightScale,
+    //         _config.seed,
+    //         _config.heightOctaves);
+    //
+    //     // blend lowland base/amp AND count mountains together
+    //     const int radius = _config.biomeBlendRadius;
+    //     long sumBase  = 0;
+    //     long sumAmp   = 0;
+    //     int  lowCount = 0;
+    //     int mtnCount  = 0;
+    //
+    //     for (int dz = -radius; dz <= radius; ++dz)
+    //     {
+    //         for (int dx = -radius; dx <= radius; ++dx)
+    //         {
+    //             const BIOME biome = _grid.At(_wx + dx, _wz + dz);
+    //
+    //             if (biome == BIOME::MOUNTAINS)
+    //             {
+    //                 ++mtnCount;
+    //             }
+    //             else
+    //             {
+    //                 sumBase += _config.biomeBaseHeight[static_cast<int>(biome)];
+    //                 sumAmp  += _config.biomeAmplitude [static_cast<int>(biome)];
+    //                 ++lowCount;
+    //             }
+    //         }
+    //     }
+    //
+    //
+    //     const int   total = (2 * radius + 1) * (2 * radius + 1);
+    //     const float frac  = static_cast<float>(mtnCount) / total;
+    //     const float rawMask = std::clamp((frac - 0.5f) * 2.0f, 0.0f, 1.0f);
+    //     const float mask = std::pow(rawMask, _config.mountainCurve);
+    //
+    //     const float lowBase = lowCount ? float(sumBase) / lowCount : float(_config.biomeBaseHeight[(int)BIOME::MOUNTAINS]);
+    //     const float lowAmp  = lowCount ? float(sumAmp)  / lowCount : float(_config.biomeAmplitude [(int)BIOME::MOUNTAINS]);
+    //
+    //     const float lowlandHeight  = lowBase + noise * lowAmp;
+    //     const float mountainHeight = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS]
+    //                                + noise * _config.biomeAmplitude[(int)BIOME::MOUNTAINS];
+    //
+    //     return static_cast<int>(lowlandHeight + (mountainHeight - lowlandHeight) * mask);
+    // }
+
+    // Optimization to blend biomes more efficently
+    inline std::array<BlendSums, 256> BuildBlendSums(const BiomeGrid& _grid, const WorldGenConfig& _config)
+    {
+        const int R   = _config.biomeBlendRadius;
+        const int gw  = _grid.w;
+        const int win = 2 * R + 1;
+
+        // per grid-cell contribution
+        std::vector<int> sBase(gw * gw), sAmp(gw * gw), sMtn(gw * gw);
+        for (int gj = 0; gj < gw; ++gj)
+        {
+            for (int gi = 0; gi < gw; ++gi)
+            {
+                const int idx = gi + gj * gw;
+                const BIOME b = _grid.cells[idx];
+                if (b == BIOME::MOUNTAINS) sMtn[idx] = 1;
+                else { sBase[idx] = _config.biomeBaseHeight[(int)b]; sAmp[idx] = _config.biomeAmplitude[(int)b]; }
+            }
+        }
+
+        // horizontal pass
+        std::vector<int> hB(16 * gw), hA(16 * gw), hM(16 * gw);
+        for (int gj = 0; gj < gw; ++gj)
+        {
+            for (int x = 0; x < 16; ++x)
+            {
+                int b = 0, a = 0, m = 0;
+                for (int k = 0; k < win; ++k) { const int i = (x + k) + gj * gw; b += sBase[i]; a += sAmp[i]; m += sMtn[i]; }
+                const int hi = x + gj * 16; hB[hi] = b; hA[hi] = a; hM[hi] = m;
+            }
+        }
+
+        // vertical pass
+        std::array<BlendSums, 256> out{};
+        for (int z = 0; z < 16; ++z)
+        {
+            for (int x = 0; x < 16; ++x)
+            {
+                int b = 0, a = 0, m = 0;
+                for (int k = 0; k < win; ++k) { const int hi = x + (z + k) * 16; b += hB[hi]; a += hA[hi]; m += hM[hi]; }
+                out[x + z * 16] = { b, a, m };
+            }
+        }
+
+        return out;
+    }
+
+    // Per-column height from the precomputed blend sums
+    // Same math as TerrainHeight, just reading box-sums instead of scanning the window
+    inline int TerrainHeightFromSums(const BlendSums& _s, int _wx, int _wz, int _total, const WorldGenConfig& _config)
     {
         const float noise = FBM(
             _wx / _config.heightScale,
@@ -19,44 +126,18 @@ namespace WORLDGEN
             _config.seed,
             _config.heightOctaves);
 
-        // blend lowland base/amp AND count mountains together
-        const int radius = _config.biomeBlendRadius;
-        long sumBase  = 0;
-        long sumAmp   = 0;
-        int  lowCount = 0;
-        int mtnCount  = 0;
+        const int mB = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS];
+        const int mA = _config.biomeAmplitude [(int)BIOME::MOUNTAINS];
 
-        for (int dz = -radius; dz <= radius; ++dz)
-        {
-            for (int dx = -radius; dx <= radius; ++dx)
-            {
-                const BIOME biome = _grid.At(_wx + dx, _wz + dz);
+        const int   lowCount = _total - _s.mtn;
+        const float lowBase  = lowCount ? float(_s.base) / lowCount : float(mB);
+        const float lowAmp   = lowCount ? float(_s.amp)  / lowCount : float(mA);
 
-                if (biome == BIOME::MOUNTAINS)
-                {
-                    ++mtnCount;
-                }
-                else
-                {
-                    sumBase += _config.biomeBaseHeight[static_cast<int>(biome)];
-                    sumAmp  += _config.biomeAmplitude [static_cast<int>(biome)];
-                    ++lowCount;
-                }
-            }
-        }
-
-
-        const int   total = (2 * radius + 1) * (2 * radius + 1);
-        const float frac  = static_cast<float>(mtnCount) / total;
-        const float rawMask = std::clamp((frac - 0.5f) * 2.0f, 0.0f, 1.0f);
-        const float mask = std::pow(rawMask, _config.mountainCurve);
-
-        const float lowBase = lowCount ? float(sumBase) / lowCount : float(_config.biomeBaseHeight[(int)BIOME::MOUNTAINS]);
-        const float lowAmp  = lowCount ? float(sumAmp)  / lowCount : float(_config.biomeAmplitude [(int)BIOME::MOUNTAINS]);
+        const float rawMask = std::clamp((float(_s.mtn) / _total - 0.5f) * 2.0f, 0.0f, 1.0f);
+        const float mask    = std::pow(rawMask, _config.mountainCurve);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
-        const float mountainHeight = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS]
-                                   + noise * _config.biomeAmplitude[(int)BIOME::MOUNTAINS];
+        const float mountainHeight = mB + noise * mA;
 
         return static_cast<int>(lowlandHeight + (mountainHeight - lowlandHeight) * mask);
     }
@@ -146,6 +227,10 @@ namespace WORLDGEN
         const int margin = _config.biomeBlendRadius;
         const BiomeGrid grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, margin, _config);
 
+        // Separable blend: precompute every column's window sums once per chunk
+        const std::array<BlendSums, 256> sums = BuildBlendSums(grid, _config);
+        const int total = (2 * margin + 1) * (2 * margin + 1);
+
         for (int z = 0; z < kSizeZ; ++z)
         {
             for (int x = 0; x < kSizeX; ++x)
@@ -155,8 +240,8 @@ namespace WORLDGEN
                 // Get Biome
                 const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
-                // Get Land Height
-                const int land  = TerrainHeight(wx, wz, grid, _config);
+                // Get Land Height (separable blend; TerrainHeight kept as the oracle for testing)
+                const int land  = TerrainHeightFromSums(sums[x + z * 16], wx, wz, total, _config);
                 const int carve = WaterCarve(wx, wz, biome, _config);
                 const int terrHeight = land - carve;
 

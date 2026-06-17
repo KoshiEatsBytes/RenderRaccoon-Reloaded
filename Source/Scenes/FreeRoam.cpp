@@ -73,6 +73,8 @@ bool FreeRoam::Init()
         RR::InfoLog("[ZOOM] plains=", zh[0], " forest=", zh[1], " desert=", zh[2], " redDesert=", zh[3],
                     " taiga=", zh[4], " tundra=", zh[5], " mountains=", zh[6], " savanna=", zh[7]);
     }
+
+
     return true;
 }
 
