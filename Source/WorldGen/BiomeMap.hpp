@@ -8,12 +8,13 @@
 
 namespace WORLDGEN
 {
-    // Distinct salts so each roll is an independent stream
+    // Distinct hash salts temp/humidity/rarity/mountain rolls are independent streams
     constexpr uInt32 kSaltTemp  = 811u;
     constexpr uInt32 kSaltHumid = 822u;
     constexpr uInt32 kSaltRare  = 833u;
     constexpr uInt32 kSaltMount = 844u;
 
+    // A chunk's precomputed biome cells. (ox,oz) is the world-space origin of cell[0],
     struct BiomeGrid
     {
         int ox = 0;
@@ -28,7 +29,7 @@ namespace WORLDGEN
     };
 
 
-    // Coarse-cell biome: random category per cell
+    // The coarsest layer: the biome of a single coarse cell (cx,cz) Pure per-cell
     inline BIOME BaseBiome(int _cx, int _cz, const WorldGenConfig& _config)
     {
         // Hash and check for mountains
@@ -64,30 +65,8 @@ namespace WORLDGEN
         return BIOME::FOREST;
     }
 
-    inline int FloorDiv(int _a, int _b)
-    {
-        int q = _a / _b;
-        if ((_a % _b != 0) && ((_a < 0) != (_b < 0))) --q;
-        return q;
-    }
-
-    // Biome at a world column - Pure function
-    inline BIOME BiomeAt(int _wx, int _wz, const WorldGenConfig& _config)
-    {
-        const float fx = static_cast<float>(_wx);
-        const float fz = static_cast<float>(_wz);
-
-        // two independent warp fields
-        const float dx = (FBM(fx/_config.biomeWarpScale, fz/_config.biomeWarpScale, _config.seed + 901u, _config.biomeWarpOct) - 0.5f) * 2.0f * _config.biomeWarpAmp;
-        const float dz = (FBM(fx/_config.biomeWarpScale, fz/_config.biomeWarpScale, _config.seed + 902u, _config.biomeWarpOct) - 0.5f) * 2.0f * _config.biomeWarpAmp;
-
-        const int cx = FloorDiv(static_cast<int>(std::floor(fx + dx)), _config.biomeRegionScale);
-        const int cz = FloorDiv(static_cast<int>(std::floor(fz + dz)), _config.biomeRegionScale);
-        return BaseBiome(cx, cz, _config);
-    }
-
-    // CELL RNG
-
+    // Deterministic per-cell RNG: a strong-mixed hash with a full avalanche,
+    // so adjacent cells AND adjacent salts give independent values
     inline uInt32 CellRand(int _x, int _z, uInt32 _seed, uInt32 _salt)
     {
         uInt32 hash = RR::CHUNK::Hash(_x, _z) ^ (_seed * 0x9e3779b1u) ^ (_salt * 0x85ebca77u);
@@ -101,11 +80,13 @@ namespace WORLDGEN
         return hash;
     }
 
+    // Zoom edge-pick randomly return one of the two parents straddling an edge child
     inline BIOME Choose2(BIOME a, BIOME b, uInt32 r)
     {
         return (r & 1u) ? b : a;
     }
 
+    // Zoom corner-pick (FuzzyZoom): uniformly random among the 4 parents, unbiased
     inline BIOME ChooseRandom4(BIOME a, BIOME b, BIOME c, BIOME d, uInt32 r)
     {
         switch (r & 3u)
@@ -124,7 +105,8 @@ namespace WORLDGEN
         }
     }
 
-    inline BIOME ChooseMode(BIOME _a, BIOME _b, BIOME _c, BIOME _d, uInt32 _r)   // majority, random tie-break
+    // Zoom corner-pick: the MAJORITY biome among the 4 parents, random tie-break
+    inline BIOME ChooseMode(BIOME _a, BIOME _b, BIOME _c, BIOME _d, uInt32 _r)
     {
         if (_b == _c && _c == _d) return _b;
         if (_a == _b && _a == _c) return _a;
@@ -153,7 +135,7 @@ namespace WORLDGEN
         }
     }
 
-    // BASE LAYER COARSE CELL
+    // Fill a w×h rectangle by calling BaseBiome per cell
     inline std::vector<BIOME> BaseArea(int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         std::vector<BIOME> out(static_cast<size_t>(_w) * _h);
@@ -169,9 +151,13 @@ namespace WORLDGEN
         return out;
     }
 
-    // fw dec because those two are mutually recursive
+    // fwd decl — BuildArea and ZoomArea are mutually recursive (zoom pulls a coarser parent).
     inline std::vector<BIOME> BuildArea(int _level, int _x, int _z, int _w, int _h, const WorldGenConfig& _config);
 
+
+    // One 2x zoom level, pulls a half-size parent area (+2 margin, guaranteed coverage),
+    // then upscales each parent 2x2 block 0,0 = parent, the two edges = Choose2 of the
+    // straddled pair
     inline std::vector<BIOME> ZoomArea(int _level, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         const int px = _x >> 1;
@@ -226,20 +212,23 @@ namespace WORLDGEN
         return out;
     }
 
+    // Recursive dispatch: level 0 = coarsest, else one more zoom of the level
     inline std::vector<BIOME> BuildArea(int _level, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         if (_level <= 0) return BaseArea(_x, _z, _w, _h, _config);
         return ZoomArea(_level, _x, _z, _w, _h, _config);
     }
 
+    // Single-point biome via the zoom stack only
     inline BIOME BiomeAtZoom(int _wx, int _wz, const WorldGenConfig& _config)
     {
         return BuildArea(_config.biomeZoomLevels, _wx, _wz, 1, 1, _config)[0];
     }
 
-    // fw dcl function below
+    // fwd decl — SmoothArea is self-recursive
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config);
 
+    // PUBLIC biome-area entry pipeline = zoom stack + optional smooth passes
     inline std::vector<BIOME> FinalArea(int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         if (_config.biomeSmoothPasses <= 0)
@@ -249,11 +238,14 @@ namespace WORLDGEN
         return SmoothArea(_config.biomeSmoothPasses, _x, _z, _w, _h, _config);
     }
 
+    // Single-point final biome
     inline BIOME BiomeAtFinal(int _wx, int _wz, const WorldGenConfig& _config)
     {
         return FinalArea(_wx, _wz, 1, 1, _config)[0];
     }
 
+    // 4-neighbour smoother, if both horizontal neighbors match (and/or both vertical),
+    // snap to them; otherwise keep the center
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         const std::vector<BIOME> parent = _pass <= 1 ?
@@ -287,6 +279,7 @@ namespace WORLDGEN
         return out;
     }
 
+    // Build a chunk's biome grid
     inline BiomeGrid BuildBiomeGrid(int _chunkX, int _chunkZ, int _margin, const WorldGenConfig& _config)
     {
         const int ox = _chunkX * RR::CHUNK::kSizeX - _margin;

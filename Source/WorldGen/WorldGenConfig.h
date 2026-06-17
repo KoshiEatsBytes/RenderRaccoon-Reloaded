@@ -41,8 +41,6 @@ namespace WORLDGEN
             10  // SAVANNA
         };
 
-        int biomeRegionScale    = 160; // Blocks per coarse biome cell
-
         float mountainChance    = 0.12f; // fraction of coarse cells rolled as mountains
         float TundraHumidThresh = 0.5f;
         float PlainsHumidThresh = 0.5f;
@@ -51,13 +49,7 @@ namespace WORLDGEN
         float tempCold          = 0.40f;
         float tempHot           = 0.60f;
 
-        // border warping
-        float biomeWarpAmp   = 50.0f;  // blocks of border displacement
-        float biomeWarpScale = 100.0f; // warp wavelength
-        int   biomeWarpOct   = 3;
-
         // Border ZOOM + CELLS
-        bool biomeUseZoom      = true;
         int  biomeZoomLevels   = 7; // coarse cell
         int  biomeSmoothPasses = 2;
         int  biomeFuzzyLevels  = 2;

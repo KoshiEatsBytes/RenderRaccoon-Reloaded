@@ -10,7 +10,7 @@
 
 namespace WORLDGEN
 {
-    // Surface Y for world column
+    // Surface height of a world column: sea-level base + FBM hills
     inline int TerrainHeight(int _wx, int _wz, const WorldGenConfig& _config)
     {
         const float noise = FBM(
@@ -33,6 +33,8 @@ namespace WORLDGEN
         return height;
     }
 
+    // Blocks to carve down at this column for water: a ridged river channel,
+    // Returns 0 for no water.
     inline int WaterCarve(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
     {
         int carveDepth = 0;
@@ -75,7 +77,7 @@ namespace WORLDGEN
         return carveDepth;
     }
 
-    // Returns what kind of stone in the strata is present
+    // Which stone/ore fills a deep block: 3D noise fields pick rare ore veins
     inline BLOCK StoneAt(int _wx, int _wy, int _wz, const WorldGenConfig& _config)
     {
         const uInt32 seed = _config.seed;
@@ -103,7 +105,8 @@ namespace WORLDGEN
         return BLOCK::STONE;
     }
 
-    // generate column of the given chunk
+    // Generate every column of a chunk: pick the biome from cellular grid
+    // This is the injected ChunkGenerator callback: pure, runs once per chunk
     inline void GenerateColumn(RR::Chunk& _chunk, const WorldGenConfig& _config)
     {
         using namespace RR::CHUNK;
@@ -111,13 +114,8 @@ namespace WORLDGEN
         const int oz = _chunk.coord.z * kSizeZ;
         const int dirtDepth  = _config.dirtDepth;
         const int waterLevel = _config.waterLevel;
-        const bool useZoom   = _config.biomeUseZoom;
 
-        BiomeGrid grid;
-        if (useZoom)
-        {
-            grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, 0, _config);
-        }
+        const BiomeGrid grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, 0, _config);
 
         for (int z = 0; z < kSizeZ; ++z)
         {
@@ -126,7 +124,7 @@ namespace WORLDGEN
                 const int wx = ox + x;
                 const int wz = oz + z;
                 // Get Biome
-                const BIOME biome = useZoom ? grid.At(wx, wz) : BiomeAt(wx, wz, _config);
+                const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
                 // Get Land Height
                 const int land  = TerrainHeight(wx, wz, _config);
@@ -175,6 +173,4 @@ namespace WORLDGEN
             }
         }
     }
-
-
 }
