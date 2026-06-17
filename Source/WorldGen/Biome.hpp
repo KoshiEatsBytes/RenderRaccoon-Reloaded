@@ -3,39 +3,30 @@
 #include <cstdint>
 #include "Voxels/ChunkData.h"
 #include "Noise.hpp"
+#include "BiomeID.h"
 #include "WorldGenConfig.h"
 
 namespace WORLDGEN
 {
     using BLOCK = RR::CHUNK::BLOCK;
 
-    enum class BIOME : std::uint8_t
-    {
-        PLAINS,
-        FOREST,
-        DESERT,
-        RED_DESERT,
-        TAIGA,
-        TUNDRA,
-
-        COUNT
-    };
-
     struct BiomeParams
     {
-        int   amplitude;  // Height variation for this biome
         BLOCK surface;    // Top block for biome
         BLOCK subsurface; // Band beneath the surface
+        bool  cliffEligible;
     };
 
-    // Shoudnt amplitude be tweakeable from WorldGenConfig?
+    // Biomes presets
     inline constexpr BiomeParams kBiomes[] = {
-        /* PLAINS     */ {24, BLOCK::GRASS, BLOCK::DIRT},
-        /* FOREST     */ {32, BLOCK::GRASS, BLOCK::DIRT},
-        /* DESERT     */ {14, BLOCK::SAND, BLOCK::SANDSTONE},
-        /* RED DESERT */ {16, BLOCK::RED_SAND, BLOCK::RED_SANDSTONE},
-        /* TAIGA      */ {40, BLOCK::PODZOL, BLOCK::DIRT},
-        /* TUNDRA     */ {20, BLOCK::SNOWY_GRASS, BLOCK::DIRT}
+        /* PLAINS     */ { BLOCK::GRASS,         BLOCK::DIRT,          false },
+        /* FOREST     */ { BLOCK::GRASS,         BLOCK::DIRT,          false },
+        /* DESERT     */ { BLOCK::SAND,          BLOCK::SANDSTONE,     false },
+        /* RED_DESERT */ { BLOCK::RED_SAND,      BLOCK::RED_SANDSTONE, false },
+        /* TAIGA      */ { BLOCK::PODZOL,        BLOCK::DIRT,          false },
+        /* TUNDRA     */ { BLOCK::SNOWY_GRASS,   BLOCK::DIRT,          false },
+        /* MOUNTAINS  */ { BLOCK::SNOW,          BLOCK::STONE,         true  },
+        /* SAVANNA    */ { BLOCK::SAVANNA_GRASS, BLOCK::DIRT,          false },
     };
     static_assert(std::size(kBiomes) == static_cast<std::size_t>(BIOME::COUNT));
 

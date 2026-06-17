@@ -38,12 +38,16 @@
           { "Path": "Textures/Blocks/Ores/iron_ore.png" },
           { "Path": "Textures/Blocks/Ores/copper_ore.png" },
           { "Path": "Textures/Blocks/ice.png" },
-          { "Path": "Textures/Blocks/Sandstone/sandstone.png" },
           { "Path": "Textures/Blocks/Sandstone/sandstone_top.png" },
+          { "Path": "Textures/Blocks/Sandstone/sandstone.png" },
           { "Path": "Textures/Blocks/Sandstone/sandstone_bottom.png" },
-          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone.png" },
           { "Path": "Textures/Blocks/Red Sandstone/red_sandstone_top.png" },
-          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone_bottom.png" }
+          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone.png" },
+          { "Path": "Textures/Blocks/Red Sandstone/red_sandstone_bottom.png" },
+          { "Path": "Textures/Blocks/Grass/grass_block_top.png",          "Tint": [0.75, 0.72, 0.34] },
+          { "Path": "Textures/Blocks/Acacia Tree/acacia_log.png" },
+          { "Path": "Textures/Blocks/Acacia Tree/acacia_log_top.png" },
+          { "Path": "Textures/Blocks/Acacia Tree/acacia_leaves.png",      "Tint": [0.52, 0.55, 0.24] }
         ]
       }
     ]

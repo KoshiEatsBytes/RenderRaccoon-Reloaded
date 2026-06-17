@@ -2,6 +2,8 @@
 #pragma once
 #include <cstdint>
 
+#include "BiomeID.h"
+
 namespace WORLDGEN
 {
     struct WorldGenConfig
@@ -10,14 +12,48 @@ namespace WORLDGEN
 
         uInt32 seed = 456356;
 
-        // BASE TERRAIN
+        // BASE TERRAIN ------------------------------------------------------------------------------------------------
         float heightScale   = 128.f; // noise in block spacing
         int   heightBase    = 64;    // Sea level
         int   heightAmp     = 40;    // Hill height range
         int   heightOctaves = 5;
         int   dirtDepth     = 4;     // Dirt thickness under grass
 
-        // BIOMES
+        // BIOMES ------------------------------------------------------------------------------------------------------
+        int biomeBaseHeight[(int)BIOME::COUNT] = {
+            66, // PLAINS
+            68, // FOREST
+            64, // DESERT
+            64, // RED_DESERT
+            70, // TAIGA
+            66, // TUNDRA
+            96, // MOUNTAINS
+            66, // SAVANNA
+        };
+        int biomeAmplitude[(int)BIOME::COUNT] = {
+            8,  // PLAINS
+            14, // FOREST
+            6,  // DESERT
+            8,  // RED_DESERT
+            18, // TAIGA
+            8,  // TUNDRA
+            60, // MOUNTAINS
+            10  // SAVANNA
+        };
+
+        float mountainChance    = 0.12f; // fraction of coarse cells rolled as mountains
+        float TundraHumidThresh = 0.5f;
+        float PlainsHumidThresh = 0.5f;
+        float desertHumidThresh = 0.5f;
+        float redDesertRarity   = 0.85f; // 1 is rarest
+        float tempCold          = 0.40f;
+        float tempHot           = 0.60f;
+
+
+
+
+
+
         float temperatureScale = 384.0f; // broad climate zones
         float humidityScale    = 120.0f; // local moisture patches
 
@@ -25,12 +61,7 @@ namespace WORLDGEN
         int humidityOctaves    = 3;
         int rarityOctaves      = 2;
 
-        float TundraHumidThresh = 0.5f;
-        float PlainsHumidThresh = 0.5f;
-        float redDesertRarity   = 0.85f; // 1 is rarest
-        float tempCold          = 0.40f;
-        float tempHot           = 0.60f;
-        float temperate         = 0.5f;
+
 
         // STRATA & ORES
         float strataScale   = 22.0f;   // diorite/granite clump size

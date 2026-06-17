@@ -11,14 +11,31 @@ namespace WORLDGEN
     // Pseudo rando value - seeded
     inline float HashFloat(int _x, int _z, uInt32 _seed)
     {
-        uInt32 hash = RR::CHUNK::Hash(_x, _z);
+        // scale seed
+        uInt32 hash = RR::CHUNK::Hash(_x, _z) ^ (_seed * 0x9e3779b1u);
 
-        // Fold seed and re-mix
-        hash ^= _seed;
-        hash *= 0x9e3779b1u; // fibonacci hashing step
+        // full avalanche
+        hash ^= hash >> 16;
+        hash *= 0x7feb352du;
         hash ^= hash >> 15;
+        hash *= 0x846ca68bu;
+        hash ^= hash >> 16;
 
-        return static_cast<float>(hash) / static_cast<float>(0xFFFFFFFFu);
+        return static_cast<float>(hash) / 4294967295.0f;
+    }
+
+    inline float HashFloat3(int _x, int _y, int _z, uInt32 _seed)
+    {
+        uInt32 hash = RR::CHUNK::Hash(_x, _z)
+                ^ (static_cast<uInt32>(_y) * 0x85ebca77u)
+                ^ (_seed * 0x9e3779b1u);
+
+        hash ^= hash >> 16;
+        hash *= 0x7feb352du;
+        hash ^= hash >> 15;
+        hash *= 0x846ca68bu;
+        hash ^= hash >> 16;
+        return static_cast<float>(hash) / 4294967295.0f;
     }
 
     // smooth step fade
@@ -71,17 +88,6 @@ namespace WORLDGEN
         }
 
         return sum / norm;
-    }
-
-    inline float HashFloat3(int _x, int _y, int _z, uInt32 _seed)
-    {
-        uInt32 hash = RR::CHUNK::Hash(_x, _z);
-        hash ^= static_cast<uInt32>(_y) * 0x9e3779b1u;   // fold in y
-        hash ^= _seed;
-        hash *= 0x85ebca77u;
-        hash ^= hash >> 15;
-
-        return static_cast<float>(hash) / static_cast<float>(0xFFFFFFFFu);
     }
 
     // get noise value - but 3D!

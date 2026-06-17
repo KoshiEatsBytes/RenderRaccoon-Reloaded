@@ -16,6 +16,7 @@
 #include "Voxels/ChunkManager.h"
 #include "imgui.h"
 #include "WorldGen/Biome.hpp"
+#include "WorldGen/BiomeMap.hpp"
 #include "WorldGen/Noise.hpp"
 #include "WorldGen/WorldGen.hpp"
 #include "WorldGen/WorldGenConfig.h"
@@ -52,13 +53,13 @@ bool FreeRoam::Init()
     };
     m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat);
 
-    int hist[(int)WORLDGEN::BIOME::COUNT] = {};
-    for (int z = 0; z < 1024; z += 4)
-        for (int x = 0; x < 1024; x += 4)
-            hist[(int)WORLDGEN::SelectBiome(x, z, m_genConfig)]++;
-    RR::InfoLog("[BIOME] plains=", hist[0], " forest=", hist[1], " desert=", hist[2],
-                " redDesert=", hist[3], " taiga=", hist[4], " tundra=", hist[5]);
-
+    int bhist[(int)WORLDGEN::BIOME::COUNT] = {};
+    for (int cz = 0; cz < 64; ++cz)
+        for (int cx = 0; cx < 64; ++cx)
+            bhist[(int)WORLDGEN::BaseBiome(cx, cz, m_genConfig)]++;
+    RR::InfoLog("[BASEBIOME] plains=", bhist[0], " forest=", bhist[1], " desert=", bhist[2],
+                " redDesert=", bhist[3], " taiga=", bhist[4], " tundra=", bhist[5],
+                " mountains=", bhist[6], " savanna=", bhist[7]);
     return true;
 }
 
