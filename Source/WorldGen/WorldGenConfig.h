@@ -33,28 +33,34 @@ namespace WORLDGEN
             20,  // FOREST
             7,   // DESERT
             8,   // RED_DESERT
-            22,  // TAIGA
+            35,  // TAIGA
             12,  // TUNDRA
             105, // MOUNTAINS
             10   // SAVANNA
         };
 
-        float mountainChance    = 0.12f; // fraction of coarse cells rolled as mountains
+        float mountainChance    = 0.2f; // fraction of coarse cells rolled as mountains
         float TundraHumidThresh = 0.5f;
         float PlainsHumidThresh = 0.5f;
         float desertHumidThresh = 0.5f;
-        float redDesertRarity   = 0.85f; // 1 is rarest
+        float redDesertRarity   = 0.835f; // 1 is rarest
         float tempCold          = 0.40f;
         float tempHot           = 0.60f;
 
         // Border ZOOM + CELLS
-        int  biomeZoomLevels    = 7; // coarse cell
+        int  biomeZoomLevels    = 8; // coarse cell
         int  biomeSmoothPasses  = 2;
         int  biomeFuzzyLevels   = 1;
 
         // Biome seam adjustment
-        int   biomeBlendRadius = 16;
+        int   biomeBlendRadius = 20;
         float mountainCurve    = 1.5f;
+
+        // MOUNTAIN SURFACE
+        int   snowLine        = 150;   // Y above which mountain surface is snow
+        int   mtnGrassLine    = 112;   // below this grassy foothills
+        float snowJitterScale = 40.0f; // wavelength of the wavy snow/grass line
+        float snowJitterAmp   = 12.0f; // blocks the line wobbles
 
 
 

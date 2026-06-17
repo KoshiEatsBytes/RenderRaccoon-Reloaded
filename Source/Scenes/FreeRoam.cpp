@@ -149,13 +149,31 @@ void FreeRoam::OnGui()
     {
         ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
         ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
-        ImGui::SliderInt  ("Dirt Depth",   &m_draftConfig.dirtDepth, 1, 32);
+        ImGui::SliderInt  ("Dirt depth",   &m_draftConfig.dirtDepth, 1, 32);
     }
-    if (ImGui::CollapsingHeader("Biomes", ImGuiTreeNodeFlags_DefaultOpen))
+
+    if (ImGui::CollapsingHeader("Climate"))
     {
-        ImGui::SliderFloat("Tundra Humidity Threshold", &m_draftConfig.TundraHumidThresh, 0.01f, 1.0f);
-        ImGui::SliderFloat("Plains Humidity Threshold", &m_draftConfig.PlainsHumidThresh, 0.01f, 1.0f);
-        ImGui::SliderInt  ("Biome Blend Radius",        &m_draftConfig.biomeBlendRadius, 1, 128);
+        ImGui::SliderFloat("Cold threshold",    &m_draftConfig.tempCold, 0.0f, 0.5f); // ≤ 0.5 so it can't pass Hot
+        ImGui::SliderFloat("Hot threshold",     &m_draftConfig.tempHot, 0.5f, 1.0f);  // ≥ 0.5 so it can't pass Cold
+        ImGui::SliderFloat("Mountain chance",   &m_draftConfig.mountainChance, 0.0f, 0.5f);
+        ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.TundraHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Plains humidity",   &m_draftConfig.PlainsHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Desert humidity",   &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Red desert rarity", &m_draftConfig.redDesertRarity, 0.0f, 1.0f);
+    }
+
+    if (ImGui::CollapsingHeader("Biome Map (cellular)"))
+    {
+        ImGui::SliderInt("Zoom levels",   &m_draftConfig.biomeZoomLevels, 1, 10);
+        ImGui::SliderInt("Smooth passes", &m_draftConfig.biomeSmoothPasses, 0, 5);
+        ImGui::SliderInt("Fuzzy levels",  &m_draftConfig.biomeFuzzyLevels, 0, 5);
+    }
+
+    if (ImGui::CollapsingHeader("Terrain Blend"))
+    {
+        ImGui::SliderInt  ("Blend radius",   &m_draftConfig.biomeBlendRadius, 1, 64);
+        ImGui::SliderFloat("Mountain curve", &m_draftConfig.mountainCurve, 0.5f, 4.0f);
     }
 
     if (ImGui::CollapsingHeader("Biome Heights"))
@@ -168,6 +186,38 @@ void FreeRoam::OnGui()
             ImGui::SliderInt("amp",  &m_draftConfig.biomeAmplitude[b],  0, 120);
             ImGui::PopID();
         }
+    }
+
+    if (ImGui::CollapsingHeader("Mountain Surface"))
+    {
+        ImGui::SliderInt  ("Snow line",    &m_draftConfig.snowLine, 0, 256);
+        ImGui::SliderInt  ("Grass line",   &m_draftConfig.mtnGrassLine, 0, m_draftConfig.snowLine); // capped at snow line
+        ImGui::SliderFloat("Jitter scale", &m_draftConfig.snowJitterScale, 4.f, 200.f);
+        ImGui::SliderFloat("Jitter amp",   &m_draftConfig.snowJitterAmp, 0.f, 40.f);
+    }
+
+    if (ImGui::CollapsingHeader("Strata & Ores"))
+    {
+        ImGui::SliderFloat("Strata scale",   &m_draftConfig.strataScale, 4.f, 100.f);
+        ImGui::SliderFloat("Diorite thresh", &m_draftConfig.dioriteThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Granite thresh", &m_draftConfig.graniteThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Ore scale",      &m_draftConfig.oreScale, 2.f, 40.f);
+        ImGui::SliderFloat("Coal thresh",    &m_draftConfig.coalThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Iron thresh",    &m_draftConfig.ironThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Copper thresh",  &m_draftConfig.copperThresh, 0.0f, 1.0f);
+    }
+
+    if (ImGui::CollapsingHeader("Water"))
+    {
+        ImGui::SliderInt  ("Water level",    &m_draftConfig.waterLevel, 0, 128);
+        ImGui::SliderFloat("River scale",    &m_draftConfig.riverScale, 50.f, 600.f);
+        ImGui::SliderFloat("River width",    &m_draftConfig.riverWidth, 0.0f, 0.3f);
+        ImGui::SliderInt  ("River depth",    &m_draftConfig.riverDepth, 0, 32);
+        ImGui::SliderInt  ("River octaves",  &m_draftConfig.riverNoiseOct, 1, 8);
+        ImGui::SliderFloat("Pond scale",     &m_draftConfig.pondScale, 20.f, 300.f);
+        ImGui::SliderFloat("Pond threshold", &m_draftConfig.pondThreshold, 0.0f, 0.5f);
+        ImGui::SliderInt  ("Pond depth",     &m_draftConfig.pondDepth, 0, 32);
+        ImGui::SliderInt  ("Pond octaves",   &m_draftConfig.pondNoiseOct, 1, 8);
     }
 
     ImGui::Separator();

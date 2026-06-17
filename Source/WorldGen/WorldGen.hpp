@@ -214,6 +214,19 @@ namespace WORLDGEN
         return BLOCK::STONE;
     }
 
+    // Mountain surface by elevation
+    // The snow/grass lines wobble together via a noise jitter, so the snow line is irregular
+    inline BLOCK MountainSurface(int _y, int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        const float jitter = (FBM(_wx / _config.snowJitterScale, _wz / _config.snowJitterScale,
+            _config.seed + 711u, 2) - 0.5f) * 2.0f * _config.snowJitterAmp;
+
+        if (_y >= _config.snowLine     + jitter) return BLOCK::SNOW;
+        if (_y >= _config.mtnGrassLine + jitter) return BLOCK::STONE;
+
+        return BLOCK::GRASS;
+    }
+
     // Generate every column of a chunk: pick the biome from cellular grid
     // This is the injected ChunkGenerator callback: pure, runs once per chunk
     inline void GenerateColumn(RR::Chunk& _chunk, const WorldGenConfig& _config)
@@ -257,17 +270,32 @@ namespace WORLDGEN
                     BLOCK block;
 
                     // Build blocks per layer
-                    if (y == 0) {
+                    if (y == 0)
+                    {
                         block = BLOCK::BEDROCK;
                     }
-                    else if (y <  terrHeight - dirtDepth) {
+                    else if (y <  terrHeight - dirtDepth)
+                    {
                         block = StoneAt(wx, y, wz, _config);
                     }
-                    else if (y <  terrHeight) {
-                        block = bParams.subsurface;
+                    else if (y <  terrHeight)
+                    {
+                        // Dont override mountains strata
+                        block = bParams.cliffEligible ? StoneAt(wx, y, wz, _config)
+                                                      : bParams.subsurface;
                     }
-                    else {
-                        block = underWater ? bParams.subsurface : bParams.surface;
+                    // Surface block, changes on biome
+                    else
+                    {
+                        if (underWater) {
+                            block = bParams.subsurface;
+                        }
+                        else if (biome == BIOME::MOUNTAINS) {
+                            block = MountainSurface(terrHeight, wx, wz, _config);
+                        }
+                        else {
+                            block = bParams.surface;
+                        }
                     }
 
                     _chunk.Set(x, y, z, static_cast<BlockId>(block));
