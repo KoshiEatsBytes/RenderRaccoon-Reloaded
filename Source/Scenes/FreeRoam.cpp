@@ -140,11 +140,12 @@ void FreeRoam::OnGui()
 
     ImGui::Begin("World Gen", nullptr);
 
+    static const char* kBiomeNames[(int)WORLDGEN::BIOME::COUNT] =
+    { "Plains", "Forest", "Desert", "Red Desert", "Taiga", "Tundra", "Mountains", "Savanna" };
+
     if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
-        ImGui::SliderInt  ("Sea level",    &m_draftConfig.heightBase,  0, 128);
-        ImGui::SliderInt  ("Hill amp",     &m_draftConfig.heightAmp,   0, 120);
         ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
         ImGui::SliderInt  ("Dirt Depth",   &m_draftConfig.dirtDepth, 1, 32);
     }
@@ -152,6 +153,18 @@ void FreeRoam::OnGui()
     {
         ImGui::SliderFloat("Tundra Humidity Threshold", &m_draftConfig.TundraHumidThresh, 0.01f, 1.0f);
         ImGui::SliderFloat("Plains Humidity Threshold", &m_draftConfig.PlainsHumidThresh, 0.01f, 1.0f);
+    }
+
+    if (ImGui::CollapsingHeader("Biome Heights"))
+    {
+        for (int b = 0; b < (int)WORLDGEN::BIOME::COUNT; ++b)
+        {
+            ImGui::PushID(b);
+            ImGui::Text("%s", kBiomeNames[b]);
+            ImGui::SliderInt("base", &m_draftConfig.biomeBaseHeight[b], 0, 200);
+            ImGui::SliderInt("amp",  &m_draftConfig.biomeAmplitude[b],  0, 120);
+            ImGui::PopID();
+        }
     }
 
     ImGui::Separator();

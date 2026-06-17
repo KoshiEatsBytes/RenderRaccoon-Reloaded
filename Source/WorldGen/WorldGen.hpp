@@ -10,25 +10,18 @@
 
 namespace WORLDGEN
 {
-    // Surface height of a world column: sea-level base + FBM hills
-    inline int TerrainHeight(int _wx, int _wz, const WorldGenConfig& _config)
+    // Surface height of a world column: sea-level base
+    inline int TerrainHeight(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
     {
         const float noise = FBM(
             _wx / _config.heightScale,
             _wz / _config.heightScale,
             _config.seed,
             _config.heightOctaves);
-        int height = _config.heightBase + static_cast<int>(noise * _config.heightAmp);
 
-        // Cliffs
-        const float cliffNoise = FBM(
-            _wx / _config.cliffScale,
-            _wz / _config.cliffScale,
-            _config.seed + _config.cliffSub,
-            _config.cliffOctaves);
-
-        const int level = static_cast<int>(cliffNoise * _config.cliffLevels);
-        height += level * _config.cliffStep;
+        const int base   = _config.biomeBaseHeight[static_cast<int>(_biome)];
+        const int amp    = _config.biomeAmplitude [static_cast<int>(_biome)];
+        const int height = base + static_cast<int>(noise * amp);
 
         return height;
     }
@@ -127,7 +120,7 @@ namespace WORLDGEN
                 const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
                 // Get Land Height
-                const int land  = TerrainHeight(wx, wz, _config);
+                const int land  = TerrainHeight(wx, wz, biome, _config);
                 const int carve = WaterCarve(wx, wz, biome, _config);
                 const int terrHeight = land - carve;
 

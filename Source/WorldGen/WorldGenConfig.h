@@ -14,31 +14,29 @@ namespace WORLDGEN
 
         // BASE TERRAIN ------------------------------------------------------------------------------------------------
         float heightScale   = 128.f; // noise in block spacing
-        int   heightBase    = 64;    // Sea level
-        int   heightAmp     = 40;    // Hill height range
         int   heightOctaves = 5;
         int   dirtDepth     = 4;     // Dirt thickness under grass
 
         // BIOMES ------------------------------------------------------------------------------------------------------
         int biomeBaseHeight[(int)BIOME::COUNT] = {
-            66, // PLAINS
-            68, // FOREST
-            64, // DESERT
-            64, // RED_DESERT
-            70, // TAIGA
-            66, // TUNDRA
-            96, // MOUNTAINS
-            66, // SAVANNA
+            66,  // PLAINS
+            71,  // FOREST
+            64,  // DESERT
+            64,  // RED_DESERT
+            73,  // TAIGA
+            65,  // TUNDRA
+            102, // MOUNTAINS
+            63,  // SAVANNA
         };
         int biomeAmplitude[(int)BIOME::COUNT] = {
-            8,  // PLAINS
-            14, // FOREST
-            6,  // DESERT
-            8,  // RED_DESERT
-            18, // TAIGA
-            8,  // TUNDRA
-            60, // MOUNTAINS
-            10  // SAVANNA
+            10,  // PLAINS
+            20,  // FOREST
+            7,   // DESERT
+            8,   // RED_DESERT
+            22,  // TAIGA
+            12,  // TUNDRA
+            105, // MOUNTAINS
+            10   // SAVANNA
         };
 
         float mountainChance    = 0.12f; // fraction of coarse cells rolled as mountains
@@ -50,11 +48,9 @@ namespace WORLDGEN
         float tempHot           = 0.60f;
 
         // Border ZOOM + CELLS
-        bool biomeClimateBuffer = true;
         int  biomeZoomLevels    = 7; // coarse cell
         int  biomeSmoothPasses  = 2;
         int  biomeFuzzyLevels   = 1;
-        int  biomeBufferLevel   = 4; // 5 thin 3 wide
 
 
 
@@ -67,15 +63,9 @@ namespace WORLDGEN
         float ironThresh    = 0.88f;
         float copperThresh  = 0.85f;
 
-        // CLIFFS
-        int    cliffOctaves = 3;
-        float  cliffScale   = 200.0f;   // size of cliff
-        int    cliffStep    = 28;       // height per level
-        int    cliffLevels  = 3;        // plateau tiers
-        uInt32 cliffSub     = 707u;
 
         // WATER
-        int   waterLevel    = 70;      // water surface height
+        int   waterLevel    = 63;      // water surface height
         int   riverNoiseOct = 3;
         float riverScale    = 280.0f;  // river "wrinkle" size
         float riverWidth    = 0.05f;   // river half-width
