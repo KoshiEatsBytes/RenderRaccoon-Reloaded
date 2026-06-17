@@ -55,12 +55,11 @@ bool FreeRoam::Init()
 
     auto checkArea = [&](int ax, int az, int aw, int ah, const char* tag)
     {
-        const int L = m_genConfig.biomeZoomLevels;
-        auto area = WORLDGEN::BuildArea(L, ax, az, aw, ah, m_genConfig);     // ← BuildArea, not ZoomArea
+        auto area = WORLDGEN::FinalArea(ax, az, aw, ah, m_genConfig);     // ← BuildArea, not ZoomArea
         bool ok = true;
         for (int j = 0; j < ah && ok; ++j)
             for (int i = 0; i < aw && ok; ++i)
-                if (area[i + j * aw] != WORLDGEN::BiomeAtZoom(ax + i, az + j, m_genConfig)) ok = false;
+                if (area[i + j * aw] != WORLDGEN::BiomeAtFinal(ax + i, az + j, m_genConfig)) ok = false;
         RR::InfoLog("[ZOOM] area==point ", tag, ": ", ok ? "PASS" : "FAIL");
     };
     checkArea(0, 0, 8, 8, "aligned");
@@ -68,7 +67,7 @@ bool FreeRoam::Init()
 
     // proportions over many coarse cells (2048² fine ÷ 128 = 16² ≈ 256 coarse cells at L=7)
     {
-        auto big = WORLDGEN::BuildArea(m_genConfig.biomeZoomLevels, 0, 0, 2048, 2048, m_genConfig);
+        auto big = WORLDGEN::FinalArea(0, 0, 2048, 2048, m_genConfig);
         int zh[(int)WORLDGEN::BIOME::COUNT] = {};
         for (WORLDGEN::BIOME b : big) zh[(int)b]++;
         RR::InfoLog("[ZOOM] plains=", zh[0], " forest=", zh[1], " desert=", zh[2], " redDesert=", zh[3],

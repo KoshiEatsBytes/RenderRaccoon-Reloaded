@@ -225,6 +225,11 @@ namespace WORLDGEN
         return SmoothArea(_config.biomeSmoothPasses, _x, _z, _w, _h, _config);
     }
 
+    inline BIOME BiomeAtFinal(int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        return FinalArea(_wx, _wz, 1, 1, _config)[0];
+    }
+
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         const std::vector<BIOME> parent = _pass <= 1 ?
