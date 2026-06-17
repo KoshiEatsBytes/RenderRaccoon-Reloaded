@@ -50,9 +50,11 @@ namespace WORLDGEN
         float tempHot           = 0.60f;
 
         // Border ZOOM + CELLS
-        int  biomeZoomLevels   = 7; // coarse cell
-        int  biomeSmoothPasses = 2;
-        int  biomeFuzzyLevels  = 1;
+        bool biomeClimateBuffer = true;
+        int  biomeZoomLevels    = 7; // coarse cell
+        int  biomeSmoothPasses  = 2;
+        int  biomeFuzzyLevels   = 1;
+        int  biomeBufferLevel   = 4; // 5 thin 3 wide
 
 
 

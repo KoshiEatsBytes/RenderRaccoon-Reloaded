@@ -14,6 +14,16 @@ namespace WORLDGEN
     constexpr uInt32 kSaltRare  = 833u;
     constexpr uInt32 kSaltMount = 844u;
 
+    // Climate band of a biome
+    // mountains are neutral, can border desert or tundra freely
+    enum class TEMPERATURE : std::uint8_t
+    {
+        COLD,
+        TEMPERATE,
+        HOT,
+        NEUTRAL
+    };
+
     // A chunk's precomputed biome cells. (ox,oz) is the world-space origin of cell[0],
     struct BiomeGrid
     {
@@ -27,6 +37,32 @@ namespace WORLDGEN
             return cells[(_wx - ox) + (_wz - oz) * w];
         }
     };
+
+    inline TEMPERATURE ClimateOf(BIOME _biome)
+    {
+        switch (_biome)
+        {
+            // tundra and taiga cold
+            case BIOME::TUNDRA:
+            case BIOME::TAIGA:
+                return TEMPERATURE::COLD;
+
+            // Deserts and savanna hot
+            case BIOME::DESERT:
+            case BIOME::RED_DESERT:
+            case BIOME::SAVANNA:
+                return TEMPERATURE::HOT;
+
+            // Plains and forest temperate
+            case BIOME::PLAINS:
+            case BIOME::FOREST:
+                return TEMPERATURE::TEMPERATE;
+
+            // Mountains
+            default:
+                return TEMPERATURE::NEUTRAL;
+        }
+    }
 
 
     // The coarsest layer: the biome of a single coarse cell (cx,cz) Pure per-cell
@@ -212,10 +248,63 @@ namespace WORLDGEN
         return out;
     }
 
+    // Hot/cold buffer applied at level biomeBufferLevel - prevents HOT biomes to border COLD biomes
+    inline std::vector<BIOME> AdjacencyArea(int _level, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
+    {
+        const std::vector<BIOME> parent = ZoomArea(_level, _x - 1, _z - 1, _w + 2, _h + 2, _config);
+        const int pw = _w + 2;
+
+        std::vector<BIOME> out(static_cast<size_t>(_w) * _h);
+
+        for (int j = 0; j < _h; ++j)
+        {
+            for (int i = 0; i < _w; ++i)
+            {
+                const BIOME centre = parent[(i + 1) + (j + 1) * pw];
+                const TEMPERATURE centreClimate = ClimateOf(centre);
+
+                if (centreClimate == TEMPERATURE::HOT || centreClimate == TEMPERATURE::COLD)
+                {
+                    const TEMPERATURE opposing = (centreClimate == TEMPERATURE::HOT) ? TEMPERATURE::COLD : TEMPERATURE::HOT;
+                    const BIOME left  = parent[ i      + (j + 1) * pw];
+                    const BIOME right = parent[(i + 2) + (j + 1) * pw];
+                    const BIOME up    = parent[(i + 1) +  j      * pw];
+                    const BIOME down  = parent[(i + 1) + (j + 2) * pw];
+
+                    if (ClimateOf(left) == opposing || ClimateOf(right) == opposing ||
+                        ClimateOf(up) == opposing   || ClimateOf(down) == opposing)
+                    {
+                        // clash, apply temperate buffer
+                        const float humid = HashFloat(_x + i, _z + j, _config.seed + kSaltHumid);
+
+                        if (humid < _config.PlainsHumidThresh) {
+                            out[i + j * _w] = BIOME::PLAINS;
+                        }
+                        else {
+                            out[i + j * _w] = BIOME::FOREST;
+                        }
+
+                        continue;
+                    }
+                }
+                out[i + j * _w] = centre;
+            }
+        }
+
+        return out;
+    }
+
     // Recursive dispatch: level 0 = coarsest, else one more zoom of the level
     inline std::vector<BIOME> BuildArea(int _level, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
         if (_level <= 0) return BaseArea(_x, _z, _w, _h, _config);
+
+        if (_config.biomeClimateBuffer && _level == _config.biomeBufferLevel)
+        {
+            // buffer this level, then zooms above propagate it
+            return AdjacencyArea(_level, _x, _z, _w, _h, _config);
+        }
+
         return ZoomArea(_level, _x, _z, _w, _h, _config);
     }
 
