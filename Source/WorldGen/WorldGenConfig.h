@@ -60,8 +60,7 @@ namespace WORLDGEN
         bool biomeUseZoom      = true;
         int  biomeZoomLevels   = 7; // coarse cell
         int  biomeSmoothPasses = 2;
-
-
+        int  biomeFuzzyLevels  = 2;
 
         float temperatureScale = 384.0f; // broad climate zones
         float humidityScale    = 120.0f; // local moisture patches

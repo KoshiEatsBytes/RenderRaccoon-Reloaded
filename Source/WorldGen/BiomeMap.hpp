@@ -106,6 +106,24 @@ namespace WORLDGEN
         return (r & 1u) ? b : a;
     }
 
+    inline BIOME ChooseRandom4(BIOME a, BIOME b, BIOME c, BIOME d, uInt32 r)
+    {
+        switch (r & 3u)
+        {
+            case 0:
+                return a;
+
+            case 1:
+                return b;
+
+            case 2:
+                return c;
+
+            default:
+                return d;
+        }
+    }
+
     inline BIOME ChooseMode(BIOME _a, BIOME _b, BIOME _c, BIOME _d, uInt32 _r)   // majority, random tie-break
     {
         if (_b == _c && _c == _d) return _b;
@@ -182,7 +200,13 @@ namespace WORLDGEN
                 tmp[ ti      +  tj      * tmpW] = a;
                 tmp[ ti      + (tj + 1) * tmpW] = Choose2(a, c, CellRand(ox,     oz + 1, _config.seed, salt));
                 tmp[(ti + 1) +  tj      * tmpW] = Choose2(a, b, CellRand(ox + 1, oz,     _config.seed, salt));
-                tmp[(ti + 1) + (tj + 1) * tmpW] = ChooseMode(a, b, c, d, CellRand(ox + 1, oz + 1, _config.seed, salt));
+
+                // pick random on the corner
+                const bool   fuzzy   = (_level <= _config.biomeFuzzyLevels);
+                const uInt32 rCorner = CellRand(ox + 1, oz + 1, _config.seed, salt);
+                tmp[(ti + 1) + (tj + 1) * tmpW] = fuzzy
+                    ? ChooseRandom4(a, b, c, d, rCorner)
+                    : ChooseMode   (a, b, c, d, rCorner);
             }
         }
 
