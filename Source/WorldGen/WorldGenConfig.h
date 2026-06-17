@@ -57,8 +57,9 @@ namespace WORLDGEN
         int   biomeWarpOct   = 3;
 
         // Border ZOOM + CELLS
-        bool biomeUseZoom   = true;
-        int biomeZoomLevels = 7; // coarse cell
+        bool biomeUseZoom      = true;
+        int  biomeZoomLevels   = 7; // coarse cell
+        int  biomeSmoothPasses = 2;
 
 
 

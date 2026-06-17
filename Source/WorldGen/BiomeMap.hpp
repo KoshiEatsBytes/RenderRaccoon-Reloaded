@@ -213,9 +213,49 @@ namespace WORLDGEN
         return BuildArea(_config.biomeZoomLevels, _wx, _wz, 1, 1, _config)[0];
     }
 
+    // fw dcl function below
+    inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config);
+
     inline std::vector<BIOME> FinalArea(int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
-        return BuildArea(_config.biomeZoomLevels, _x, _z, _w, _h, _config);
+        if (_config.biomeSmoothPasses <= 0)
+        {
+            return BuildArea(_config.biomeZoomLevels, _x, _z, _w, _h, _config);
+        }
+        return SmoothArea(_config.biomeSmoothPasses, _x, _z, _w, _h, _config);
+    }
+
+    inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
+    {
+        const std::vector<BIOME> parent = _pass <= 1 ?
+            BuildArea(_config.biomeZoomLevels, _x - 1, _z - 1, _w + 2, _h + 2, _config) :
+            SmoothArea(_pass - 1, _x - 1, _z - 1, _w + 2, _h + 2, _config);
+
+        const int pw = _w + 2;
+        const uInt32 salt = 5000u + static_cast<uInt32>(_pass);
+
+        std::vector<BIOME> out(static_cast<size_t>(_w) * _h);
+        for (int j = 0; j < _h; ++j)
+        {
+            for (int i = 0; i < _w; ++i)
+            {
+                const BIOME center = parent[(i + 1) + (j + 1) * pw];
+                const BIOME left   = parent[ i      + (j + 1) * pw];
+                const BIOME right  = parent[(i + 2) + (j + 1) * pw];
+                const BIOME up     = parent[(i + 1) +  j      * pw];
+                const BIOME down   = parent[(i + 1) + (j + 2) * pw];
+
+                const bool xm = (left == right), zm = (up == down);
+                BIOME r;
+                if (xm && zm) r = (CellRand(_x + i, _z + j, _config.seed, salt) & 1u) ? left : up;  // both axes agree → coin-flip
+                else if (xm)  r = left;
+                else if (zm)  r = up;
+                else          r = center;                                                     // no agreement → keep
+                out[i + j * _w] = r;
+            }
+        }
+
+        return out;
     }
 
     inline BiomeGrid BuildBiomeGrid(int _chunkX, int _chunkZ, int _margin, const WorldGenConfig& _config)
