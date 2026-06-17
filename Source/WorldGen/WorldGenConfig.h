@@ -53,7 +53,8 @@ namespace WORLDGEN
         int  biomeFuzzyLevels   = 1;
 
         // Biome seam adjustment
-        int biomeBlendRadius    = 16;
+        int   biomeBlendRadius = 16;
+        float mountainCurve    = 1.5f;
 
 
 

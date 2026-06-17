@@ -48,7 +48,8 @@ namespace WORLDGEN
 
         const int   total = (2 * radius + 1) * (2 * radius + 1);
         const float frac  = static_cast<float>(mtnCount) / total;
-        const float mask  = std::clamp((frac - 0.5f) * 2.0f, 0.0f, 1.0f);
+        const float rawMask = std::clamp((frac - 0.5f) * 2.0f, 0.0f, 1.0f);
+        const float mask = std::pow(rawMask, _config.mountainCurve);
 
         const float lowBase = lowCount ? float(sumBase) / lowCount : float(_config.biomeBaseHeight[(int)BIOME::MOUNTAINS]);
         const float lowAmp  = lowCount ? float(sumAmp)  / lowCount : float(_config.biomeAmplitude [(int)BIOME::MOUNTAINS]);
