@@ -56,7 +56,9 @@ namespace WORLDGEN
         float biomeWarpScale = 100.0f; // warp wavelength
         int   biomeWarpOct   = 3;
 
-
+        // Border ZOOM + CELLS
+        bool biomeUseZoom   = true;
+        int biomeZoomLevels = 7; // coarse cell
 
 
 

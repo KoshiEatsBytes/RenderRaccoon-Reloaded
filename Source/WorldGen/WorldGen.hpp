@@ -111,6 +111,13 @@ namespace WORLDGEN
         const int oz = _chunk.coord.z * kSizeZ;
         const int dirtDepth  = _config.dirtDepth;
         const int waterLevel = _config.waterLevel;
+        const bool useZoom   = _config.biomeUseZoom;
+
+        BiomeGrid grid;
+        if (useZoom)
+        {
+            grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, 0, _config);
+        }
 
         for (int z = 0; z < kSizeZ; ++z)
         {
@@ -119,7 +126,7 @@ namespace WORLDGEN
                 const int wx = ox + x;
                 const int wz = oz + z;
                 // Get Biome
-                const BIOME biome = BiomeAt(wx, wz, _config);
+                const BIOME biome = useZoom ? grid.At(wx, wz) : BiomeAt(wx, wz, _config);
                 const BiomeParams& bParams = GetBiome(biome);
                 // Get Land Height
                 const int land  = TerrainHeight(wx, wz, _config);
