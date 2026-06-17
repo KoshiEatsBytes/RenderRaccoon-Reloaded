@@ -54,7 +54,6 @@ namespace WORLDGEN
 
         // Biome seam adjustment
         int biomeBlendRadius    = 16;
-        int mountainBlendRadius = 32; // inward foothill width for mountains
 
 
 
