@@ -150,11 +150,6 @@ void FreeRoam::OnGui()
     }
     if (ImGui::CollapsingHeader("Biomes", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::SliderFloat("Temperature scale",   &m_draftConfig.temperatureScale, 16.f, 1024.f);
-        ImGui::SliderFloat("Humidity Scale",      &m_draftConfig.humidityScale,  16.f, 1024.f);
-        ImGui::SliderInt  ("Temperature Octaves", &m_draftConfig.temperatureOctaves,   1, 64);
-        ImGui::SliderInt  ("Humidity Octaves",    &m_draftConfig.humidityOctaves,   1, 64);
-        ImGui::SliderInt  ("Rarity Octaves",      &m_draftConfig.rarityOctaves,   1, 64);
         ImGui::SliderFloat("Tundra Humidity Threshold", &m_draftConfig.TundraHumidThresh, 0.01f, 1.0f);
         ImGui::SliderFloat("Plains Humidity Threshold", &m_draftConfig.PlainsHumidThresh, 0.01f, 1.0f);
     }

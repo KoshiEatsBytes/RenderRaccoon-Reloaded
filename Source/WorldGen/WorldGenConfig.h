@@ -52,18 +52,11 @@ namespace WORLDGEN
         // Border ZOOM + CELLS
         int  biomeZoomLevels   = 7; // coarse cell
         int  biomeSmoothPasses = 2;
-        int  biomeFuzzyLevels  = 2;
-
-        float temperatureScale = 384.0f; // broad climate zones
-        float humidityScale    = 120.0f; // local moisture patches
-
-        int temperatureOctaves = 3;
-        int humidityOctaves    = 3;
-        int rarityOctaves      = 2;
+        int  biomeFuzzyLevels  = 1;
 
 
 
-        // STRATA & ORES
+        // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size
         float dioriteThresh = 0.78f;
         float graniteThresh = 0.78f;
