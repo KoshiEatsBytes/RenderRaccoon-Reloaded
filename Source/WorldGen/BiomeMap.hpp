@@ -57,10 +57,17 @@ namespace WORLDGEN
     }
 
     // Biome at a world column - Pure function
-    inline BIOME BiomeAt(int _wx, int _wz, const WorldGenConfig& _cfg)
+    inline BIOME BiomeAt(int _wx, int _wz, const WorldGenConfig& _config)
     {
-        const int chunkX = FloorDiv(_wx, _cfg.biomeRegionScale);
-        const int chunkZ = FloorDiv(_wz, _cfg.biomeRegionScale);
-        return BaseBiome(chunkX, chunkZ, _cfg);
+        const float fx = static_cast<float>(_wx);
+        const float fz = static_cast<float>(_wz);
+
+        // two independent warp fields
+        const float dx = (FBM(fx/_config.biomeWarpScale, fz/_config.biomeWarpScale, _config.seed + 901u, _config.biomeWarpOct) - 0.5f) * 2.0f * _config.biomeWarpAmp;
+        const float dz = (FBM(fx/_config.biomeWarpScale, fz/_config.biomeWarpScale, _config.seed + 902u, _config.biomeWarpOct) - 0.5f) * 2.0f * _config.biomeWarpAmp;
+
+        const int cx = FloorDiv(static_cast<int>(std::floor(fx + dx)), _config.biomeRegionScale);
+        const int cz = FloorDiv(static_cast<int>(std::floor(fz + dz)), _config.biomeRegionScale);
+        return BaseBiome(cx, cz, _config);
     }
 }

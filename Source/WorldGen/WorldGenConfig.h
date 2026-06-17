@@ -51,6 +51,10 @@ namespace WORLDGEN
         float tempCold          = 0.40f;
         float tempHot           = 0.60f;
 
+        // border warping
+        float biomeWarpAmp   = 50.0f;  // blocks of border displacement
+        float biomeWarpScale = 100.0f; // warp wavelength
+        int   biomeWarpOct   = 3;
 
 
 
