@@ -44,7 +44,7 @@ namespace WORLDGEN
         if (temp < _config.tempCold)
         {
             // Tundra or taiga
-            if (humid < _config.TundraHumidThresh) return BIOME::TUNDRA;
+            if (humid < _config.tundraHumidThresh) return BIOME::TUNDRA;
             return BIOME::TAIGA;
         }
         // HOT
@@ -60,7 +60,7 @@ namespace WORLDGEN
         }
         // TEMPERATE
         // Plains or forest
-        if (humid < _config.PlainsHumidThresh) return BIOME::PLAINS;
+        if (humid < _config.plainsHumidThresh) return BIOME::PLAINS;
         return BIOME::FOREST;
     }
 

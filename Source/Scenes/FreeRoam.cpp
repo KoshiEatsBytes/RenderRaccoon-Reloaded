@@ -74,6 +74,28 @@ bool FreeRoam::Init()
                     " taiga=", zh[4], " tundra=", zh[5], " mountains=", zh[6], " savanna=", zh[7]);
     }
 
+    {
+        using namespace RR::CHUNK;
+
+        bool reproducible = true;
+        for (Coord c : { Coord{0, 0}, Coord{-3, 5}, Coord{12, -7} })
+        {
+            RR::Chunk a(c), b(c);
+            WORLDGEN::GenerateColumn(a, m_genConfig);
+            WORLDGEN::GenerateColumn(b, m_genConfig);
+            if (a.voxels != b.voxels) reproducible = false;     // std::array ==, element-wise
+        }
+        RR::InfoLog("[DETERMINISM] same seed twice == identical: ", reproducible ? "PASS" : "FAIL");
+
+        WORLDGEN::WorldGenConfig other = m_genConfig;
+        other.seed += 1u;
+        RR::Chunk s0(Coord{0, 0}), s1(Coord{0, 0});
+        WORLDGEN::GenerateColumn(s0, m_genConfig);
+        WORLDGEN::GenerateColumn(s1, other);
+        RR::InfoLog("[DETERMINISM] seed changes the world: ", (s0.voxels != s1.voxels) ? "PASS" : "FAIL");
+    }
+
+
 
     return true;
 }
@@ -145,40 +167,39 @@ void FreeRoam::OnGui()
     static const char* kBiomeNames[(int)WORLDGEN::BIOME::COUNT] =
     { "Plains", "Forest", "Desert", "Red Desert", "Taiga", "Tundra", "Mountains", "Savanna" };
 
-    if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Terrain Shape", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ImGui::Checkbox   ("Use Gradient Noise (Perlin)", &m_draftConfig.useGradientNoise);
+        ImGui::SeparatorText("Base noise");
+        ImGui::Checkbox   ("Gradient noise (Perlin)", &m_draftConfig.useGradientNoise);
         ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
         ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
         ImGui::SliderInt  ("Dirt depth",   &m_draftConfig.dirtDepth, 1, 32);
-        ImGui::Checkbox   ("Warp Enabled", &m_draftConfig.warpEnabled);
-        ImGui::SliderFloat("Warp Scale",   &m_draftConfig.warpScale, 20.f, 1024.f);
-        ImGui::SliderFloat("Warp Amp",     &m_draftConfig.warpAmp, 1.f, 384.f);
-        ImGui::SliderInt  ("Warp Octaves", &m_draftConfig.warpOctaves, 1, 10);
-        ImGui::SliderInt  ("Warp Levels",  &m_draftConfig.warpLevels, 1, 5);
+
+        ImGui::SeparatorText("Domain warp");
+        ImGui::Checkbox   ("Enabled##warp", &m_draftConfig.warpEnabled);
+        ImGui::SliderFloat("Scale##warp",   &m_draftConfig.warpScale, 20.f, 1024.f);
+        ImGui::SliderFloat("Amp##warp",     &m_draftConfig.warpAmp, 1.f, 384.f);
+        ImGui::SliderInt  ("Octaves##warp", &m_draftConfig.warpOctaves, 1, 10);
+        ImGui::SliderInt  ("Levels (1=single, 2=recursive)##warp", &m_draftConfig.warpLevels, 1, 2);
+
+        ImGui::SeparatorText("Detail / terracing");
+        ImGui::Checkbox   ("Enabled##detail", &m_draftConfig.detailEnabled);
+        ImGui::SliderFloat("Scale##detail",   &m_draftConfig.detailScale, 1.f, 256.f);
+        ImGui::SliderFloat("Amp##detail",     &m_draftConfig.detailAmp, 0.1f, 10.f);
+        ImGui::SliderInt  ("Octaves##detail", &m_draftConfig.detailOctaves, 1, 10);
+
+        ImGui::SeparatorText("Mountain ridges");
+        ImGui::Checkbox   ("Enabled##ridge",  &m_draftConfig.ridgeMountains);
+        ImGui::SliderFloat("Strength##ridge", &m_draftConfig.ridgeStrength, 0.01f, 1.f);
     }
 
-    if (ImGui::CollapsingHeader("Terracing", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::Checkbox("Terrace Detail", &m_draftConfig.detailEnabled);
-        ImGui::SliderFloat("Terrace Detail Scale", &m_draftConfig.detailScale, 1.f, 256.f);
-        ImGui::SliderFloat("Terrace Detail Amp", &m_draftConfig.detailAmp, 0.1f, 10.f);
-        ImGui::SliderInt  ("Terrace Octaves", &m_draftConfig.detailOctaves, 1, 10);
-    }
-
-    if (ImGui::CollapsingHeader("Ridges", ImGuiTreeNodeFlags_DefaultOpen))
-    {
-        ImGui::Checkbox("Ridge Mountains", &m_draftConfig.ridgeMountains);
-        ImGui::SliderFloat("Ridge Ampl", &m_draftConfig.ridgeAmp, 0.01f, 1.f);
-    }
-
-    if (ImGui::CollapsingHeader("Climate"))
+    if (ImGui::CollapsingHeader("Climate (biome selection)"))
     {
         ImGui::SliderFloat("Cold threshold",    &m_draftConfig.tempCold, 0.0f, 0.5f); // ≤ 0.5 so it can't pass Hot
         ImGui::SliderFloat("Hot threshold",     &m_draftConfig.tempHot, 0.5f, 1.0f);  // ≥ 0.5 so it can't pass Cold
         ImGui::SliderFloat("Mountain chance",   &m_draftConfig.mountainChance, 0.0f, 0.5f);
-        ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.TundraHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Plains humidity",   &m_draftConfig.PlainsHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.tundraHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Plains humidity",   &m_draftConfig.plainsHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Desert humidity",   &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Red desert rarity", &m_draftConfig.redDesertRarity, 0.0f, 1.0f);
     }
@@ -188,12 +209,6 @@ void FreeRoam::OnGui()
         ImGui::SliderInt("Zoom levels",   &m_draftConfig.biomeZoomLevels, 1, 10);
         ImGui::SliderInt("Smooth passes", &m_draftConfig.biomeSmoothPasses, 0, 5);
         ImGui::SliderInt("Fuzzy levels",  &m_draftConfig.biomeFuzzyLevels, 0, 5);
-    }
-
-    if (ImGui::CollapsingHeader("Terrain Blend"))
-    {
-        ImGui::SliderInt  ("Blend radius",   &m_draftConfig.biomeBlendRadius, 1, 64);
-        ImGui::SliderFloat("Mountain curve", &m_draftConfig.mountainCurve, 0.5f, 4.0f);
     }
 
     if (ImGui::CollapsingHeader("Biome Heights"))
@@ -206,6 +221,12 @@ void FreeRoam::OnGui()
             ImGui::SliderInt("amp",  &m_draftConfig.biomeAmplitude[b],  0, 120);
             ImGui::PopID();
         }
+    }
+
+    if (ImGui::CollapsingHeader("Terrain Blend"))
+    {
+        ImGui::SliderInt  ("Blend radius",   &m_draftConfig.biomeBlendRadius, 1, 64);
+        ImGui::SliderFloat("Mountain curve", &m_draftConfig.mountainCurve, 0.5f, 4.0f);
     }
 
     if (ImGui::CollapsingHeader("Mountain Surface"))

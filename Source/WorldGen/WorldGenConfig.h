@@ -13,7 +13,7 @@ namespace WORLDGEN
         uInt32 seed = 456356;
 
         // BASE TERRAIN ------------------------------------------------------------------------------------------------
-        bool  useGradientNoise = false; // use perlin
+        bool  useGradientNoise = true; // use perlin
         float heightScale      = 128.f; // noise in block spacing
         int   heightOctaves    = 5;
         int   dirtDepth        = 4;     // Dirt thickness under grass
@@ -21,13 +21,13 @@ namespace WORLDGEN
         // TERRAIN SHAPE -----------------------------------------------------------------------------------------------
         // Warping
         bool  warpEnabled   = true;
-        float warpScale     = 200.0f;
+        float warpScale     = 400.0f;
         float warpAmp       = 100.f;
         int   warpOctaves   = 3;
         int   warpLevels    = 2;  // 1 = single warp 2 = recursive
         // Terracing
         bool  detailEnabled  = true;
-        float detailScale    = 32.0f;  // high freq = roughens edges
+        float detailScale    = 48.0f;  // high freq = roughens edges
         float detailAmp      = 2.0f;   // blocks of edge jitter
         int   detailOctaves  = 3;
 
@@ -54,8 +54,8 @@ namespace WORLDGEN
         };
 
         float mountainChance    = 0.2f; // fraction of coarse cells rolled as mountains
-        float TundraHumidThresh = 0.5f;
-        float PlainsHumidThresh = 0.5f;
+        float tundraHumidThresh = 0.5f;
+        float plainsHumidThresh = 0.5f;
         float desertHumidThresh = 0.5f;
         float redDesertRarity   = 0.835f; // 1 is rarest
         float tempCold          = 0.40f;
@@ -77,7 +77,7 @@ namespace WORLDGEN
         float snowJitterAmp   = 12.0f; // blocks the line wobbles
         // Ridges
         bool  ridgeMountains = true;
-        float ridgeAmp       = 1.f;    // 0 = round, 1 = full ridge
+        float ridgeStrength  = 1.f;    // 0 = round, 1 = full ridge
 
 
 

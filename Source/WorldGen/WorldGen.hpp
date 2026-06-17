@@ -168,7 +168,7 @@ namespace WORLDGEN
         if (_config.ridgeMountains)
         {
             const float ridged = 1.0f - std::abs(noise * 2.0f - 1.0f);
-            const float mNoise = Lerp(noise, ridged, _config.ridgeAmp);
+            const float mNoise = Lerp(noise, ridged, _config.ridgeStrength);
             mountainHeight = mB + mNoise * mA;
         }
         else
