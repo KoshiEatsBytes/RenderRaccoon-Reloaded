@@ -48,4 +48,19 @@ namespace WORLDGEN
         if (humid < _config.PlainsHumidThresh) return BIOME::PLAINS;
         return BIOME::FOREST;
     }
+
+    inline int FloorDiv(int _a, int _b)
+    {
+        int q = _a / _b;
+        if ((_a % _b != 0) && ((_a < 0) != (_b < 0))) --q;
+        return q;
+    }
+
+    // Biome at a world column - Pure function
+    inline BIOME BiomeAt(int _wx, int _wz, const WorldGenConfig& _cfg)
+    {
+        const int chunkX = FloorDiv(_wx, _cfg.biomeRegionScale);
+        const int chunkZ = FloorDiv(_wz, _cfg.biomeRegionScale);
+        return BaseBiome(chunkX, chunkZ, _cfg);
+    }
 }

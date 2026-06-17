@@ -41,6 +41,8 @@ namespace WORLDGEN
             10  // SAVANNA
         };
 
+        int biomeRegionScale    = 160; // Blocks per coarse biome cell
+
         float mountainChance    = 0.12f; // fraction of coarse cells rolled as mountains
         float TundraHumidThresh = 0.5f;
         float PlainsHumidThresh = 0.5f;

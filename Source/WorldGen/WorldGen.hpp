@@ -119,7 +119,7 @@ namespace WORLDGEN
                 const int wx = ox + x;
                 const int wz = oz + z;
                 // Get Biome
-                const BIOME biome = SelectBiome(wx, wz, _config);
+                const BIOME biome = BiomeAt(wx, wz, _config);
                 const BiomeParams& bParams = GetBiome(biome);
                 // Get Land Height
                 const int land  = TerrainHeight(wx, wz, _config);
