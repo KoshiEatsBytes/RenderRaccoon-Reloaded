@@ -147,6 +147,7 @@ void FreeRoam::OnGui()
 
     if (ImGui::CollapsingHeader("Terrain", ImGuiTreeNodeFlags_DefaultOpen))
     {
+        ImGui::Checkbox   ("Use Gradient Noise (Perlin)", &m_draftConfig.useGradientNoise);
         ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
         ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
         ImGui::SliderInt  ("Dirt depth",   &m_draftConfig.dirtDepth, 1, 32);

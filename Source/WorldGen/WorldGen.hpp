@@ -149,7 +149,8 @@ namespace WORLDGEN
             sx / _config.heightScale,
             sz / _config.heightScale,
             _config.seed,
-            _config.heightOctaves);
+            _config.heightOctaves,
+            _config.useGradientNoise);
 
         const int mB = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS];
         const int mA = _config.biomeAmplitude [(int)BIOME::MOUNTAINS];

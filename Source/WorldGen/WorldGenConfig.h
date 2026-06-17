@@ -13,9 +13,10 @@ namespace WORLDGEN
         uInt32 seed = 456356;
 
         // BASE TERRAIN ------------------------------------------------------------------------------------------------
-        float heightScale   = 128.f; // noise in block spacing
-        int   heightOctaves = 5;
-        int   dirtDepth     = 4;     // Dirt thickness under grass
+        bool  useGradientNoise = false; // use perlin
+        float heightScale      = 128.f; // noise in block spacing
+        int   heightOctaves    = 5;
+        int   dirtDepth        = 4;     // Dirt thickness under grass
 
         // TERRAIN SHAPE -----------------------------------------------------------------------------------------------
         // Warping
