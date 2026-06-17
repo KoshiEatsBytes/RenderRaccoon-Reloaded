@@ -153,6 +153,7 @@ void FreeRoam::OnGui()
     {
         ImGui::SliderFloat("Tundra Humidity Threshold", &m_draftConfig.TundraHumidThresh, 0.01f, 1.0f);
         ImGui::SliderFloat("Plains Humidity Threshold", &m_draftConfig.PlainsHumidThresh, 0.01f, 1.0f);
+        ImGui::SliderInt  ("Biome Blend Radius",        &m_draftConfig.biomeBlendRadius, 1, 128);
     }
 
     if (ImGui::CollapsingHeader("Biome Heights"))

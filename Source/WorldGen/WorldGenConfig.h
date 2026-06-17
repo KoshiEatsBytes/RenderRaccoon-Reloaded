@@ -52,6 +52,10 @@ namespace WORLDGEN
         int  biomeSmoothPasses  = 2;
         int  biomeFuzzyLevels   = 1;
 
+        // Biome seam adjustment
+        int biomeBlendRadius    = 16;
+        int mountainBlendRadius = 32; // inward foothill width for mountains
+
 
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------

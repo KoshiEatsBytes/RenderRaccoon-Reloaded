@@ -10,18 +10,36 @@
 
 namespace WORLDGEN
 {
-    // Surface height of a world column: sea-level base
-    inline int TerrainHeight(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
+    // Surface height of a world column: per biome base
+    inline int TerrainHeight(int _wx, int _wz, const BiomeGrid& _grid, const WorldGenConfig& _config)
     {
+        const int radius = _config.biomeBlendRadius;
+        long sumBase = 0;
+        long sumAmp  = 0;
+        int  count   = 0;
+
+        for (int dz = -radius; dz <= radius; ++dz)
+        {
+            for (int dx = -radius; dx <= radius; ++dx)
+            {
+                // halo guarantees this is in-bounds
+                const BIOME biome = _grid.At(_wx + dx, _wz + dz);
+                sumBase += _config.biomeBaseHeight[static_cast<int>(biome)];
+                sumAmp  += _config.biomeAmplitude [static_cast<int>(biome)];
+                ++count;
+            }
+        }
+
+        const float base  = static_cast<float>(sumBase) / count;
+        const float amp   = static_cast<float>(sumAmp)  / count;
+
         const float noise = FBM(
             _wx / _config.heightScale,
             _wz / _config.heightScale,
             _config.seed,
             _config.heightOctaves);
 
-        const int base   = _config.biomeBaseHeight[static_cast<int>(_biome)];
-        const int amp    = _config.biomeAmplitude [static_cast<int>(_biome)];
-        const int height = base + static_cast<int>(noise * amp);
+        const int height = static_cast<int>(base + noise * amp);
 
         return height;
     }
@@ -108,7 +126,11 @@ namespace WORLDGEN
         const int dirtDepth  = _config.dirtDepth;
         const int waterLevel = _config.waterLevel;
 
-        const BiomeGrid grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, 0, _config);
+        const BiomeGrid grid = BuildBiomeGrid(
+            _chunk.coord.x,
+            _chunk.coord.z,
+            _config.biomeBlendRadius,
+            _config);
 
         for (int z = 0; z < kSizeZ; ++z)
         {
@@ -120,7 +142,7 @@ namespace WORLDGEN
                 const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
                 // Get Land Height
-                const int land  = TerrainHeight(wx, wz, biome, _config);
+                const int land  = TerrainHeight(wx, wz, grid, _config);
                 const int carve = WaterCarve(wx, wz, biome, _config);
                 const int terrHeight = land - carve;
 
