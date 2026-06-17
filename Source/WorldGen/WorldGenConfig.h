@@ -17,6 +17,19 @@ namespace WORLDGEN
         int   heightOctaves = 5;
         int   dirtDepth     = 4;     // Dirt thickness under grass
 
+        // TERRAIN SHAPE -----------------------------------------------------------------------------------------------
+        // Warping
+        bool  warpEnabled   = true;
+        float warpScale     = 200.0f;
+        float warpAmp       = 100.f;
+        int   warpOctaves   = 3;
+        int   warpLevels    = 2;  // 1 = single warp 2 = recursive
+        // Terracing
+        bool  detailEnabled  = true;
+        float detailScale    = 32.0f;  // high freq = roughens edges
+        float detailAmp      = 2.0f;   // blocks of edge jitter
+        int   detailOctaves  = 3;
+
         // BIOMES ------------------------------------------------------------------------------------------------------
         int biomeBaseHeight[(int)BIOME::COUNT] = {
             66,  // PLAINS
@@ -61,6 +74,9 @@ namespace WORLDGEN
         int   mtnGrassLine    = 112;   // below this grassy foothills
         float snowJitterScale = 40.0f; // wavelength of the wavy snow/grass line
         float snowJitterAmp   = 12.0f; // blocks the line wobbles
+        // Ridges
+        bool  ridgeMountains = true;
+        float ridgeAmp       = 1.f;    // 0 = round, 1 = full ridge
 
 
 

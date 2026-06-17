@@ -150,6 +150,25 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
         ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
         ImGui::SliderInt  ("Dirt depth",   &m_draftConfig.dirtDepth, 1, 32);
+        ImGui::Checkbox   ("Warp Enabled", &m_draftConfig.warpEnabled);
+        ImGui::SliderFloat("Warp Scale",   &m_draftConfig.warpScale, 20.f, 1024.f);
+        ImGui::SliderFloat("Warp Amp",     &m_draftConfig.warpAmp, 1.f, 384.f);
+        ImGui::SliderInt  ("Warp Octaves", &m_draftConfig.warpOctaves, 1, 10);
+        ImGui::SliderInt  ("Warp Levels",  &m_draftConfig.warpLevels, 1, 5);
+    }
+
+    if (ImGui::CollapsingHeader("Terracing", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Terrace Detail", &m_draftConfig.detailEnabled);
+        ImGui::SliderFloat("Terrace Detail Scale", &m_draftConfig.detailScale, 1.f, 256.f);
+        ImGui::SliderFloat("Terrace Detail Amp", &m_draftConfig.detailAmp, 0.1f, 10.f);
+        ImGui::SliderInt  ("Terrace Octaves", &m_draftConfig.detailOctaves, 1, 10);
+    }
+
+    if (ImGui::CollapsingHeader("Ridges", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::Checkbox("Ridge Mountains", &m_draftConfig.ridgeMountains);
+        ImGui::SliderFloat("Ridge Ampl", &m_draftConfig.ridgeAmp, 0.01f, 1.f);
     }
 
     if (ImGui::CollapsingHeader("Climate"))

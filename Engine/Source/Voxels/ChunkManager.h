@@ -40,6 +40,6 @@ namespace RR
 
         CHUNK::Coord m_lastCoords;
         bool m_firstFrame = true;
-        int m_meshRadius  = 36;
+        int m_meshRadius  = 24;
     };
 }

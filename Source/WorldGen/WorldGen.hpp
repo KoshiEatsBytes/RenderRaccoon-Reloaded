@@ -120,9 +120,34 @@ namespace WORLDGEN
     // Same math as TerrainHeight, just reading box-sums instead of scanning the window
     inline int TerrainHeightFromSums(const BlendSums& _s, int _wx, int _wz, int _total, const WorldGenConfig& _config)
     {
+        float sx = static_cast<float>(_wx);
+        float sz = static_cast<float>(_wz);
+        if (_config.warpEnabled)
+        {
+            const float px = _wx / _config.warpScale;
+            const float pz = _wz / _config.warpScale;
+
+            // level 1 displacement
+            const float d1x = (FBM(px, pz, _config.seed + 931u, _config.warpOctaves) - 0.5f) * 2.0f * _config.warpAmp;
+            const float d1z = (FBM(px, pz, _config.seed + 932u, _config.warpOctaves) - 0.5f) * 2.0f * _config.warpAmp;
+
+            if (_config.warpLevels >= 2)
+            {
+                // sample the warp AGAIN
+                const float qx = (_wx + d1x) / _config.warpScale;
+                const float qz = (_wz + d1z) / _config.warpScale;
+                sx += (FBM(qx, qz, _config.seed + 933u, _config.warpOctaves) - 0.5f) * 2.0f * _config.warpAmp;
+                sz += (FBM(qx, qz, _config.seed + 934u, _config.warpOctaves) - 0.5f) * 2.0f * _config.warpAmp;
+            }
+            else
+            {
+                sx += d1x;
+                sz += d1z;
+            }
+        }
         const float noise = FBM(
-            _wx / _config.heightScale,
-            _wz / _config.heightScale,
+            sx / _config.heightScale,
+            sz / _config.heightScale,
             _config.seed,
             _config.heightOctaves);
 
@@ -137,9 +162,26 @@ namespace WORLDGEN
         const float mask    = std::pow(rawMask, _config.mountainCurve);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
-        const float mountainHeight = mB + noise * mA;
+        float mountainHeight = 0.0f;
 
-        return static_cast<int>(lowlandHeight + (mountainHeight - lowlandHeight) * mask);
+        if (_config.ridgeMountains)
+        {
+            const float ridged = 1.0f - std::abs(noise * 2.0f - 1.0f);
+            const float mNoise = Lerp(noise, ridged, _config.ridgeAmp);
+            mountainHeight = mB + mNoise * mA;
+        }
+        else
+        {
+            mountainHeight = mB + noise * mA;
+        }
+
+        float height = lowlandHeight + (mountainHeight - lowlandHeight) * mask;
+        if (_config.detailEnabled)
+        {
+            height += (FBM(_wx / _config.detailScale, _wz / _config.detailScale,
+                      _config.seed + 941u, _config.detailOctaves) - 0.5f) * 2.0f * _config.detailAmp;
+        }
+        return static_cast<int>(height);
     }
 
     // Blocks to carve down at this column for water: a ridged river channel,
