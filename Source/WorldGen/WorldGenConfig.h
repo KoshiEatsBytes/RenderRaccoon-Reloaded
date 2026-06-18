@@ -92,7 +92,7 @@ namespace WORLDGEN
         float channelThreshold = 0.525f; // valleyTerr above this carves the deep channel
         float riverScale       = 200.0f; // river "wrinkle" size (HEHE WRINKLEE)
         int   riverNoiseOct    = 3;
-        float riverValleyWidth = 0.085f;
+        float riverValleyWidth = 0.08f;
         int   riverMaxHeight   = 120;    // Y where open rivers fade out 
         float riverFade        = 10.f;   // fade range in blocks
         bool  taigaRivers      = false;  // allow rivers through taiga 
@@ -106,11 +106,11 @@ namespace WORLDGEN
         float tribValleyWidth    = 0.05f;
         float tribStrength       = 0.6f;
         // Banks
-        float beachBand        = 0.25f; // how far past the water edge the beach reaches
+        float beachBand        = 0.20f; // how far past the water edge the beach reaches
         float beachSandChance  = 0.70f; // sand vs surface scatter 
         bool  desertRiverGrass = true;  // desert river banks scatter grass instead of sand
 
-        // RIVER TUNNELS (karst) ---------------------------------------------------------------------------------------
+        // RIVER TUNNELS -----------------------------------------------------------------------------------------------
         bool  riverTunnels      = true;  // rivers bore through mountains 
         float tunnelMaskThresh  = 0.2f;  // min mountain mask to tunnel, if lower mouths further out on the flank
         float riverArchHeight   = 10.0f; // max arched void height above the water at the river centre
