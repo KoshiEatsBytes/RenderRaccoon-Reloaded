@@ -47,7 +47,9 @@
           { "Path": "Textures/Blocks/Grass/grass_block_top.png",          "Tint": [0.75, 0.72, 0.34] },
           { "Path": "Textures/Blocks/Acacia Tree/acacia_log.png" },
           { "Path": "Textures/Blocks/Acacia Tree/acacia_log_top.png" },
-          { "Path": "Textures/Blocks/Acacia Tree/acacia_leaves.png",      "Tint": [0.52, 0.55, 0.24] }
+          { "Path": "Textures/Blocks/Acacia Tree/acacia_leaves.png",      "Tint": [0.52, 0.55, 0.24] },
+          { "Path": "Textures/Blocks/calcite.png" },
+          { "Path": "Textures/Blocks/dripstone_block.png" }
         ]
       }
     ]

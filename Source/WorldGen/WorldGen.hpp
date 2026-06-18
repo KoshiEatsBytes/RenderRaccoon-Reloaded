@@ -77,6 +77,13 @@ namespace WORLDGEN
         return out;
     }
 
+    // Mountain influence at a column from the blend sums, 0 is lowland
+    inline float MountainMask(const BlendSums& _s, int _total, const WorldGenConfig& _config)
+    {
+        const float rawMask = std::clamp((float(_s.mtn) / _total - 0.5f) * 2.0f, 0.0f, 1.0f);
+        return std::pow(rawMask, _config.mountainCurve);
+    }
+
     // Per-column height from the precomputed blend sums
     // Same math as TerrainHeight, just reading box-sums instead of scanning the window
     inline int TerrainHeightFromSums(const BlendSums& _s, int _wx, int _wz, int _total, const WorldGenConfig& _config)
@@ -120,8 +127,7 @@ namespace WORLDGEN
         const float lowBase  = lowCount ? float(_s.base) / lowCount : float(mB);
         const float lowAmp   = lowCount ? float(_s.amp)  / lowCount : float(mA);
 
-        const float rawMask = std::clamp((float(_s.mtn) / _total - 0.5f) * 2.0f, 0.0f, 1.0f);
-        const float mask    = std::pow(rawMask, _config.mountainCurve);
+        const float mask = MountainMask(_s, _total, _config);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
         float mountainHeight = 0.0f;
@@ -175,7 +181,7 @@ namespace WORLDGEN
     }
 
     // Mountain surface by elevation
-    // The snow/grass lines wobble together via a noise jitter, so the snow line is irregular
+    // The snow lines wobble together via a noise jitter, so the snow line is irregular
     inline BLOCK MountainSurface(int _y, int _wx, int _wz, const WorldGenConfig& _config)
     {
         const float jitter = (FBM(_wx / _config.snowJitterScale, _wz / _config.snowJitterScale,
@@ -199,11 +205,9 @@ namespace WORLDGEN
         return result;
     }
 
-    inline float RiverValleyTerrain(int _wx, int _wz, int _land, const WorldGenConfig& _config)
+    // Raw river meander profile 0 1 at a column 
+    inline float RiverProfile(int _wx, int _wz, const WorldGenConfig& _config)
     {
-        const float riverAllow = std::clamp(float(_config.riverMaxHeight - _land) / _config.riverFade, 0.0f, 1.0f);
-        if (riverAllow <= 0.0f) return 0.0f;
-
         // warp once, both fields share the same meander
         float rx = static_cast<float>(_wx), rz = static_cast<float>(_wz);
 
@@ -216,7 +220,7 @@ namespace WORLDGEN
 
         // trunk = wide full-depth main rivers
         float profile = RiverFieldProfile(
-            rx, rz, riverAllow,
+            rx, rz, 1.0f,
             _config.riverScale,
             _config.riverValleyWidth,
             _config.seed + 601u,
@@ -225,7 +229,7 @@ namespace WORLDGEN
         // tributaries: smaller scale, narrower, shallower, merge into trunks via max
         if (_config.tributariesEnabled)
         {
-            const float trib = RiverFieldProfile(rx, rz, riverAllow, _config.tribScale, _config.tribValleyWidth, _config.seed + 603u, _config.riverNoiseOct);
+            const float trib = RiverFieldProfile(rx, rz, 1.0f, _config.tribScale, _config.tribValleyWidth, _config.seed + 603u, _config.riverNoiseOct);
             profile = std::max(profile, trib * _config.tribStrength);
         }
         return profile;
@@ -257,28 +261,48 @@ namespace WORLDGEN
                 const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
                 const BlendSums& sum = sums[x + z * 16];
-                // Get Land Height (separable blend; TerrainHeight kept as the oracle for testing)
-                const int   land       = TerrainHeightFromSums(sum, wx, wz, total, _config);
-                float       valleyTerr = RiverValleyTerrain(wx, wz, land, _config);
-                if (!_config.taigaRivers) valleyTerr *= 1.0f - float(sum.taiga) / total;  
+                // Land height + mountain mask (mask shared with the tunnel gate)
+                const int   land    = TerrainHeightFromSums(sum, wx, wz, total, _config);
+                const float mtnMask = MountainMask(sum, total, _config);
+
+                // Raw meander (for tunnels) 
+                float profile = RiverProfile(wx, wz, _config);
+                if (!_config.taigaRivers) profile *= 1.0f - float(sum.taiga) / total;
+                const float riverAllow = std::clamp(float(_config.riverMaxHeight - land) / _config.riverFade, 0.0f, 1.0f);
+                const float valleyTerr = profile * riverAllow;
 
                 int waterTop   = _config.waterLevel;
                 int terrHeight = land;
+                int capBase    = -1;   
 
-                if (valleyTerr > 0.0f)
+                if (profile > 0.0f)
                 {
                     const int shelfBed   = _config.riverLevel - _config.riverShelfDepth;
                     const int channelBed = _config.riverLevel - _config.riverDepth;
 
-                    // ramp down valley to shelf
-                    float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), valleyTerr);
+                    // Tunnel ceiling: arched 
+                    const float arch    = _config.riverArchHeight * Smooth(profile);
+                    const float jit     = FBM(wx / _config.riverCeilScale, wz / _config.riverCeilScale, _config.seed + 960u, 2) * _config.riverCeilJitter;
+                    const int   ceiling = _config.riverLevel + static_cast<int>(arch) - static_cast<int>(jit);
 
-                    // core cuts deeper through the channel
-                    const float channelT = std::clamp((valleyTerr - _config.channelThreshold) / (1.0f - _config.channelThreshold), 0.0f, 1.0f);
-                    bed = Lerp(bed, static_cast<float>(channelBed), channelT);
-
-                    terrHeight = std::min(land, static_cast<int>(bed));
-                    waterTop   = std::max(_config.waterLevel, _config.riverLevel);
+                    if (_config.riverTunnels && mtnMask > _config.tunnelMaskThresh
+                        && ceiling > _config.riverLevel && land > ceiling)
+                    {
+                        // TUNNEL carve a channel arched void through the mountain
+                        const float floorF = Lerp(static_cast<float>(_config.riverLevel), static_cast<float>(channelBed), profile);
+                        terrHeight = static_cast<int>(floorF);
+                        waterTop   = std::max(_config.waterLevel, _config.riverLevel);
+                        capBase    = ceiling;   
+                    }
+                    else if (valleyTerr > 0.0f)
+                    {
+                        // ramp terrain down to the channel, flat water fills it.
+                        float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), valleyTerr);
+                        const float channelT = std::clamp((valleyTerr - _config.channelThreshold) / (1.0f - _config.channelThreshold), 0.0f, 1.0f);
+                        bed = Lerp(bed, static_cast<float>(channelBed), channelT);
+                        terrHeight = std::min(land, static_cast<int>(bed));
+                        waterTop   = std::max(_config.waterLevel, _config.riverLevel);
+                    }
                 }
                 const bool underWater = terrHeight < waterTop;
 
@@ -355,6 +379,26 @@ namespace WORLDGEN
                     for (int y = terrHeight + 1; y <= waterTop && y < kSizeY; ++y)
                     {
                         _chunk.Set(x,y,z, static_cast<BlockId>(liquid));
+                    }
+                }
+
+                // River-tunnel cap: solid mountain resumes above the arched void
+                if (capBase >= 0)
+                {
+                    for (int y = capBase + 1; y <= land && y < kSizeY; ++y)
+                    {
+                        BLOCK block = (y == land) ? MountainSurface(land, wx, wz, _config)
+                                                  : StoneAt(wx, y, wz, _config);
+
+                        // Dripstone/calcite formations on the tunnel ceiling & upper walls 
+                        if (y < land && y <= capBase + _config.calciteBand
+                            && HashFloat3(wx, y, wz, _config.seed + 970u) < _config.calciteChance)
+                        {
+                            // mostly dripstone, calcite accents
+                            block = (HashFloat3(wx, y, wz, _config.seed + 971u) < _config.dripstoneFraction)
+                                    ? BLOCK::DRIPSTONE : BLOCK::CALCITE;
+                        }
+                        _chunk.Set(x, y, z, static_cast<BlockId>(block));
                     }
                 }
             }

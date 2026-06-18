@@ -48,6 +48,8 @@ namespace RR::CHUNK
         SAVANNA_GRASS,
         ACACIA_LOG,
         ACACIA_LEAVES,
+        CALCITE,
+        DRIPSTONE,
 
         COUNT
     };
@@ -93,6 +95,8 @@ namespace RR::CHUNK
         ACACIA_LOG_SIDE,
         ACACIA_LOG_END,
         ACACIA_LEAVES,
+        CALCITE,
+        DRIPSTONE,
 
         COUNT
     };
@@ -137,6 +141,8 @@ namespace RR::CHUNK
         false, // ACACIA_LOG_SIDE
         false, // ACACIA_LOG_END
         false, // ACACIA_LEAVES
+        false, // CALCITE
+        false, // DRIPSTONE
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -202,7 +208,9 @@ namespace RR::CHUNK
             /* Red Sandstone */ SidedBlock  (RED_SANDSTONE_SIDE, RED_SANDSTONE_TOP, RED_SANDSTONE_BOTTOM),
             /* Savanna Grass */ SidedBlock  (GRASS_SIDE, SAVANNA_GRASS_TOP, DIRT),
             /* Acacia Log    */ SidedBlock  (ACACIA_LOG_SIDE, ACACIA_LOG_END, ACACIA_LOG_END),
-            /* Acacia Leaves */ UniformBlock(ACACIA_LEAVES)
+            /* Acacia Leaves */ UniformBlock(ACACIA_LEAVES),
+            /* Calcite       */ UniformBlock(CALCITE),
+            /* Dripstone     */ UniformBlock(DRIPSTONE)
         }
     };
 

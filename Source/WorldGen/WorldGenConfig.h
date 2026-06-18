@@ -6,33 +6,51 @@
 
 namespace WORLDGEN
 {
+    // Generation configuration panel
     struct WorldGenConfig
     {
         using uInt32 = std::uint32_t;
 
+        // GENERAL -----------------------------------------------------------------------------------------------------
         uInt32 seed = 456356;
 
-        // BASE TERRAIN ------------------------------------------------------------------------------------------------
-        bool  useGradientNoise = true; // use perlin
-        int   waterLevel       = 58;      // water surface height
-        float heightScale      = 128.f; // noise in block spacing
+        // BASE NOISE --------------------------------------------------------------------------------------------------
+        bool  useGradientNoise = true;  // gradient (Perlin) vs value noise
+        float heightScale      = 128.f; // base-noise wavelength in blocks
         int   heightOctaves    = 5;
-        int   dirtDepth        = 4;     // Dirt thickness under grass
+        int   dirtDepth        = 4;     // soil thickness under the surface
 
         // TERRAIN SHAPE -----------------------------------------------------------------------------------------------
-        // Warping
-        bool  warpEnabled   = true;
-        float warpScale     = 400.0f;
-        float warpAmp       = 100.f;
-        int   warpOctaves   = 3;
-        int   warpLevels    = 2;  // 1 = single warp 2 = recursive
-        // Terracing
-        bool  detailEnabled  = true;
-        float detailScale    = 48.0f;  // high freq = roughens edges
-        float detailAmp      = 2.0f;   // blocks of edge jitter
-        int   detailOctaves  = 3;
+        // Domain warp - sinuous landforms
+        bool  warpEnabled = true;
+        float warpScale   = 400.0f;
+        float warpAmp     = 100.f;
+        int   warpOctaves = 3;
+        int   warpLevels  = 2;          // 1 = single warp, 2 = recursive 
+        // Detail / deterracing — fixedblock roughness on the edges
+        bool  detailEnabled = true;
+        float detailScale   = 48.0f;
+        float detailAmp     = 2.0f;     // blocks of edge jitter
+        int   detailOctaves = 3;
+        // Mountain ridges 
+        bool  ridgeMountains = true;
+        float ridgeStrength  = 1.f;     // 0 = round, 1 = sharp
 
-        // BIOMES ------------------------------------------------------------------------------------------------------
+        // CLIMATE ----------------------------------------------------------------------------------------------------
+        float tempCold          = 0.40f;  // < this = cold band 
+        float tempHot           = 0.60f;  // > this = hot band  
+        float mountainChance    = 0.2f;   // fraction of coarse cells rolled as mountains
+        float tundraHumidThresh = 0.5f;   // cold:      < tundra else taiga
+        float plainsHumidThresh = 0.5f;   // temperate: < plains else forest
+        float desertHumidThresh = 0.5f;   // hot:       < desert else savanna
+        float redDesertRarity   = 0.835f; // 1 = rarest
+
+        // BIOME MAP --------------------------------------------------------------------------------------------------
+        int biomeZoomLevels   = 8;  // coarse-cell size 
+        int biomeSmoothPasses = 2;  // majority-vote passes
+        int biomeFuzzyLevels  = 1;  // coarsest levels 
+
+        // PER-BIOME TERRAIN ------------------------------------------------------------------------------------------
         int biomeBaseHeight[(int)BIOME::COUNT] = {
             66,  // PLAINS
             71,  // FOREST
@@ -51,59 +69,56 @@ namespace WORLDGEN
             35,  // TAIGA
             12,  // TUNDRA
             105, // MOUNTAINS
-            10   // SAVANNA
+            10,  // SAVANNA
         };
 
-        float mountainChance    = 0.2f; // fraction of coarse cells rolled as mountains
-        float tundraHumidThresh = 0.5f;
-        float plainsHumidThresh = 0.5f;
-        float desertHumidThresh = 0.5f;
-        float redDesertRarity   = 0.835f; // 1 is rarest
-        float tempCold          = 0.40f;
-        float tempHot           = 0.60f;
+        // TERRAIN BLEND -----------------------------------------------------------------------------------------------
+        int   biomeBlendRadius = 20;     // neighbourhood radius for base/amp blending
+        float mountainCurve    = 1.5f;   // foothill steepness
+  
+        // MOUNTAIN SURFACE --------------------------------------------------------------------------------------------
+        int   snowLine        = 150;     // Y above which surface is snow
+        int   mtnGrassLine    = 112;     // Y below which surface is grass
+        float snowJitterScale = 40.0f;   // wavelength of the wavy snow/grass line
+        float snowJitterAmp   = 12.0f;   // blocks the line wobbles (hehe wobble fun word)
 
-        // Border ZOOM + CELLS
-        int  biomeZoomLevels    = 8; // coarse cell
-        int  biomeSmoothPasses  = 2;
-        int  biomeFuzzyLevels   = 1;
-
-        // Biome seam adjustment
-        int   biomeBlendRadius = 20;
-        float mountainCurve    = 1.5f;
-
-        // MOUNTAIN SURFACE
-        int   snowLine        = 150;   // Y above which mountain surface is snow
-        int   mtnGrassLine    = 112;   // below this grassy foothills
-        float snowJitterScale = 40.0f; // wavelength of the wavy snow/grass line
-        float snowJitterAmp   = 12.0f; // blocks the line wobbles
-        // Ridges
-        bool  ridgeMountains = true;
-        float ridgeStrength  = 1.f;    // 0 = round, 1 = full ridge
-
-        // RIVERS ------------------------------------------------------------------------------------------------------
-
-        bool  riverWarpEnabled   = false;
-        int   riverDepth         = 6;       // deep inner-channel depth below riverLevel
-        int   riverShelfDepth    = 2;       // shallow outer-shelf depth below riverLevel
-        float channelThreshold   = 0.525f;    // valleyTerr above this carves the deep channel (higher = narrower)
-        int   riverLevel         = 63;
-        int   riverMaxHeight     = 120;      // Y where rivers start fading out
-        float riverFade          = 10.f;    // fade range in blocks
-        float riverWarpScale     = 80.f;    // river meander wavelength
-        float riverWarpAmp       = 15.0f;   // how far the channel wanders
-        float riverValleyWidth   = 0.085f;
-        float riverScale         = 200.0f;  // river "wrinkle" size
-        int   riverNoiseOct      = 3;
-        bool  iceEnabled         = false;   // freeze rivers/seas in cold biomes
-        bool  taigaRivers        = false;   // allow rivers through taiga (off: taiga's height glitches them)
+        // WATER & RIVERS ----------------------------------------------------------------------------------------------
+        int  waterLevel = 58;            // water surface height
+        bool iceEnabled = false;         // freeze rivers in cold biomes
+        // River channel
+        int   riverLevel       = 63;     // flat river surface height
+        int   riverDepth       = 6;      // deep channel depth
+        int   riverShelfDepth  = 2;      // shallow outer shelf depth 
+        float channelThreshold = 0.525f; // valleyTerr above this carves the deep channel
+        float riverScale       = 200.0f; // river "wrinkle" size (HEHE WRINKLEE)
+        int   riverNoiseOct    = 3;
+        float riverValleyWidth = 0.085f;
+        int   riverMaxHeight   = 120;    // Y where open rivers fade out 
+        float riverFade        = 10.f;   // fade range in blocks
+        bool  taigaRivers      = false;  // allow rivers through taiga 
+        // River meander warp
+        bool  riverWarpEnabled = false;
+        float riverWarpScale   = 80.f;
+        float riverWarpAmp     = 15.0f;
+        // Smaller river branches
         bool  tributariesEnabled = false;
-        float tribScale          = 90.0f;   // riverScale = more, smaller branches
-        float tribValleyWidth    = 0.05f;   // riverValleyWidth = narrower
+        float tribScale          = 90.0f;
+        float tribValleyWidth    = 0.05f;
         float tribStrength       = 0.6f;
-        float beachBand          = 0.25f;   // how far past the water edge the beach reaches
-        float beachSandChance    = 0.70f;   // scatter sand vs the normal block (1.0 = solid sand)
-        bool  desertRiverGrass   = true;    // desert river banks scatter grass
+        // Banks
+        float beachBand        = 0.25f; // how far past the water edge the beach reaches
+        float beachSandChance  = 0.70f; // sand vs surface scatter 
+        bool  desertRiverGrass = true;  // desert river banks scatter grass instead of sand
 
+        // RIVER TUNNELS (karst) ---------------------------------------------------------------------------------------
+        bool  riverTunnels      = true;  // rivers bore through mountains 
+        float tunnelMaskThresh  = 0.2f;  // min mountain mask to tunnel, if lower mouths further out on the flank
+        float riverArchHeight   = 10.0f; // max arched void height above the water at the river centre
+        float riverCeilScale    = 22.0f; // ceiling-roughness wavelength, low thighter
+        float riverCeilJitter   = 5.0f;  // blocks the rock ceiling dips for irregularity
+        float calciteChance     = 0.55f; // ceiling formation scatter density
+        int   calciteBand       = 3;     // blocks above the ceiling that can turn to formation rock
+        float dripstoneFraction = 0.7f;  // formation split, currently mostly dripstone, percentage
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size
@@ -113,6 +128,5 @@ namespace WORLDGEN
         float coalThresh    = 0.82f;
         float ironThresh    = 0.88f;
         float copperThresh  = 0.85f;
-        
     };
 }

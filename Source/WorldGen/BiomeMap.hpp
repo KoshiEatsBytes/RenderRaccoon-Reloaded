@@ -218,12 +218,6 @@ namespace WORLDGEN
         return ZoomArea(_level, _x, _z, _w, _h, _config);
     }
 
-    // Single-point biome via the zoom stack only
-    inline BIOME BiomeAtZoom(int _wx, int _wz, const WorldGenConfig& _config)
-    {
-        return BuildArea(_config.biomeZoomLevels, _wx, _wz, 1, 1, _config)[0];
-    }
-
     // fwd decl — SmoothArea is self-recursive
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config);
 

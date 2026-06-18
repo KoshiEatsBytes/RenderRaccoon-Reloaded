@@ -280,6 +280,16 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Beach band",            &m_draftConfig.beachBand, 0.0f, 0.5f);
         ImGui::SliderFloat("Sand density",          &m_draftConfig.beachSandChance, 0.0f, 1.0f);
         ImGui::Checkbox   ("Desert -> grass banks", &m_draftConfig.desertRiverGrass);
+
+        ImGui::SeparatorText("Tunnels (karst)");
+        ImGui::Checkbox   ("Enabled##tunnel",   &m_draftConfig.riverTunnels);
+        ImGui::SliderFloat("Mountain gate",     &m_draftConfig.tunnelMaskThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Arch height",       &m_draftConfig.riverArchHeight, 2.0f, 30.0f);
+        ImGui::SliderFloat("Ceiling scale",     &m_draftConfig.riverCeilScale, 6.0f, 64.0f);
+        ImGui::SliderFloat("Ceiling jitter",    &m_draftConfig.riverCeilJitter, 0.0f, 16.0f);
+        ImGui::SliderFloat("Formation density", &m_draftConfig.calciteChance, 0.0f, 1.0f);
+        ImGui::SliderInt  ("Formation band",    &m_draftConfig.calciteBand, 0, 8);
+        ImGui::SliderFloat("Dripstone frac",    &m_draftConfig.dripstoneFraction, 0.0f, 1.0f);
     }
 
     ImGui::Separator();
