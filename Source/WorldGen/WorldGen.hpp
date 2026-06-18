@@ -12,62 +12,11 @@ namespace WORLDGEN
 {
     struct BlendSums
     {
-        int base = 0;
-        int amp  = 0;
-        int mtn  = 0;
+        int base  = 0;
+        int amp   = 0;
+        int mtn   = 0;
+        int taiga = 0;
     };
-
-    // Surface height of a world column: per biome base
-    // DEPRECATED
-    // inline int TerrainHeight(int _wx, int _wz, const BiomeGrid& _grid, const WorldGenConfig& _config)
-    // {
-    //     const float noise = FBM(
-    //         _wx / _config.heightScale,
-    //         _wz / _config.heightScale,
-    //         _config.seed,
-    //         _config.heightOctaves);
-    //
-    //     // blend lowland base/amp AND count mountains together
-    //     const int radius = _config.biomeBlendRadius;
-    //     long sumBase  = 0;
-    //     long sumAmp   = 0;
-    //     int  lowCount = 0;
-    //     int mtnCount  = 0;
-    //
-    //     for (int dz = -radius; dz <= radius; ++dz)
-    //     {
-    //         for (int dx = -radius; dx <= radius; ++dx)
-    //         {
-    //             const BIOME biome = _grid.At(_wx + dx, _wz + dz);
-    //
-    //             if (biome == BIOME::MOUNTAINS)
-    //             {
-    //                 ++mtnCount;
-    //             }
-    //             else
-    //             {
-    //                 sumBase += _config.biomeBaseHeight[static_cast<int>(biome)];
-    //                 sumAmp  += _config.biomeAmplitude [static_cast<int>(biome)];
-    //                 ++lowCount;
-    //             }
-    //         }
-    //     }
-    //
-    //
-    //     const int   total = (2 * radius + 1) * (2 * radius + 1);
-    //     const float frac  = static_cast<float>(mtnCount) / total;
-    //     const float rawMask = std::clamp((frac - 0.5f) * 2.0f, 0.0f, 1.0f);
-    //     const float mask = std::pow(rawMask, _config.mountainCurve);
-    //
-    //     const float lowBase = lowCount ? float(sumBase) / lowCount : float(_config.biomeBaseHeight[(int)BIOME::MOUNTAINS]);
-    //     const float lowAmp  = lowCount ? float(sumAmp)  / lowCount : float(_config.biomeAmplitude [(int)BIOME::MOUNTAINS]);
-    //
-    //     const float lowlandHeight  = lowBase + noise * lowAmp;
-    //     const float mountainHeight = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS]
-    //                                + noise * _config.biomeAmplitude[(int)BIOME::MOUNTAINS];
-    //
-    //     return static_cast<int>(lowlandHeight + (mountainHeight - lowlandHeight) * mask);
-    // }
 
     // Optimization to blend biomes more efficently
     inline std::array<BlendSums, 256> BuildBlendSums(const BiomeGrid& _grid, const WorldGenConfig& _config)
@@ -77,9 +26,10 @@ namespace WORLDGEN
         const int win = 2 * R + 1;
 
         // per grid-cell contribution
-        std::vector<int> sBase(gw * gw);
-        std::vector<int> sAmp (gw * gw);
-        std::vector<int> sMtn (gw * gw);
+        std::vector<int> sBase (gw * gw);
+        std::vector<int> sAmp  (gw * gw);
+        std::vector<int> sMtn  (gw * gw);
+        std::vector<int> sTaiga(gw * gw);
 
         for (int gj = 0; gj < gw; ++gj)
         {
@@ -95,19 +45,20 @@ namespace WORLDGEN
                 {
                     sBase[idx] = _config.biomeBaseHeight[static_cast<int>(biome)];
                     sAmp[idx]  = _config.biomeAmplitude[static_cast<int>(biome)];
+                    if (biome == BIOME::TAIGA) sTaiga[idx] = 1;
                 }
             }
         }
 
         // horizontal pass
-        std::vector<int> hB(16 * gw), hA(16 * gw), hM(16 * gw);
+        std::vector<int> hB(16 * gw), hA(16 * gw), hM(16 * gw), hT(16 * gw);
         for (int gj = 0; gj < gw; ++gj)
         {
             for (int x = 0; x < 16; ++x)
             {
-                int b = 0, a = 0, m = 0;
-                for (int k = 0; k < win; ++k) { const int i = (x + k) + gj * gw; b += sBase[i]; a += sAmp[i]; m += sMtn[i]; }
-                const int hi = x + gj * 16; hB[hi] = b; hA[hi] = a; hM[hi] = m;
+                int b = 0, a = 0, m = 0, t = 0;
+                for (int k = 0; k < win; ++k) { const int i = (x + k) + gj * gw; b += sBase[i]; a += sAmp[i]; m += sMtn[i]; t += sTaiga[i]; }
+                const int hi = x + gj * 16; hB[hi] = b; hA[hi] = a; hM[hi] = m; hT[hi] = t;
             }
         }
 
@@ -117,9 +68,9 @@ namespace WORLDGEN
         {
             for (int x = 0; x < 16; ++x)
             {
-                int b = 0, a = 0, m = 0;
-                for (int k = 0; k < win; ++k) { const int hi = x + (z + k) * 16; b += hB[hi]; a += hA[hi]; m += hM[hi]; }
-                out[x + z * 16] = { b, a, m };
+                int b = 0, a = 0, m = 0, t = 0;
+                for (int k = 0; k < win; ++k) { const int hi = x + (z + k) * 16; b += hB[hi]; a += hA[hi]; m += hM[hi]; t += hT[hi]; }
+                out[x + z * 16] = { b, a, m, t };
             }
         }
 
@@ -308,18 +259,25 @@ namespace WORLDGEN
                 const BlendSums& sum = sums[x + z * 16];
                 // Get Land Height (separable blend; TerrainHeight kept as the oracle for testing)
                 const int   land       = TerrainHeightFromSums(sum, wx, wz, total, _config);
-                const float valleyTerr = RiverValleyTerrain(wx, wz, land, _config);
+                float       valleyTerr = RiverValleyTerrain(wx, wz, land, _config);
+                if (!_config.taigaRivers) valleyTerr *= 1.0f - float(sum.taiga) / total;  
 
                 int waterTop   = _config.waterLevel;
                 int terrHeight = land;
 
                 if (valleyTerr > 0.0f)
                 {
-                    // bed below river level
+                    const int shelfBed   = _config.riverLevel - _config.riverShelfDepth;
                     const int channelBed = _config.riverLevel - _config.riverDepth;
-                    const int bed = static_cast<int>(Lerp((float)land, (float)channelBed, valleyTerr));
-                    terrHeight = std::min(land, bed);
-                    // river surface
+
+                    // ramp down valley to shelf
+                    float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), valleyTerr);
+
+                    // core cuts deeper through the channel
+                    const float channelT = std::clamp((valleyTerr - _config.channelThreshold) / (1.0f - _config.channelThreshold), 0.0f, 1.0f);
+                    bed = Lerp(bed, static_cast<float>(channelBed), channelT);
+
+                    terrHeight = std::min(land, static_cast<int>(bed));
                     waterTop   = std::max(_config.waterLevel, _config.riverLevel);
                 }
                 const bool underWater = terrHeight < waterTop;
@@ -360,23 +318,27 @@ namespace WORLDGEN
                         }
                         else
                         {
-                            const int channelBed = _config.riverLevel - _config.riverDepth;
-                            float waterT = 1.0f;
+                            // sand around water hedge
+                            const int shelfBed = _config.riverLevel - _config.riverShelfDepth;
+                            float     waterT   = 1.0f;
 
-                            if (land > channelBed)
-                                waterT = float(land - waterTop) / float(land - channelBed);
+                            if (land > shelfBed)
+                            {
+                                waterT = static_cast<float>(land - waterTop) / static_cast<float>(land - shelfBed);
+                            }
 
-                            // A tile is a beach if its on land and close to river
-                            const bool beach = (valleyTerr > 0.0f) && (waterT - valleyTerr <= _config.beachBand);
+                            // desert uses grass instead of sand for river
+                            const bool  arid       = (biome == BIOME::DESERT || biome == BIOME::RED_DESERT);
+                            const BLOCK beachBlock = (arid && _config.desertRiverGrass) ? BLOCK::GRASS : BLOCK::SAND;
 
-                            // In hot biomes river banks are grass instead of sand
-                            const bool  arid = (biome == BIOME::DESERT || biome == BIOME::RED_DESERT);
-                            BLOCK beachBlock = BLOCK::SAND;
-
-                            if (arid && _config.desertRiverGrass) beachBlock = BLOCK::GRASS;
-                            
-                            block = bParams.surface;
-                            if (beach && sandRoll < _config.beachSandChance) block = beachBlock;
+                            if (valleyTerr > 0.0f && waterT - valleyTerr <= _config.beachBand)
+                            {
+                                block = (sandRoll < _config.beachSandChance) ? beachBlock : bParams.surface;
+                            }
+                            else
+                            {
+                                block = bParams.surface;
+                            }
                         }
 
                     }

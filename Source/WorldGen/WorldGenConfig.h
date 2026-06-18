@@ -45,7 +45,7 @@ namespace WORLDGEN
         };
         int biomeAmplitude[(int)BIOME::COUNT] = {
             10,  // PLAINS
-            20,  // FOREST
+            15,  // FOREST
             7,   // DESERT
             8,   // RED_DESERT
             35,  // TAIGA
@@ -83,9 +83,11 @@ namespace WORLDGEN
         // RIVERS ------------------------------------------------------------------------------------------------------
 
         bool  riverWarpEnabled   = false;
-        int   riverDepth         = 6;
-        int   riverLevel         = 64;
-        int   riverMaxHeight     = 90;      // Y where rivers start fading out
+        int   riverDepth         = 6;       // deep inner-channel depth below riverLevel
+        int   riverShelfDepth    = 2;       // shallow outer-shelf depth below riverLevel
+        float channelThreshold   = 0.525f;    // valleyTerr above this carves the deep channel (higher = narrower)
+        int   riverLevel         = 63;
+        int   riverMaxHeight     = 120;      // Y where rivers start fading out
         float riverFade          = 10.f;    // fade range in blocks
         float riverWarpScale     = 80.f;    // river meander wavelength
         float riverWarpAmp       = 15.0f;   // how far the channel wanders
@@ -93,13 +95,15 @@ namespace WORLDGEN
         float riverScale         = 200.0f;  // river "wrinkle" size
         int   riverNoiseOct      = 3;
         bool  iceEnabled         = false;   // freeze rivers/seas in cold biomes
+        bool  taigaRivers        = false;   // allow rivers through taiga (off: taiga's height glitches them)
         bool  tributariesEnabled = false;
         float tribScale          = 90.0f;   // riverScale = more, smaller branches
         float tribValleyWidth    = 0.05f;   // riverValleyWidth = narrower
         float tribStrength       = 0.6f;
-        float beachBand          = 0.15f;   // how far past the water edge the beach reaches
-        float beachSandChance    = 0.65f;   // scatter sand vs the normal block (1.0 = solid sand)
+        float beachBand          = 0.25f;   // how far past the water edge the beach reaches
+        float beachSandChance    = 0.70f;   // scatter sand vs the normal block (1.0 = solid sand)
         bool  desertRiverGrass   = true;    // desert river banks scatter grass
+
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size

@@ -254,8 +254,11 @@ void FreeRoam::OnGui()
         ImGui::Checkbox   ("Ice in cold biomes", &m_draftConfig.iceEnabled);
 
         ImGui::SeparatorText("Rivers");
+        ImGui::Checkbox   ("Rivers through taiga", &m_draftConfig.taigaRivers);
         ImGui::SliderInt  ("River level",        &m_draftConfig.riverLevel, 0, 128);
-        ImGui::SliderInt  ("River depth",        &m_draftConfig.riverDepth, 0, 32);
+        ImGui::SliderInt  ("Channel depth",      &m_draftConfig.riverDepth, 0, 32);
+        ImGui::SliderInt  ("Shelf depth",        &m_draftConfig.riverShelfDepth, 0, 32);
+        ImGui::SliderFloat("Channel threshold",  &m_draftConfig.channelThreshold, 0.0f, 1.0f);
         ImGui::SliderFloat("River scale",        &m_draftConfig.riverScale, 50.f, 600.f);
         ImGui::SliderInt  ("River octaves",      &m_draftConfig.riverNoiseOct, 1, 8);
         ImGui::SliderFloat("Valley width",       &m_draftConfig.riverValleyWidth, 0.01f, 0.30f);
