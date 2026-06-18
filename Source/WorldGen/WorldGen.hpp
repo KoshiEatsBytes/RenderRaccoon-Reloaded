@@ -236,30 +236,48 @@ namespace WORLDGEN
         return BLOCK::GRASS;
     }
 
+    // One river field's valley profile from already warped coords
+    inline float RiverFieldProfile(float _rx, float _rz, float _allow, float _scale, float _valleyWidth, uInt32 _salt, int _oct)
+    {
+        const float noise = FBM(_rx/_scale, _rz/_scale, _salt, _oct);
+        const float dist = std::abs(noise - 0.5f) * 2.0f;
+
+        if (dist >= _valleyWidth) return 0.0f;
+        const float result = Smooth(1.0f - dist/_valleyWidth) * _allow;
+
+        return result;
+    }
+
     inline float RiverValleyTerrain(int _wx, int _wz, int _land, const WorldGenConfig& _config)
     {
         const float riverAllow = std::clamp(float(_config.riverMaxHeight - _land) / _config.riverFade, 0.0f, 1.0f);
         if (riverAllow <= 0.0f) return 0.0f;
 
-        float rx = static_cast<float>(_wx);
-        float rz = static_cast<float>(_wz);
+        // warp once, both fields share the same meander
+        float rx = static_cast<float>(_wx), rz = static_cast<float>(_wz);
+
         if (_config.riverWarpEnabled)
         {
             const float px = _wx / _config.riverWarpScale, pz = _wz / _config.riverWarpScale;
             rx += (FBM(px, pz, _config.seed + 935u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
             rz += (FBM(px, pz, _config.seed + 936u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
         }
-        const float riverNoise = FBM(
-            rx/_config.riverScale,
-            rz/_config.riverScale,
+
+        // trunk = wide full-depth main rivers
+        float profile = RiverFieldProfile(
+            rx, rz, riverAllow,
+            _config.riverScale,
+            _config.riverValleyWidth,
             _config.seed + 601u,
             _config.riverNoiseOct);
 
-        const float dist = std::abs(riverNoise - 0.5f) * 2.0f;
-        if (dist >= _config.riverValleyWidth) return 0.0f;
-
-        const float t = 1.0f - dist / _config.riverValleyWidth;
-        return Smooth(t) * riverAllow;
+        // tributaries: smaller scale, narrower, shallower, merge into trunks via max
+        if (_config.tributariesEnabled)
+        {
+            const float trib = RiverFieldProfile(rx, rz, riverAllow, _config.tribScale, _config.tribValleyWidth, _config.seed + 603u, _config.riverNoiseOct);
+            profile = std::max(profile, trib * _config.tribStrength);
+        }
+        return profile;
     }
 
     // Generate every column of a chunk: pick the biome from cellular grid
@@ -329,15 +347,38 @@ namespace WORLDGEN
                     // Surface block, changes on biome
                     else
                     {
-                        if (underWater) {
-                            block = bParams.subsurface;
+                        const float sandRoll = HashFloat(wx, wz, _config.seed + 950u);
+
+                        if (underWater)
+                        {
+                            // river bed, scattered sand floor instead of plain dirt
+                            block = (sandRoll < _config.beachSandChance) ? BLOCK::SAND : bParams.subsurface;
                         }
-                        else if (biome == BIOME::MOUNTAINS) {
+                        else if (biome == BIOME::MOUNTAINS)
+                        {
                             block = MountainSurface(terrHeight, wx, wz, _config);
                         }
-                        else {
+                        else
+                        {
+                            const int channelBed = _config.riverLevel - _config.riverDepth;
+                            float waterT = 1.0f;
+
+                            if (land > channelBed)
+                                waterT = float(land - waterTop) / float(land - channelBed);
+
+                            // A tile is a beach if its on land and close to river
+                            const bool beach = (valleyTerr > 0.0f) && (waterT - valleyTerr <= _config.beachBand);
+
+                            // In hot biomes river banks are grass instead of sand
+                            const bool  arid = (biome == BIOME::DESERT || biome == BIOME::RED_DESERT);
+                            BLOCK beachBlock = BLOCK::SAND;
+
+                            if (arid && _config.desertRiverGrass) beachBlock = BLOCK::GRASS;
+                            
                             block = bParams.surface;
+                            if (beach && sandRoll < _config.beachSandChance) block = beachBlock;
                         }
+
                     }
 
                     _chunk.Set(x, y, z, static_cast<BlockId>(block));

@@ -266,6 +266,17 @@ void FreeRoam::OnGui()
         ImGui::Checkbox   ("Enabled##rwarp",     &m_draftConfig.riverWarpEnabled);
         ImGui::SliderFloat("Scale##rwarp",       &m_draftConfig.riverWarpScale, 20.f, 600.f);
         ImGui::SliderFloat("Amp##rwarp",         &m_draftConfig.riverWarpAmp, 0.f, 200.f);
+
+        ImGui::SeparatorText("Tributaries");
+        ImGui::Checkbox   ("Enabled##trib",      &m_draftConfig.tributariesEnabled);
+        ImGui::SliderFloat("Scale##trib",        &m_draftConfig.tribScale, 20.f, 400.f);
+        ImGui::SliderFloat("Valley width##trib", &m_draftConfig.tribValleyWidth, 0.01f, 0.30f);
+        ImGui::SliderFloat("Strength##trib",     &m_draftConfig.tribStrength, 0.0f, 1.0f);
+
+        ImGui::SeparatorText("Beaches");
+        ImGui::SliderFloat("Beach band",            &m_draftConfig.beachBand, 0.0f, 0.5f);
+        ImGui::SliderFloat("Sand density",          &m_draftConfig.beachSandChance, 0.0f, 1.0f);
+        ImGui::Checkbox   ("Desert -> grass banks", &m_draftConfig.desertRiverGrass);
     }
 
     ImGui::Separator();
