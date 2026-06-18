@@ -14,6 +14,7 @@ namespace WORLDGEN
 
         // BASE TERRAIN ------------------------------------------------------------------------------------------------
         bool  useGradientNoise = true; // use perlin
+        int   waterLevel       = 58;      // water surface height
         float heightScale      = 128.f; // noise in block spacing
         int   heightOctaves    = 5;
         int   dirtDepth        = 4;     // Dirt thickness under grass
@@ -79,27 +80,28 @@ namespace WORLDGEN
         bool  ridgeMountains = true;
         float ridgeStrength  = 1.f;    // 0 = round, 1 = full ridge
 
+        // RIVERS ------------------------------------------------------------------------------------------------------
 
+        bool  riverWarpEnabled = false;
+        int   riverDepth       = 6;
+        int   riverLevel       = 64;
+        int   riverMaxHeight   = 90;     // Y where rivers start fading out
+        float riverFade        = 10.f;    // fade range in blocks
+        float riverWarpScale   = 80.f;    // river meander wavelength
+        float riverWarpAmp     = 15.0f;   // how far the channel wanders
+        float riverValleyWidth = 0.085f;
+        float riverScale       = 200.0f;  // river "wrinkle" size
+        int   riverNoiseOct    = 3;
+        bool  iceEnabled       = true;   // freeze rivers/seas in cold biomes (Taiga/Tundra)
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size
         float dioriteThresh = 0.78f;
         float graniteThresh = 0.78f;
-        float oreScale      = 9.0f;   // ore clump size
+        float oreScale      = 9.0f;    // ore clump size
         float coalThresh    = 0.82f;
         float ironThresh    = 0.88f;
         float copperThresh  = 0.85f;
-
-
-        // WATER
-        int   waterLevel    = 63;      // water surface height
-        int   riverNoiseOct = 3;
-        float riverScale    = 280.0f;  // river "wrinkle" size
-        float riverWidth    = 0.05f;   // river half-width
-        int   riverDepth    = 8;
-        int   pondNoiseOct  = 3;
-        float pondScale     = 120.0f;
-        float pondThreshold = 0.12f;
-        int   pondDepth     = 6;
+        
     };
 }

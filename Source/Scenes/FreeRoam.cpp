@@ -250,15 +250,22 @@ void FreeRoam::OnGui()
 
     if (ImGui::CollapsingHeader("Water"))
     {
-        ImGui::SliderInt  ("Water level",    &m_draftConfig.waterLevel, 0, 128);
-        ImGui::SliderFloat("River scale",    &m_draftConfig.riverScale, 50.f, 600.f);
-        ImGui::SliderFloat("River width",    &m_draftConfig.riverWidth, 0.0f, 0.3f);
-        ImGui::SliderInt  ("River depth",    &m_draftConfig.riverDepth, 0, 32);
-        ImGui::SliderInt  ("River octaves",  &m_draftConfig.riverNoiseOct, 1, 8);
-        ImGui::SliderFloat("Pond scale",     &m_draftConfig.pondScale, 20.f, 300.f);
-        ImGui::SliderFloat("Pond threshold", &m_draftConfig.pondThreshold, 0.0f, 0.5f);
-        ImGui::SliderInt  ("Pond depth",     &m_draftConfig.pondDepth, 0, 32);
-        ImGui::SliderInt  ("Pond octaves",   &m_draftConfig.pondNoiseOct, 1, 8);
+        ImGui::SliderInt  ("Water level",        &m_draftConfig.waterLevel, 0, 128);
+        ImGui::Checkbox   ("Ice in cold biomes", &m_draftConfig.iceEnabled);
+
+        ImGui::SeparatorText("Rivers");
+        ImGui::SliderInt  ("River level",        &m_draftConfig.riverLevel, 0, 128);
+        ImGui::SliderInt  ("River depth",        &m_draftConfig.riverDepth, 0, 32);
+        ImGui::SliderFloat("River scale",        &m_draftConfig.riverScale, 50.f, 600.f);
+        ImGui::SliderInt  ("River octaves",      &m_draftConfig.riverNoiseOct, 1, 8);
+        ImGui::SliderFloat("Valley width",       &m_draftConfig.riverValleyWidth, 0.01f, 0.30f);
+        ImGui::SliderInt  ("Max height (fade)",  &m_draftConfig.riverMaxHeight, 0, 200);
+        ImGui::SliderFloat("Fade range",         &m_draftConfig.riverFade, 1.f, 64.f);
+
+        ImGui::SeparatorText("River warp");
+        ImGui::Checkbox   ("Enabled##rwarp",     &m_draftConfig.riverWarpEnabled);
+        ImGui::SliderFloat("Scale##rwarp",       &m_draftConfig.riverWarpScale, 20.f, 600.f);
+        ImGui::SliderFloat("Amp##rwarp",         &m_draftConfig.riverWarpAmp, 0.f, 200.f);
     }
 
     ImGui::Separator();
