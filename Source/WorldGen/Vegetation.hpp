@@ -44,6 +44,9 @@ namespace WORLDGEN
         bool    boulders;
     };
 
+    // tree margin
+    constexpr int kTreeMargin = 3;
+
     // Indexed by biome
     inline constexpr BiomeVegTypes kVegTypes[] = {
         /* PLAINS    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::AIR,       false, false },
@@ -181,6 +184,62 @@ namespace WORLDGEN
                 _chunk.Set(_x, y, _z, static_cast<BlockId>(types.grass));
             }
             return;
+        }
+    }
+
+    inline void StampOak(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
+    {
+        using namespace RR::CHUNK;
+
+        auto setLog = [&](int x, int y, int z)
+        {
+            if (x < 0 || x >= kSizeX || z < 0 || z >= kSizeZ || y < 0 || y >= kSizeY) return;
+
+            // Logs win unconditionally
+            _chunk.Set(x, y, z, static_cast<BlockId>(BLOCK::OAKLOG));
+        };
+
+        auto setLeaf = [&](int x, int y, int z)
+        {
+            if (x < 0 || x >= kSizeX || z < 0 || z >= kSizeZ || y < 0 || y >= kSizeY) return;
+
+            // leaves generate only if there is air
+            if (_chunk.At(x, y, z) != static_cast<BlockId>(BLOCK::AIR)) return;
+
+            _chunk.Set(x, y, z, static_cast<BlockId>(BLOCK::LEAVES));
+        };
+
+        // trunk can be 5 to 7 tall
+        const int trunkHeight = 5 + static_cast<int>(_hash % 4u);
+        const int topY        = _rootY + trunkHeight;
+
+        // Trunk first
+        for (int y = _rootY + 1; y <= topY; ++y)
+        {
+            setLog(_lx, y, _lz);
+        }
+
+        // canopy, fill around the logs
+        for (int dy = -2; dy <= 1; ++dy)
+        {
+            const int radius = (dy <= -1) ? 2 : 1;
+            const int height = topY + dy;
+
+            for (int dz = -radius; dz <= radius; ++dz)
+            {
+                for (int dx = -radius; dx <= radius; ++dx)
+                {
+                    // round the 5x5 shape
+                    const bool corner2   = radius == 2 && std::abs(dx) == 2 && std::abs(dz) == 2;
+                    // plus shaped tree top
+                    const bool capCorner = dy == 1 && std::abs(dx) == 1 && std::abs(dz) == 1;
+
+                    if (corner2 || capCorner) continue;
+
+                    setLeaf(_lx + dx, height, _lz + dz);
+                }
+            }
+
         }
     }
 }

@@ -84,7 +84,9 @@ namespace WORLDGEN
             10,  // SAVANNA
         };
 
-        // inside WorldGenConfig, indexed by BIOME (order matches BiomeID.h)
+        // VEGETATION --------------------------------------------------------------------------------------------------
+
+        // Per biome vegetation density
         BiomeVeg biomeVegetation[static_cast<int>(BIOME::COUNT)] = {
             /* PLAINS    */ { 0.0015f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f },
             /* FOREST    */ { 0.030f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f },
@@ -95,6 +97,9 @@ namespace WORLDGEN
             /* MOUNTAINS */ { 0.000f,  0.07f,  0.00f, 0.000f, 0.000f, 0.000f, 0.000f },
             /* SAVANNA   */ { 0.012f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f },
         };
+
+        // Trees
+        int treeSlopeMax = 3;
 
         // TERRAIN BLEND -----------------------------------------------------------------------------------------------
         int   biomeBlendRadius = 20;     // neighbourhood radius for base/amp blending

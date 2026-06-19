@@ -279,39 +279,56 @@ namespace WORLDGEN
         return static_cast<int>(height);
     }
 
+    // Blend window at precomputer area from x and z
+    inline int LandHeightAt(const std::vector<BIOME>& _area, int _areaOriginX, int _areaOriginZ, int areaWidth,
+                            int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        const int blendRadius = _config.biomeBlendRadius;
+        BlendSums sum{};
+
+        // Copy of blendSums once again
+        for (int dz = -blendRadius; dz <= blendRadius; ++dz)
+        {
+            for (int dx = -blendRadius; dx <= blendRadius; ++dx)
+            {
+                const BIOME biome = _area[(_wx + dx - _areaOriginX) + (_wz + dz - _areaOriginZ) * areaWidth];
+
+                if (biome == BIOME::MOUNTAINS)
+                {
+                    sum.mtn += 1;
+                }
+                else if (biome == BIOME::MESA)
+                {
+                    sum.mesa += 1;
+                    if (!_config.mesaRimCliffs)
+                    {
+                        sum.base += _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
+                        sum.amp  += _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
+                    }
+                }
+                else
+                {
+                    sum.base += _config.biomeBaseHeight[static_cast<int>(biome)];
+                    sum.amp  += _config.biomeAmplitude [static_cast<int>(biome)];
+                    if (biome == BIOME::TAIGA) sum.taiga += 1;
+                }
+            }
+        }
+
+
+        const int width = 2 * blendRadius + 1;
+        return TerrainHeightFromSums(sum, _wx, _wz, width * width, _config);
+    }
+
     // Surface height at ANY world column, rebuilds the blend window, has to be same
     inline int LandHeight(int _wx, int _wz, const WorldGenConfig& _config)
     {
         const int radius = _config.biomeBlendRadius;
         const int width  = 2 * radius + 1;
 
-        // Zoom pyramid amortises across the whole window
         const std::vector<BIOME> area = FinalArea(_wx - radius, _wz - radius, width, width, _config);
 
-        BlendSums sum{};
-        for (BIOME biome : area)
-        {
-            if (biome == BIOME::MOUNTAINS)
-            {
-                sum.mtn += 1;
-            }
-            else if (biome == BIOME::MESA)
-            {
-                sum.mesa += 1;
-                if (!_config.mesaRimCliffs)
-                {
-                    sum.base += _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
-                    sum.amp  += _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
-                }
-            }
-            else
-            {
-                sum.base += _config.biomeBaseHeight[static_cast<int>(biome)];
-                sum.amp  += _config.biomeAmplitude [static_cast<int>(biome)];
-                if (biome == BIOME::TAIGA) sum.taiga += 1;
-            }
-        }
-        return TerrainHeightFromSums(sum, _wx, _wz, width * width, _config);
+        return LandHeightAt(area, _wx - radius, _wz - radius, width , _wx, _wz, _config);
     }
 
     // Max land height, rejects trees on cliffs / flanks
@@ -428,6 +445,81 @@ namespace WORLDGEN
             profile = std::max(profile, trib * _config.tribStrength);
         }
         return profile;
+    }
+
+    inline void PlaceTrees(RR::Chunk& _chunk, const WorldGenConfig& _config)
+    {
+        constexpr int FOOT = 1;
+        const int areaRadius = FOOT + _config.biomeBlendRadius;
+        const int areaWidth  = 2 * areaRadius + 1;
+
+        using namespace RR::CHUNK;
+        const int outX = _chunk.coord.x * kSizeX;
+        const int outZ = _chunk.coord.z * kSizeZ;
+        const int gw   = kSizeX + 2 * kTreeMargin;
+
+        // one biome for the margin
+        const std::vector<BIOME> biomes = FinalArea(outX - kTreeMargin, outZ - kTreeMargin, gw, gw, _config);
+
+        for (int lz = -kTreeMargin; lz < kSizeZ + kTreeMargin; ++lz)
+        {
+            for (int lx = -kTreeMargin; lx < kSizeX + kTreeMargin; ++lx)
+            {
+                const BIOME biome   = biomes[(lx + kTreeMargin) + (lz + kTreeMargin) * gw];
+                const TREE  species = GetVegTypes(biome).tree;
+
+                // for now oak only
+                if (species != TREE::OAK) continue;
+
+                const int wx = outX + lx;
+                const int wz = outZ + lz;
+
+                const float hasOak = HashFloat(wx, wz, _config.seed + 1010u);
+                // Filter candidates
+                if (hasOak >= _config.biomeVegetation[static_cast<int>(biome)].tree) continue;
+
+                // CONFIRMED TREE - EXPENSIVE CHECKS
+                const int areaOriginX = wx - areaRadius;
+                const int areaOriginZ = wz - areaRadius;
+
+                const std::vector<BIOME> area = FinalArea(areaOriginX, areaOriginZ, areaWidth,
+                                                        areaWidth, _config);
+
+                const int land = LandHeightAt(area, areaOriginX, areaOriginZ,
+                                              areaWidth, wx, wz, _config);
+
+                const float profile    = RiverProfile(wx, wz, _config);
+                const float riverAllow = std::clamp(static_cast<float>(_config.riverMaxHeight - land)
+                                                    / _config.riverFade, 0.f, 1.f);
+
+                // No trees in river valleys or below sea
+                if (profile * riverAllow > 0.0f) continue;
+                if (land < _config.waterLevel)   continue;
+
+                // slope spread from the same area
+                int lowHeight  = land;
+                int highHeight = land;
+
+                for (int dz = -FOOT; dz <= FOOT; dz += FOOT)
+                {
+                     for (int dx = -FOOT; dx <= FOOT; dx += FOOT)
+                    {
+                        if (dx == 0 && dz == 0) continue;
+
+                        const int height = LandHeightAt(area, areaOriginX, areaOriginZ, areaWidth,
+                                                        wx + dx, wz + dz, _config);
+
+                        lowHeight = std::min(lowHeight, height);
+                        highHeight = std::max(highHeight, height);
+                    }
+                }
+
+                // too steep, cant spawn, discard
+                if (highHeight - lowHeight > _config.treeSlopeMax) continue;
+
+                StampOak(_chunk, lx, land, lz, HashU32(wx, wz, _config.seed + 1011u));
+            }
+        }
     }
 
     // Generate every column of a chunk: pick the biome from cellular grid
@@ -618,5 +710,8 @@ namespace WORLDGEN
                 }
             }
         }
+
+        // Trees override column fill
+        PlaceTrees(_chunk, _config);
     }
 }
