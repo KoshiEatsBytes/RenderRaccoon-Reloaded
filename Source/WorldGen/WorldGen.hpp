@@ -16,20 +16,22 @@ namespace WORLDGEN
         int amp   = 0;
         int mtn   = 0;
         int taiga = 0;
+        int mesa  = 0;
     };
 
     // Optimization to blend biomes more efficently
     inline std::array<BlendSums, 256> BuildBlendSums(const BiomeGrid& _grid, const WorldGenConfig& _config)
     {
-        const int R   = _config.biomeBlendRadius;
-        const int gw  = _grid.w;
-        const int win = 2 * R + 1;
+        const int radius = _config.biomeBlendRadius;
+        const int gw     = _grid.w;
+        const int win    = 2 * radius + 1;
 
         // per grid-cell contribution
         std::vector<int> sBase (gw * gw);
         std::vector<int> sAmp  (gw * gw);
         std::vector<int> sMtn  (gw * gw);
         std::vector<int> sTaiga(gw * gw);
+        std::vector<int> sMesa (gw * gw);
 
         for (int gj = 0; gj < gw; ++gj)
         {
@@ -37,9 +39,21 @@ namespace WORLDGEN
             {
                 const int idx = gi + gj * gw;
                 const BIOME biome = _grid.cells[idx];
+
                 if (biome == BIOME::MOUNTAINS)
                 {
                     sMtn[idx] = 1;
+                }
+                else if (biome == BIOME::MESA)
+                {
+                    sMesa[idx] = 1;
+
+                    // smooth rim, mesa has lowland blend
+                    if (!_config.mesaRimCliffs)
+                    {
+                        sBase[idx] = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
+                        sAmp[idx]  = _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
+                    }
                 }
                 else
                 {
@@ -51,14 +65,39 @@ namespace WORLDGEN
         }
 
         // horizontal pass
-        std::vector<int> hB(16 * gw), hA(16 * gw), hM(16 * gw), hT(16 * gw);
+        std::vector<int> hBase (16 * gw);
+        std::vector<int> hAmp  (16 * gw);
+        std::vector<int> hMtn  (16 * gw);
+        std::vector<int> hTaiga(16 * gw);
+        std::vector<int> hMesa (16 * gw);
+
         for (int gj = 0; gj < gw; ++gj)
         {
             for (int x = 0; x < 16; ++x)
             {
-                int b = 0, a = 0, m = 0, t = 0;
-                for (int k = 0; k < win; ++k) { const int i = (x + k) + gj * gw; b += sBase[i]; a += sAmp[i]; m += sMtn[i]; t += sTaiga[i]; }
-                const int hi = x + gj * 16; hB[hi] = b; hA[hi] = a; hM[hi] = m; hT[hi] = t;
+                int base  = 0;
+                int amp   = 0;
+                int mtn   = 0;
+                int taiga = 0;
+                int mesa  = 0;
+
+                for (int k = 0; k < win; ++k)
+                {
+                    const int i = (x + k) + gj * gw;
+                    base  += sBase[i];
+                    amp   += sAmp[i];
+                    mtn   += sMtn[i];
+                    taiga += sTaiga[i];
+                    mesa  += sMesa[i];
+                }
+
+                const int hi = x + gj * 16;
+
+                hBase[hi]  = base;
+                hAmp[hi]   = amp;
+                hMtn[hi]   = mtn;
+                hTaiga[hi] = taiga;
+                hMesa[hi]  = mesa;
             }
         }
 
@@ -68,9 +107,23 @@ namespace WORLDGEN
         {
             for (int x = 0; x < 16; ++x)
             {
-                int b = 0, a = 0, m = 0, t = 0;
-                for (int k = 0; k < win; ++k) { const int hi = x + (z + k) * 16; b += hB[hi]; a += hA[hi]; m += hM[hi]; t += hT[hi]; }
-                out[x + z * 16] = { b, a, m, t };
+                int base  = 0;
+                int amp   = 0;
+                int mtn   = 0;
+                int taiga = 0;
+                int mesa  = 0;
+
+                for (int k = 0; k < win; ++k)
+                {
+                    const int hi = x + (z + k) * 16;
+                    base  += hBase[hi];
+                    amp   += hAmp[hi];
+                    mtn   += hMtn[hi];
+                    taiga += hTaiga[hi];
+                    mesa  += hMesa[hi];
+                }
+
+                out[x + z * 16] = { base, amp, mtn, taiga, mesa };
             }
         }
 
@@ -80,16 +133,22 @@ namespace WORLDGEN
     // Mountain influence at a column from the blend sums, 0 is lowland
     inline float MountainMask(const BlendSums& _s, int _total, const WorldGenConfig& _config)
     {
-        const float rawMask = std::clamp((float(_s.mtn) / _total - 0.5f) * 2.0f, 0.0f, 1.0f);
+        const float rawMask = std::clamp((static_cast<float>(_s.mtn) / _total - 0.5f) * 2.0f, 0.0f, 1.0f);
         return std::pow(rawMask, _config.mountainCurve);
+    }
+
+    inline float MesaMask(const BlendSums& _sums, int _total, const WorldGenConfig& _config)
+    {
+        return std::clamp((static_cast<float>(_sums.mesa) / _total - 0.5f) * 2.f, 0.0f, 1.0f);
     }
 
     // Per-column height from the precomputed blend sums
     // Same math as TerrainHeight, just reading box-sums instead of scanning the window
-    inline int TerrainHeightFromSums(const BlendSums& _s, int _wx, int _wz, int _total, const WorldGenConfig& _config)
+    inline int TerrainHeightFromSums(const BlendSums& _sum, int _wx, int _wz, int _total, const WorldGenConfig& _config)
     {
-        float sx = static_cast<float>(_wx);
-        float sz = static_cast<float>(_wz);
+        auto sx = static_cast<float>(_wx);
+        auto sz = static_cast<float>(_wz);
+
         if (_config.warpEnabled)
         {
             const float px = _wx / _config.warpScale;
@@ -120,14 +179,15 @@ namespace WORLDGEN
             _config.heightOctaves,
             _config.useGradientNoise);
 
-        const int mB = _config.biomeBaseHeight[(int)BIOME::MOUNTAINS];
-        const int mA = _config.biomeAmplitude [(int)BIOME::MOUNTAINS];
+        const int mtnBase = _config.biomeBaseHeight[static_cast<int>(BIOME::MOUNTAINS)];
+        const int mtnAmp  = _config.biomeAmplitude [static_cast<int>(BIOME::MOUNTAINS)];
 
-        const int   lowCount = _total - _s.mtn;
-        const float lowBase  = lowCount ? float(_s.base) / lowCount : float(mB);
-        const float lowAmp   = lowCount ? float(_s.amp)  / lowCount : float(mA);
+        const int   sumMesa  = _config.mesaRimCliffs ? _sum.mesa : 0;
+        const int   lowCount = _total - _sum.mtn - sumMesa;
+        const float lowBase  = lowCount ? float(_sum.base) / lowCount : float(mtnBase);
+        const float lowAmp   = lowCount ? float(_sum.amp)  / lowCount : float(mtnAmp );
 
-        const float mask = MountainMask(_s, _total, _config);
+        const float mtnMask = MountainMask(_sum, _total, _config);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
         float mountainHeight = 0.0f;
@@ -136,14 +196,24 @@ namespace WORLDGEN
         {
             const float ridged = 1.0f - std::abs(noise * 2.0f - 1.0f);
             const float mNoise = Lerp(noise, ridged, _config.ridgeStrength);
-            mountainHeight = mB + mNoise * mA;
+            mountainHeight = mtnBase + mNoise * mtnAmp ;
         }
         else
         {
-            mountainHeight = mB + noise * mA;
+            mountainHeight = mtnBase + noise * mtnAmp ;
         }
 
-        float height = lowlandHeight + (mountainHeight - lowlandHeight) * mask;
+        float height = lowlandHeight + (mountainHeight - lowlandHeight) * mtnMask;
+
+        if (_config.mesaRimCliffs)
+        {
+            const float mesaMask  = MesaMask(_sum, _total, _config);
+            const float mesaHeight = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)]
+                                   + noise * _config.biomeAmplitude[static_cast<int>(BIOME::MESA)];
+
+            height += (mesaHeight - lowlandHeight) * mesaMask;
+        }
+
         if (_config.detailEnabled)
         {
             height += (FBM(_wx / _config.detailScale, _wz / _config.detailScale,

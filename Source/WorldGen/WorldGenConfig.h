@@ -43,7 +43,7 @@ namespace WORLDGEN
         float tundraHumidThresh = 0.5f;   // cold:      < tundra else taiga
         float plainsHumidThresh = 0.5f;   // temperate: < plains else forest
         float desertHumidThresh = 0.5f;   // hot:       < desert else savanna
-        float mesaRarity        = 0.835f; // 1 = rarest
+        float mesaRarity        = 0.7f;   // 1 = rarest
 
         // BIOME MAP --------------------------------------------------------------------------------------------------
         int biomeZoomLevels   = 8;  // coarse-cell size 
@@ -51,21 +51,21 @@ namespace WORLDGEN
         int biomeFuzzyLevels  = 1;  // coarsest levels 
 
         // PER-BIOME TERRAIN ------------------------------------------------------------------------------------------
-        int biomeBaseHeight[(int)BIOME::COUNT] = {
+        int biomeBaseHeight[static_cast<int>(BIOME::COUNT)] = {
             66,  // PLAINS
             71,  // FOREST
             64,  // DESERT
-            64,  // MESA
+            80,  // MESA
             73,  // TAIGA
             65,  // TUNDRA
             102, // MOUNTAINS
             63,  // SAVANNA
         };
-        int biomeAmplitude[(int)BIOME::COUNT] = {
+        int biomeAmplitude[static_cast<int>(BIOME::COUNT)] = {
             10,  // PLAINS
             15,  // FOREST
             7,   // DESERT
-            8,   // MESA
+            30,  // MESA
             35,  // TAIGA
             12,  // TUNDRA
             105, // MOUNTAINS
@@ -81,6 +81,16 @@ namespace WORLDGEN
         int   mtnGrassLine    = 112;     // Y below which surface is grass
         float snowJitterScale = 40.0f;   // wavelength of the wavy snow/grass line
         float snowJitterAmp   = 12.0f;   // blocks the line wobbles (hehe wobble fun word)
+
+        // MESA SURFACE ------------------------------------------------------------------------------------------------
+        bool mesaRimCliffs    = true;
+        //Mesa Cliffs
+        bool  cliffsEnabled   = true;
+        float cliffScale      = 120.0f; // cliff cluster size within a mesa
+        int   cliffOctaves    = 2;
+        float cliffThreshold  = 0.50f;  // cliffNoise above this is cliffy
+        float cliffBlendWidth = 0.15f;  // smoothstep transition between terracing
+        float cliffStep       = 10.0f;  // terrace height = vertical face size in blocks
 
         // WATER & RIVERS ----------------------------------------------------------------------------------------------
         int  waterLevel = 58;            // water surface height
