@@ -142,6 +142,20 @@ namespace WORLDGEN
         return std::clamp((static_cast<float>(_sums.mesa) / _total - 0.5f) * 2.f, 0.0f, 1.0f);
     }
 
+    inline float Cliffiness(int _wx, int _wz, float _mesaMask, const WorldGenConfig& _config)
+    {
+        if (!_config.cliffsEnabled || _mesaMask <= 0.0f) return 0.0f;
+
+        const float noise = FBM(
+            _wx / _config.cliffScale,
+            _wz / _config.cliffScale,
+            _config.seed + 980u,
+            _config.cliffOctaves);
+
+        const float clamp = std::clamp((noise - _config.cliffThreshold) / _config.cliffBlendWidth, 0.0f, 1.0f);
+        return _mesaMask * Smooth(clamp);
+    }
+
     // Per-column height from the precomputed blend sums
     // Same math as TerrainHeight, just reading box-sums instead of scanning the window
     inline int TerrainHeightFromSums(const BlendSums& _sum, int _wx, int _wz, int _total, const WorldGenConfig& _config)
@@ -187,10 +201,15 @@ namespace WORLDGEN
         const float lowBase  = lowCount ? float(_sum.base) / lowCount : float(mtnBase);
         const float lowAmp   = lowCount ? float(_sum.amp)  / lowCount : float(mtnAmp );
 
-        const float mtnMask = MountainMask(_sum, _total, _config);
+        const float mtnMask  = MountainMask(_sum, _total, _config);
+        const float mesaMask = MesaMask(_sum, _total, _config);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
         float mountainHeight = 0.0f;
+
+        const float mesaHeight = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)]
+                               + noise * _config.biomeAmplitude[static_cast<int>(BIOME::MESA)];
+
 
         if (_config.ridgeMountains)
         {
@@ -205,13 +224,15 @@ namespace WORLDGEN
 
         float height = lowlandHeight + (mountainHeight - lowlandHeight) * mtnMask;
 
-        if (_config.mesaRimCliffs)
-        {
-            const float mesaMask  = MesaMask(_sum, _total, _config);
-            const float mesaHeight = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)]
-                                   + noise * _config.biomeAmplitude[static_cast<int>(BIOME::MESA)];
-
+        if (_config.mesaRimCliffs) {
             height += (mesaHeight - lowlandHeight) * mesaMask;
+        }
+
+        const float cliff = Cliffiness(_wx, _wz, mesaMask, _config);
+        if (cliff > 0.0f)
+        {
+            const float terraced = std::round(height / _config.cliffStep) * _config.cliffStep;
+            height = Lerp(height, terraced, cliff);
         }
 
         if (_config.detailEnabled)
@@ -220,6 +241,18 @@ namespace WORLDGEN
                       _config.seed + 941u, _config.detailOctaves) - 0.5f) * 2.0f * _config.detailAmp;
         }
         return static_cast<int>(height);
+    }
+
+    // Terracotta by elevation
+    inline BLOCK MesaStrata(int _y, int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        const float jitter = (FBM(_wx / _config.mesaBandJitterScale, _wz / _config.mesaBandJitterScale,
+                           _config.seed + 990u, 2) - 0.5f) * 2.0f * _config.mesaBandJitterAmp;
+
+        const int band = static_cast<int>((static_cast<float>(_y) + jitter) / _config.mesaBandThickness);
+        constexpr int num = std::size(kMesaPalette);
+
+        return kMesaPalette[(band % num + num) % num];
     }
 
     // Which stone/ore fills a deep block: 3D noise fields pick rare ore veins
@@ -386,6 +419,11 @@ namespace WORLDGEN
                     {
                         block = BLOCK::BEDROCK;
                     }
+                    // specifical exception for mesa
+                    else if (biome == BIOME::MESA && y < terrHeight)
+                    {
+                        block = MesaStrata(y, wx, wz, _config);
+                    }
                     else if (y <  terrHeight - dirtDepth)
                     {
                         block = StoneAt(wx, y, wz, _config);
@@ -405,6 +443,11 @@ namespace WORLDGEN
                         {
                             // river bed, scattered sand floor instead of plain dirt
                             block = (sandRoll < _config.beachSandChance) ? BLOCK::SAND : bParams.subsurface;
+                        }
+                        else if (biome == BIOME::MESA)
+                        {
+                            // banded mesa look
+                            block = MesaStrata(terrHeight, wx, wz, _config);
                         }
                         else if (biome == BIOME::MOUNTAINS)
                         {

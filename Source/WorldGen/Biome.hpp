@@ -30,6 +30,13 @@ namespace WORLDGEN
     };
     static_assert(std::size(kBiomes) == static_cast<std::size_t>(BIOME::COUNT));
 
+    inline constexpr BLOCK kMesaPalette[] = {
+        BLOCK::TERRACOTTA, BLOCK::TERRACOTTA, BLOCK::TERRACOTTA, BLOCK::ORANGE_TERRACOTTA,
+        BLOCK::TERRACOTTA, BLOCK::TERRACOTTA, BLOCK::YELLOW_TERRACOTTA, BLOCK::TERRACOTTA,
+        BLOCK::TERRACOTTA, BLOCK::WHITE_TERRACOTTA, BLOCK::TERRACOTTA, BLOCK::BROWN_TERRACOTTA,
+        BLOCK::TERRACOTTA, BLOCK::TERRACOTTA, BLOCK::RED_TERRACOTTA, BLOCK::LIGHT_GRAY_TERRACOTTA,
+    };
+
     inline const BiomeParams& GetBiome(BIOME _biome)
     {
         return kBiomes[static_cast<std::size_t>(_biome)];
