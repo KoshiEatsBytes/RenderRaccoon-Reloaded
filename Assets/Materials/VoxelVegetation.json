@@ -2,7 +2,7 @@
   "Shaders":
   {
     "Vertex": "Shaders/Voxel/Voxel.vert",
-    "Fragment": "Shaders/Voxel/Voxel.frag"
+    "Fragment": "Shaders/Voxel/VoxelCutout.frag"
   },
   "Params":
   {

@@ -29,9 +29,10 @@ namespace RR
         CHUNK::Coord coord;
         CHUNK::STATE state = CHUNK::STATE::EMPTY;
 
-        // Chunk contents and mesh
+        // Chunk contents and meshes
         std::array<CHUNK::BlockId, CHUNK::kVoxelsPerChunk> voxels {};
         std::unique_ptr<Mesh> mesh;
+        std::unique_ptr<Mesh> vegMesh;
     };
 
     using ChunkGenerator = std::function<void(Chunk&)>;

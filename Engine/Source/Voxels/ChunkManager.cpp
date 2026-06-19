@@ -15,8 +15,10 @@ namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    ChunkManager::ChunkManager(ChunkGenerator _generator, std::shared_ptr<Material> _material)
-        : m_material(std::move(_material)), m_generator(std::move(_generator))
+    ChunkManager::ChunkManager(ChunkGenerator _generator,
+        std::shared_ptr<Material> _blockMat,  std::shared_ptr<Material> _vegMat)
+        : m_blockMat(std::move(_blockMat)), m_vegMat(std::move(_vegMat)),
+          m_generator(std::move(_generator))
     {
     }
 
@@ -49,9 +51,27 @@ namespace RR
 
             // Create and submit render command for that chunk
             RenderCommand command;
-            command.material    = m_material.get();
+            command.material    = m_blockMat.get();
             command.mesh        = chunk->mesh.get();
             command.modelMatrix = chunkMatrix;
+            command.color       = vec3(1.0f);
+
+            queue.Submit(command);
+        }
+
+        // Render vegetation AFTER opaque blocks
+        for (auto& [coord, chunk] : m_chunks)
+        {
+            if (!chunk->vegMesh) continue;
+
+            auto model = glm::translate(mat4(1.0f),
+                vec3(coord.x*CHUNK::kSizeX, 0.0f, coord.z*CHUNK::kSizeZ));
+
+            // Create and submit render command for vegetation on this chunk
+            RenderCommand command;
+            command.material    = m_vegMat.get();
+            command.mesh        = chunk->vegMesh.get();
+            command.modelMatrix = model;
             command.color       = vec3(1.0f);
 
             queue.Submit(command);
@@ -97,9 +117,19 @@ namespace RR
     void ChunkManager::BuildChunkMesh(Chunk& _chunk)
     {
         const ChunkBorders borders = GatherBorders(_chunk.coord);
-        MeshData data = MeshChunk(_chunk, borders);
-        
-        _chunk.mesh  = std::make_unique<Mesh>(data.layout, data.vertices, data.indices);
+
+        // Create chunk mesh
+        MeshData chunkData = MeshChunk(_chunk, borders);
+        _chunk.mesh        = std::make_unique<Mesh>(chunkData.layout, chunkData.vertices, chunkData.indices);
+
+        // Separate mesh for vegetation
+        MeshData vegData = MeshVegetation(_chunk, borders);
+        if (!vegData.Empty())
+        {
+            _chunk.vegMesh = std::make_unique<Mesh>(vegData.layout, vegData.vertices, vegData.indices);
+        }
+
+        // chunk marked as meshed
         _chunk.state = CHUNK::STATE::MESHED;
     }
 

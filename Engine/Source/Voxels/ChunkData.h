@@ -7,7 +7,8 @@
 
 namespace RR::CHUNK
 {
-    using BlockId = std::uint8_t;
+    using BlockId  = std::uint8_t;
+    using RenderId = std::uint8_t;
 
     inline constexpr int kSizeX = 16;
     inline constexpr int kSizeZ = 16;
@@ -16,6 +17,13 @@ namespace RR::CHUNK
     inline constexpr int kVoxelsPerChunk = kSizeX * kSizeZ * kSizeY;
 
     // BLOCKS ----------------------------------------------------------------------------------------------------------
+
+    enum class RENDERKIND : RenderId
+    {
+        CUBE,
+        CROSS,
+        LEAF
+    };
 
     // Block Repository
     enum class BLOCK : BlockId
@@ -67,6 +75,20 @@ namespace RR::CHUNK
         GREEN_TERRACOTTA,
         RED_TERRACOTTA,
         BLACK_TERRACOTTA,
+        MOSSY_COBBLESTONE,
+        SHORT_GRASS,
+        SHORT_DRY_GRASS,
+        TALL_DRY_GRASS,
+        TALL_GRASS_LOWER,
+        TALL_GRASS_UPPER,
+        POPPY,
+        DANDELION,
+        ALLIUM,
+        BLUE_ORCHID,
+        RED_TULIP,
+        ORANGE_TULIP,
+        PINK_TULIP,
+        WHITE_TULIP,
 
         COUNT
     };
@@ -131,6 +153,20 @@ namespace RR::CHUNK
         GREEN_TERRACOTTA,
         RED_TERRACOTTA,
         BLACK_TERRACOTTA,
+        MOSSY_COBBLESTONE,
+        SHORT_GRASS,
+        SHORT_DRY_GRASS,
+        TALL_DRY_GRASS,
+        TALL_GRASS_LOWER,
+        TALL_GRASS_UPPER,
+        POPPY,
+        DANDELION,
+        ALLIUM,
+        BLUE_ORCHID,
+        RED_TULIP,
+        ORANGE_TULIP,
+        PINK_TULIP,
+        WHITE_TULIP,
 
         COUNT
     };
@@ -194,6 +230,20 @@ namespace RR::CHUNK
         true,  // GREEN_TERRACOTTA
         true,  // RED_TERRACOTTA
         true,  // BLACK_TERRACOTTA
+        false, // MOSSY_COBBLESTONE
+        false, // SHORT_GRASS
+        false, // SHORT_DRY_GRASS
+        false, // TALL_DRY_GRASS
+        false, // TALL_GRASS_LOWER
+        false, // TALL_GRASS_UPPER
+        false, // POPPY
+        false, // DANDELION
+        false, // ALLIUM
+        false, // BLUE_ORCHID
+        false, // RED_TULIP
+        false, // ORANGE_TULIP
+        false, // PINK_TULIP
+        false, // WHITE_TULIP
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -218,6 +268,7 @@ namespace RR::CHUNK
     {
         bool solid = true;
         std::uint16_t faceLayer[6] = {};
+        RENDERKIND kind = RENDERKIND::CUBE;
     };
 
     // Face order is EAST, WEST, UP, DOWN, SOUTH, NORT
@@ -228,6 +279,16 @@ namespace RR::CHUNK
     constexpr BlockInfo SidedBlock(BLOCKTEX _side, BLOCKTEX _top, BLOCKTEX _bottom)
     {
         return { true, { _side, _side, _top, _bottom, _side, _side } };
+    }
+    // Leafs have their own factory
+    constexpr BlockInfo LeafBlock(BLOCKTEX _tex)
+    {
+        return { true, { _tex, _tex, _tex, _tex, _tex, _tex }, RENDERKIND::LEAF };
+    }
+    // Cross block, flowers/grass that kind of stuff
+    constexpr BlockInfo CrossBlock(BLOCKTEX _tex)
+    {
+        return { false, { _tex, _tex, _tex, _tex, _tex, _tex }, RENDERKIND::CROSS };
     }
 
     // Block info table
@@ -244,9 +305,9 @@ namespace RR::CHUNK
             /* Snow          */ UniformBlock(SNOW),
             /* Water         */ UniformBlock(WATER),
             /* OakLog        */ SidedBlock  (OAK_LOG_SIDE, OAK_LOG_END, OAK_LOG_END),
-            /* Leaves        */ UniformBlock(OAK_LEAVES),
+            /* Leaves        */ LeafBlock   (OAK_LEAVES),
             /* SpruceLog     */ SidedBlock  (SPRUCE_LOG_SIDE, SPRUCE_LOG_END, SPRUCE_LOG_END),
-            /* SpruceLeaf    */ UniformBlock(SPRUCE_LEAVES),
+            /* Spruce Leaves */ LeafBlock   (SPRUCE_LEAVES),
             /* SnowyGrass    */ SidedBlock  (SNOWY_GRASS_SIDE, SNOWY_GRASS_TOP, DIRT),
             /* Podzol        */ SidedBlock  (PODZOL_SIDE, PODZOL_TOP, DIRT),
             /* RedSand       */ UniformBlock(RED_SAND),
@@ -259,7 +320,7 @@ namespace RR::CHUNK
             /* Red Sandstone */ SidedBlock  (RED_SANDSTONE_SIDE, RED_SANDSTONE_TOP, RED_SANDSTONE_BOTTOM),
             /* Savanna Grass */ SidedBlock  (GRASS_SIDE, SAVANNA_GRASS_TOP, DIRT),
             /* Acacia Log    */ SidedBlock  (ACACIA_LOG_SIDE, ACACIA_LOG_END, ACACIA_LOG_END),
-            /* Acacia Leaves */ UniformBlock(ACACIA_LEAVES),
+            /* Acacia Leaves */ LeafBlock   (ACACIA_LEAVES),
             /* Calcite       */ UniformBlock(CALCITE),
             /* Dripstone     */ UniformBlock(DRIPSTONE),
             /* Terracotta    */ UniformBlock(TERRACOTTA),
@@ -278,7 +339,21 @@ namespace RR::CHUNK
             /* Brown Terra   */ UniformBlock(BROWN_TERRACOTTA),
             /* Green Terra   */ UniformBlock(GREEN_TERRACOTTA),
             /* Red Terra     */ UniformBlock(RED_TERRACOTTA),
-            /* Black Terra   */ UniformBlock(BLACK_TERRACOTTA)
+            /* Black Terra   */ UniformBlock(BLACK_TERRACOTTA),
+            /* Mossy Cobble  */ UniformBlock(MOSSY_COBBLESTONE),
+            /* Short Grass   */ CrossBlock  (SHORT_GRASS),
+            /* Short DryGrass*/ CrossBlock  (SHORT_DRY_GRASS),
+            /* Tall Dry Grass*/ CrossBlock  (TALL_DRY_GRASS),
+            /* TallGrass Low */ CrossBlock  (TALL_GRASS_LOWER),
+            /* TallGrass Up  */ CrossBlock  (TALL_GRASS_UPPER),
+            /* Poppy         */ CrossBlock  (POPPY),
+            /* Dandelion     */ CrossBlock  (DANDELION),
+            /* Allium        */ CrossBlock  (ALLIUM),
+            /* Blue Orchid   */ CrossBlock  (BLUE_ORCHID),
+            /* Red Tulip     */ CrossBlock  (RED_TULIP),
+            /* Orange Tulip  */ CrossBlock  (ORANGE_TULIP),
+            /* Pink Tulip    */ CrossBlock  (PINK_TULIP),
+            /* White Tulip   */ CrossBlock  (WHITE_TULIP)
         }
     };
 

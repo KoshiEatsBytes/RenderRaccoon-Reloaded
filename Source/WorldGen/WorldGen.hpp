@@ -513,6 +513,14 @@ namespace WORLDGEN
                             {
                                 block = bParams.surface;
                             }
+
+                            // Debug to have grass rendered
+                            if ((block == BLOCK::GRASS || block == BLOCK::SAVANNA_GRASS) &&
+                                !underWater && y + 1 < kSizeY &&
+                                HashFloat(wx, wz, _config.seed + 980u) < 0.30f)
+                            {
+                                _chunk.Set(x, y + 1, z, static_cast<BlockId>(BLOCK::SHORT_GRASS));
+                            }
                         }
 
                     }

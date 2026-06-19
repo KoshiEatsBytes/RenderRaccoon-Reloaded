@@ -7,6 +7,8 @@ namespace RR
 
     // FACE GEOMETRY TABLES --------------------------------------------------------------------------------------------
 
+    // VOXELS
+
     // Step one cell along face index to check for neighbor block
     static constexpr int kFaceOffset[6][3] = {
         { 1, 0, 0}, {-1, 0, 0},
@@ -33,6 +35,19 @@ namespace RR
 
     // UV paired with corners above
     static constexpr float kFaceUV[4][2] = {
+        {0,1},{1,1},{1,0},{0,0}
+    };
+
+    // CROSS BLOCKS
+
+    // Corss blocks are two quads interlacing, different coords
+    static constexpr float kCrossCorner[2][4][3] = {
+        {{0,0,0},{1,0,1},{1,1,1},{0,1,0}},  // plane A
+        {{1,0,0},{0,0,1},{0,1,1},{1,1,0}},  // plane B
+    };
+
+    // different UVs
+    static constexpr float kCrossUV[4][2] = {
         {0,1},{1,1},{1,0},{0,0}
     };
 
@@ -102,6 +117,9 @@ namespace RR
 
                     const BlockInfo& info = GetBlockInfo(id);
 
+                    // Skip anything that is not an opaque cube, vegetation has a separate layer
+                    if (info.kind != RENDERKIND::CUBE) continue;
+
                     for (int face = 0; face < 6; ++face)
                     {
                         // Hidden face cull, dont render face if neighbour in that direction is solid
@@ -161,6 +179,68 @@ namespace RR
         }
 
         return chunkMesh;
+    }
+
+    // STUB FOR LATER
+    MeshData MeshVegetation(const Chunk& _chunk, const ChunkBorders& _borders)
+    {
+        MeshData veg;
+        veg.layout = VoxelVertexLayout();
+
+        std::uint32_t baseVert = 0;
+
+        for (int z = 0; z < kSizeZ; ++z)
+        {
+            for (int x = 0; x < kSizeX; ++x)
+            {
+                for (int y = 0; y < kSizeY; y++)
+                {
+                    const BlockInfo& info = GetBlockInfo(_chunk.At(x,y,z));
+
+                    // Block non-cross blocks
+                    if (info.kind != RENDERKIND::CROSS) continue;
+
+                    const float layer = info.faceLayer[0];
+
+                    for (int panel = 0; panel < 2; ++panel)
+                    {
+                        for (int corner = 0; corner < 4; ++corner)
+                        {
+                            // Position
+                            veg.vertices.push_back(x + kCrossCorner[panel][corner][0]);
+                            veg.vertices.push_back(y + kCrossCorner[panel][corner][1]);
+                            veg.vertices.push_back(z + kCrossCorner[panel][corner][2]);
+                            // Normal
+                            veg.vertices.push_back(0.0f);
+                            veg.vertices.push_back(1.0f);
+                            veg.vertices.push_back(0.0f);
+                            //Uvs
+                            veg.vertices.push_back(kCrossUV[corner][0]);
+                            veg.vertices.push_back(kCrossUV[corner][1]);
+
+                            veg.vertices.push_back(layer);
+                        }
+
+                        // 4 traingles per face, double sided regardles of culling
+                        veg.indices.push_back(baseVert + 0);
+                        veg.indices.push_back(baseVert + 1);
+                        veg.indices.push_back(baseVert + 2);
+                        veg.indices.push_back(baseVert + 0);
+                        veg.indices.push_back(baseVert + 2);
+                        veg.indices.push_back(baseVert + 3);
+                        veg.indices.push_back(baseVert + 0);
+                        veg.indices.push_back(baseVert + 2);
+                        veg.indices.push_back(baseVert + 1);
+                        veg.indices.push_back(baseVert + 0);
+                        veg.indices.push_back(baseVert + 3);
+                        veg.indices.push_back(baseVert + 2);
+                        baseVert += 4;
+                    }
+                }
+            }
+        }
+
+        return veg;
     }
 }
 

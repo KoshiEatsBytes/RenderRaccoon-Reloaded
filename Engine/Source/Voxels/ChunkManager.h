@@ -14,7 +14,8 @@ namespace RR
     class ChunkManager
     {
     public:
-        ChunkManager(ChunkGenerator _generator, std::shared_ptr<Material> _material);
+        ChunkManager(ChunkGenerator _generator, std::shared_ptr<Material> _blockMat,
+            std::shared_ptr<Material> _vegMat);
         ~ChunkManager();
 
         void Update(const vec3& _cameraPos);
@@ -35,8 +36,9 @@ namespace RR
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
 
         std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash> m_chunks;
-        std::shared_ptr<Material> m_material;
-        ChunkGenerator            m_generator;
+        std::shared_ptr<Material> m_blockMat;
+        std::shared_ptr<Material> m_vegMat;
+        ChunkGenerator m_generator;
 
         CHUNK::Coord m_lastCoords;
         bool m_firstFrame = true;

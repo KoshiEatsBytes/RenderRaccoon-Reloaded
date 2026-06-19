@@ -31,6 +31,7 @@ private:
     RR::FreeCameraComponent* m_camComp = nullptr;
 
     std::shared_ptr<RR::Material> m_voxelMat;
+    std::shared_ptr<RR::Material> m_vegMat;
     std::unique_ptr<RR::ChunkManager> m_chunkManager;
     WORLDGEN::WorldGenConfig m_genConfig;
     WORLDGEN::WorldGenConfig m_draftConfig;

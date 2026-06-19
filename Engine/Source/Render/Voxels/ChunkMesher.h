@@ -87,7 +87,8 @@ namespace RR
     VertexLayout VoxelVertexLayout();
 
     // Pure mesher, automatically culls hiding faces
-    MeshData MeshChunk(const Chunk& _chunk, const ChunkBorders& _borders);
+    MeshData MeshChunk     (const Chunk& _chunk, const ChunkBorders& _borders);
+    MeshData MeshVegetation(const Chunk& _chunk, const ChunkBorders& _borders);
 }
 
 

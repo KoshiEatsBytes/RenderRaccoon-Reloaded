@@ -47,11 +47,15 @@ bool FreeRoam::Init()
     auto arr = m_voxelMat->GetTextureArray("uBlockTex");
     assert(arr && arr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
 
+    m_vegMat = RR::Material::Load("Materials/VoxelVegetation.json");
+    auto vegArr = m_vegMat->GetTextureArray("uBlockTex");
+    assert(vegArr && vegArr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
+
 
     RR::ChunkGenerator gen = [this](RR::Chunk& c) {
         WORLDGEN::GenerateColumn(c, m_genConfig);
     };
-    m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat);
+    m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat, m_vegMat);
 
     auto checkArea = [&](int ax, int az, int aw, int ah, const char* tag)
     {
@@ -94,6 +98,8 @@ bool FreeRoam::Init()
         WORLDGEN::GenerateColumn(s1, other);
         RR::InfoLog("[DETERMINISM] seed changes the world: ", (s0.voxels != s1.voxels) ? "PASS" : "FAIL");
     }
+
+
 
 
 
