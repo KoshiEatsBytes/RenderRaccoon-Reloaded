@@ -74,8 +74,13 @@ namespace WORLDGEN
 
         // TERRAIN BLEND -----------------------------------------------------------------------------------------------
         int   biomeBlendRadius = 20;     // neighbourhood radius for base/amp blending
-        float mountainCurve    = 1.5f;   // foothill steepness
-  
+        float mountainCurve    = 2.5f;   // foothill steepness
+        // Aprons, skirts before rise/cliff
+        bool  mesaApron       = true;
+        float mesaApronThresh = 0.70f;
+        bool  mtnApron        = true;
+        float mtnApronThresh  = 0.25f;
+
         // MOUNTAIN SURFACE --------------------------------------------------------------------------------------------
         int   snowLine        = 150;     // Y above which surface is snow
         int   mtnGrassLine    = 112;     // Y below which surface is grass
@@ -83,7 +88,9 @@ namespace WORLDGEN
         float snowJitterAmp   = 12.0f;   // blocks the line wobbles (hehe wobble fun word)
 
         // MESA SURFACE ------------------------------------------------------------------------------------------------
-        bool mesaRimCliffs    = true;
+        bool mesaRimCliffs        = true;
+        float mesaNoiseScale      = 260.0f;  // broad makes gentle slopes, narrow wide plateaus
+        int   mesaNoiseOctaves    = 3;       // fewer is smoother
         //Mesa Cliffs
         bool  cliffsEnabled       = true;
         float cliffScale          = 256.0f; // cliff cluster size within a mesa
@@ -94,6 +101,8 @@ namespace WORLDGEN
         float mesaBandThickness   = 2.0f;   // blocks per color band
         float mesaBandJitterScale = 60.0f;  // wavelength of the band edge wobble
         float mesaBandJitterAmp   = 0.f;    // blocks the band line wobbles
+        float cliffRiser          = 0.25f;  // riser width, small = sharp cliff
+        float cliffPhaseScale     = 300.0f; // wavelength of the region terrace phase offset
 
         // WATER & RIVERS ----------------------------------------------------------------------------------------------
         int  waterLevel = 58;            // water surface height

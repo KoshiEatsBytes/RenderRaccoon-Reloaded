@@ -142,6 +142,23 @@ namespace WORLDGEN
         return std::clamp((static_cast<float>(_sums.mesa) / _total - 0.5f) * 2.f, 0.0f, 1.0f);
     }
 
+    // apron creating a slight skirt before biome height
+    inline float ApronMask(float _mask, bool _enabled, float _thresh)
+    {
+        if (!_enabled) return _mask;
+
+        return std::clamp((_mask - _thresh) / (1.0f - _thresh), 0.0f, 1.0f);
+    }
+
+    inline float SoftTerrace(float _height, float _step, float _riser)
+    {
+        const float level = _height / _step;
+        const float floor = std::floor(level);
+        const float t     = std::clamp((level - floor - (1.0f - _riser)) / _riser, 0.0f, 1.0f);
+
+        return (floor + Smooth(t)) * _step;
+    }
+
     inline float Cliffiness(int _wx, int _wz, float _mesaMask, const WorldGenConfig& _config)
     {
         if (!_config.cliffsEnabled || _mesaMask <= 0.0f) return 0.0f;
@@ -203,6 +220,8 @@ namespace WORLDGEN
 
         const float mtnMask  = MountainMask(_sum, _total, _config);
         const float mesaMask = MesaMask(_sum, _total, _config);
+        const float mtnCliff  = ApronMask(mtnMask,  _config.mtnApron,  _config.mtnApronThresh);
+        const float mesaCliff = ApronMask(mesaMask, _config.mesaApron, _config.mesaApronThresh);
 
         const float lowlandHeight  = lowBase + noise * lowAmp;
         float mountainHeight = 0.0f;
@@ -222,16 +241,23 @@ namespace WORLDGEN
             mountainHeight = mtnBase + noise * mtnAmp ;
         }
 
-        float height = lowlandHeight + (mountainHeight - lowlandHeight) * mtnMask;
+        float height = lowlandHeight + (mountainHeight - lowlandHeight) * mtnCliff;
 
         if (_config.mesaRimCliffs) {
-            height += (mesaHeight - lowlandHeight) * mesaMask;
+            height += (mesaHeight - lowlandHeight) * mesaCliff;
         }
 
-        const float cliff = Cliffiness(_wx, _wz, mesaMask, _config);
+        const float cliff = Cliffiness(_wx, _wz, mesaCliff, _config);
         if (cliff > 0.0f)
         {
-            const float terraced = std::round(height / _config.cliffStep) * _config.cliffStep;
+            const float phase = FBM(
+                _wx / _config.cliffPhaseScale,
+                _wz / _config.cliffPhaseScale,
+                _config.seed + 981u, 2)
+                * _config.cliffStep;
+
+            const float terraced = SoftTerrace(height - phase, _config.cliffStep, _config.cliffRiser) + phase;
+
             height = Lerp(height, terraced, cliff);
         }
 
@@ -367,6 +393,8 @@ namespace WORLDGEN
                 // Land height + mountain mask (mask shared with the tunnel gate)
                 const int   land    = TerrainHeightFromSums(sum, wx, wz, total, _config);
                 const float mtnMask = MountainMask(sum, total, _config);
+                const float mesaMask  = MesaMask(sum, total, _config);
+                const float mesaCliff = ApronMask(mesaMask, _config.mesaApron, _config.mesaApronThresh);
 
                 // Raw meander (for tunnels) 
                 float profile = RiverProfile(wx, wz, _config);
@@ -420,7 +448,7 @@ namespace WORLDGEN
                         block = BLOCK::BEDROCK;
                     }
                     // specifical exception for mesa
-                    else if (biome == BIOME::MESA && y < terrHeight)
+                    else if (biome == BIOME::MESA && mesaCliff > 0.0f && y < terrHeight)
                     {
                         block = MesaStrata(y, wx, wz, _config);
                     }
@@ -444,7 +472,7 @@ namespace WORLDGEN
                             // river bed, scattered sand floor instead of plain dirt
                             block = (sandRoll < _config.beachSandChance) ? BLOCK::SAND : bParams.subsurface;
                         }
-                        else if (biome == BIOME::MESA)
+                        else if (biome == BIOME::MESA && mesaCliff > 0.0f)
                         {
                             // banded mesa look
                             block = MesaStrata(terrHeight, wx, wz, _config);
