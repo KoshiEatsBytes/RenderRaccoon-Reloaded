@@ -89,6 +89,12 @@ namespace RR::CHUNK
         ORANGE_TULIP,
         PINK_TULIP,
         WHITE_TULIP,
+        BUSH,
+        DEAD_BUSH,
+        FERN,
+        SAVANNA_SHORT_GRASS,
+        SNOW_SHORT_GRASS,
+        TUNDRA_SPRUCE_LEAVES,
 
         COUNT
     };
@@ -167,6 +173,12 @@ namespace RR::CHUNK
         ORANGE_TULIP,
         PINK_TULIP,
         WHITE_TULIP,
+        BUSH,
+        DEAD_BUSH,
+        FERN,
+        SAVANNA_SHORT_GRASS,
+        SNOW_SHORT_GRASS,
+        TUNDRA_SPRUCE_LEAVES,
 
         COUNT
     };
@@ -244,6 +256,12 @@ namespace RR::CHUNK
         false, // ORANGE_TULIP
         false, // PINK_TULIP
         false, // WHITE_TULIP
+        false, // BUSH
+        false, // DEAD_BUSH
+        false, // FERN
+        false, // SAVANNA_SHORT_GRASS
+        false, // SNOW_SHORT_GRASS
+        false, // TUNDRA_SPRUCE_LEAVES
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -353,7 +371,13 @@ namespace RR::CHUNK
             /* Red Tulip     */ CrossBlock  (RED_TULIP),
             /* Orange Tulip  */ CrossBlock  (ORANGE_TULIP),
             /* Pink Tulip    */ CrossBlock  (PINK_TULIP),
-            /* White Tulip   */ CrossBlock  (WHITE_TULIP)
+            /* White Tulip   */ CrossBlock  (WHITE_TULIP),
+            /* Bush          */ CrossBlock  (BUSH),
+            /* Dead Bush     */ CrossBlock  (DEAD_BUSH),
+            /* Fern          */ CrossBlock  (FERN),
+            /* Savanna Grass */ CrossBlock  (SAVANNA_SHORT_GRASS),
+            /* Snow Grass    */ CrossBlock  (SNOW_SHORT_GRASS),
+            /* Tundra Spruce */ LeafBlock   (TUNDRA_SPRUCE_LEAVES)
         }
     };
 

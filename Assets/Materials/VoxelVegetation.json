@@ -80,7 +80,13 @@
           { "Path": "Textures/Blocks/Vegetation/red_tulip.png" },
           { "Path": "Textures/Blocks/Vegetation/orange_tulip.png" },
           { "Path": "Textures/Blocks/Vegetation/pink_tulip.png" },
-          { "Path": "Textures/Blocks/Vegetation/white_tulip.png" }
+          { "Path": "Textures/Blocks/Vegetation/white_tulip.png" },
+          { "Path": "Textures/Blocks/Vegetation/bush.png",             "Tint": [0.45, 0.62, 0.30] },
+          { "Path": "Textures/Blocks/Vegetation/dead_bush.png" },
+          { "Path": "Textures/Blocks/Vegetation/fern.png",             "Tint": [0.45, 0.60, 0.32] },
+          { "Path": "Textures/Blocks/Vegetation/short_grass.png",      "Tint": [0.75, 0.72, 0.34] },
+          { "Path": "Textures/Blocks/Vegetation/short_grass.png",      "Tint": [0.80, 0.84, 0.78] },
+          { "Path": "Textures/Blocks/Spruce Tree/spruce_leaves.png",   "Tint": [0.50, 0.62, 0.55] }
         ]
       }
     ]
