@@ -281,7 +281,7 @@ namespace WORLDGEN
 
     // Blend window at precomputer area from x and z
     inline int LandHeightAt(const std::vector<BIOME>& _area, int _areaOriginX, int _areaOriginZ, int areaWidth,
-                            int _wx, int _wz, const WorldGenConfig& _config)
+                            int _wx, int _wz, const WorldGenConfig& _config, BlendSums* _outSums = nullptr)
     {
         const int blendRadius = _config.biomeBlendRadius;
         BlendSums sum{};
@@ -316,7 +316,10 @@ namespace WORLDGEN
         }
 
 
+        if (_outSums) *_outSums = sum;
+
         const int width = 2 * blendRadius + 1;
+        
         return TerrainHeightFromSums(sum, _wx, _wz, width * width, _config);
     }
 
@@ -329,27 +332,6 @@ namespace WORLDGEN
         const std::vector<BIOME> area = FinalArea(_wx - radius, _wz - radius, width, width, _config);
 
         return LandHeightAt(area, _wx - radius, _wz - radius, width , _wx, _wz, _config);
-    }
-
-    // Max land height, rejects trees on cliffs / flanks
-    inline int SlopeSpread(int _wx, int _wz, int _radius, const WorldGenConfig& _config)
-    {
-        int lowerHeight = LandHeight(_wx, _wz, _config);
-        int higherHeight = lowerHeight;
-
-        for (int dz = -_radius; dz <= _radius; dz += _radius)
-        {
-            for (int dx = -_radius; dx <= _radius; dx += _radius)
-            {
-                if (dx == 0 && dz == 0) continue;
-
-                const int height = LandHeight(_wx + dx, _wz + dz, _config);
-                lowerHeight      = std::min(lowerHeight, height);
-                higherHeight     = std::max(higherHeight, height);
-            }
-        }
-
-        return higherHeight - lowerHeight;
     }
 
     // Terracotta by elevation
@@ -449,11 +431,12 @@ namespace WORLDGEN
 
     inline void PlaceTrees(RR::Chunk& _chunk, const WorldGenConfig& _config)
     {
+        using namespace RR::CHUNK;
+
         constexpr int FOOT = 1;
         const int areaRadius = FOOT + _config.biomeBlendRadius;
         const int areaWidth  = 2 * areaRadius + 1;
 
-        using namespace RR::CHUNK;
         const int outX = _chunk.coord.x * kSizeX;
         const int outZ = _chunk.coord.z * kSizeZ;
         const int gw   = kSizeX + 2 * kTreeMargin;
@@ -465,30 +448,41 @@ namespace WORLDGEN
         {
             for (int lx = -kTreeMargin; lx < kSizeX + kTreeMargin; ++lx)
             {
-                const BIOME biome   = biomes[(lx + kTreeMargin) + (lz + kTreeMargin) * gw];
-                const TREE  species = GetVegTypes(biome).tree;
-
-                // for now oak only
-                if (species != TREE::OAK) continue;
+                const BIOME biome = biomes[(lx + kTreeMargin) + (lz + kTreeMargin) * gw];
+                const BiomeVegTypes& vegTypes = GetVegTypes(biome);
+                const BiomeVeg&      details  = _config.biomeVegetation[static_cast<int>(biome)];
 
                 const int wx = outX + lx;
                 const int wz = outZ + lz;
 
-                const float hasOak = HashFloat(wx, wz, _config.seed + 1010u);
-                // Filter candidates
-                if (hasOak >= _config.biomeVegetation[static_cast<int>(biome)].tree) continue;
+                // check if tree or boulder should be placed
+                const bool placeTree = vegTypes.tree != TREE::NONE
+                                       && HashFloat(wx, wz, _config.seed + 1010u) < details.tree;
+                const bool placeBoulder = !placeTree && vegTypes.boulders
+                                          && HashFloat(wx, wz, _config.seed + 1012u) < details.boulder;
 
-                // CONFIRMED TREE - EXPENSIVE CHECKS
+                // Discard if none
+                if (!placeTree && !placeBoulder) continue;
+
+                // CONFIRMED FEATURE SPAWN
                 const int areaOriginX = wx - areaRadius;
                 const int areaOriginZ = wz - areaRadius;
 
                 const std::vector<BIOME> area = FinalArea(areaOriginX, areaOriginZ, areaWidth,
                                                         areaWidth, _config);
 
+                BlendSums rootSums;
                 const int land = LandHeightAt(area, areaOriginX, areaOriginZ,
-                                              areaWidth, wx, wz, _config);
+                                              areaWidth, wx, wz, _config, &rootSums);
 
-                const float profile    = RiverProfile(wx, wz, _config);
+                // Match GenerateColumn's taiga river-fade so trees don't avoid phantom rivers
+                float profile = RiverProfile(wx, wz, _config);
+                if (!_config.taigaRivers)
+                {
+                    const int blendTotal = (2 * _config.biomeBlendRadius + 1) * (2 * _config.biomeBlendRadius + 1);
+                    profile *= 1.0f - static_cast<float>(rootSums.taiga) / blendTotal;
+                }
+
                 const float riverAllow = std::clamp(static_cast<float>(_config.riverMaxHeight - land)
                                                     / _config.riverFade, 0.f, 1.f);
 
@@ -517,7 +511,37 @@ namespace WORLDGEN
                 // too steep, cant spawn, discard
                 if (highHeight - lowHeight > _config.treeSlopeMax) continue;
 
-                StampOak(_chunk, lx, land, lz, HashU32(wx, wz, _config.seed + 1011u));
+                // Valid spawn point, hash and pick for biome
+                const uInt32 shape = HashU32(wx, wz, _config.seed + 1011u);
+                if (placeTree)
+                {
+                    switch (vegTypes.tree)
+                    {
+                        case TREE::OAK:
+                        {
+                            StampOak (_chunk, lx, land, lz, shape);
+                            break;
+                        }
+                        case TREE::SPRUCE_TALL:
+                        {
+                            StampSpruceTall(_chunk, lx, land, lz, shape);
+                            break;
+                        }
+                        case TREE::SPRUCE_SMALL:
+                        {
+                            StampSpruceSmall(_chunk, lx, land, lz, shape);
+                            break;
+                        }
+                        case TREE::ACACIA:
+                        {
+                            StampAcacia(_chunk, lx, land, lz, shape);
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                }
+                else StampBoulder(_chunk, lx, land, lz, shape);
             }
         }
     }
