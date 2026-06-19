@@ -1,6 +1,7 @@
 
 #pragma once
 #include <cstdint>
+#include <algorithm>
 #include "Voxels/ChunkData.h"
 #include "BiomeID.h"
 #include "Voxels/Chunk.h"
@@ -116,6 +117,57 @@ namespace WORLDGEN
         return _sample >= BLOCK::TERRACOTTA && _sample <= BLOCK::BLACK_TERRACOTTA;
     }
 
+    // tree clumping, low freq noise
+    inline float TreeClumpField(int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        float sx = static_cast<float>(_wx);
+        float sz = static_cast<float>(_wz);
+
+        // domain-warp so grove/clearing edges are sinuous, not round blobs
+        if (_config.clumpWarp > 0.0f)
+        {
+            const float px = static_cast<float>(_wx) / _config.clumpScale;
+            const float pz = static_cast<float>(_wz) / _config.clumpScale;
+            
+            sx += (FBM(px, pz, _config.seed + 1021u, 2) - 0.5f) * 2.0f * _config.clumpWarp;
+            sz += (FBM(px, pz, _config.seed + 1022u, 2) - 0.5f) * 2.0f * _config.clumpWarp;
+        }
+
+        const float noise = FBM(sx / _config.clumpScale, sz / _config.clumpScale,
+                            _config.seed + 1020u, 3);
+        const float denom = _config.clumpThick - _config.clumpClear;
+
+        float density = 0.0f;
+        if (denom > 1e-5f) {
+            density = std::clamp((noise - _config.clumpClear) / denom, 0.0f, 1.0f);
+        }
+        else {
+            density = noise >= _config.clumpThick ? 1.0f : 0.0f;
+        }
+
+        return Smooth(density) * _config.clumpPeak;
+    }
+
+    // biome blend between uniform scatter 
+    inline float TreeClump(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
+    {
+        // Only clump if enabled
+        if (!_config.clumpEnabled) return 1.0f;
+
+        const float amount = _config.biomeVegetation[static_cast<int>(_biome)].clumpAmount;
+        if (amount <= 0.0f) return 1.0f;
+
+        return Lerp(1.0f, TreeClumpField(_wx, _wz, _config), amount);
+    }
+
+    // Tunable trunk height, deterministic pick min/max
+    inline int PickHeight(uInt32 _hash, int _min, int _max)
+    {
+        if (_max < _min) _max = _min;
+        const uInt32 span = static_cast<uInt32>(_max - _min) + 1u;
+        return _min + static_cast<int>(_hash % span);
+    }
+
     inline void PlaceGroundCover(RR::Chunk& _chunk, int _x, int _surfaceY, int _z,
                                  int _wx, int _wz, BIOME _biome, BLOCK _surface,
                                  const WorldGenConfig& _config)
@@ -211,12 +263,11 @@ namespace WORLDGEN
     }
 
     // Generate oak at coords
-    inline void StampOak(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
+    inline void StampOak(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash, int _minH, int _maxH)
     {
         using namespace RR::CHUNK;
 
-        // trunk can be 5 to 7 tall
-        const int trunkHeight = 5 + static_cast<int>(_hash % 4u);
+        const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
         // Trunk first
@@ -249,13 +300,12 @@ namespace WORLDGEN
         }
     }
 
-    // Generate tall spruce 2x2 trunk, wide tiered skirts 
-    inline void StampSpruceTall(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
+    // Generate tall spruce 2x2 trunk, wide tiered skirts
+    inline void StampSpruceTall(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash, int _minH, int _maxH)
     {
         using namespace RR::CHUNK;
 
-        // height 22 to 26 unless tweaked
-        const int trunkHeight = 22 + static_cast<int>(_hash % 5u);   
+        const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
         // 2x2 trunk
@@ -269,8 +319,12 @@ namespace WORLDGEN
 
         // pointed tip over the 2x2
         for (int tz = 0; tz <= 1; ++tz)
+        {
             for (int tx = 0; tx <= 1; ++tx)
+            {
                 SetClippedIfAir(_chunk, _lx + tx, topY + 1, _lz + tz, BLOCK::SPRUCE_LEAVES);
+            }
+        }
 
         // tiered skirts around the trunk
         const int canopyBottom = _rootY + 6;
@@ -301,12 +355,12 @@ namespace WORLDGEN
     }
 
     // generate small spruce at coords
-    inline void StampSpruceSmall(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
+    inline void StampSpruceSmall(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash, int _minH, int _maxH)
     {
         using namespace RR::CHUNK;
 
-        // Small spruce are 6 to 8 tall
-        const int trunkHeight = 6 + static_cast<int>(_hash % 3u);
+        // trunk height range is per-biome tunable (default 6 to 8)
+        const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
         for (int y=_rootY+1; y<=topY; ++y)
@@ -336,7 +390,7 @@ namespace WORLDGEN
     }
 
     // generate acacia tree at coords
-    inline void StampAcacia(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
+    inline void StampAcacia(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash, int _minH, int _maxH)
     {
         using namespace RR::CHUNK;
 
@@ -370,7 +424,7 @@ namespace WORLDGEN
         };
 
         // lower straight trunk, then bend
-        const int baseH = 2 + static_cast<int>(_hash % 3u);     
+        const int baseH = PickHeight(_hash, _minH, _maxH);
         const int bendY = _rootY + baseH;
 
         for (int y = _rootY + 1; y <= bendY; ++y)

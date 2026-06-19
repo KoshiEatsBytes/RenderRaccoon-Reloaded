@@ -456,8 +456,10 @@ namespace WORLDGEN
                 const int wz = outZ + lz;
 
                 // check if tree or boulder should be placed
+                // clumping modulates the per-biome tree density into thickets/clearings
                 const bool placeTree = vegTypes.tree != TREE::NONE
-                                       && HashFloat(wx, wz, _config.seed + 1010u) < details.tree;
+                                       && HashFloat(wx, wz, _config.seed + 1010u)
+                                            < details.tree * TreeClump(wx, wz, biome, _config);
                 const bool placeBoulder = !placeTree && vegTypes.boulders
                                           && HashFloat(wx, wz, _config.seed + 1012u) < details.boulder;
 
@@ -525,7 +527,8 @@ namespace WORLDGEN
                             if (GetVegTypes(nearBiome).tree == TREE::NONE) continue;
 
                             if (HashFloat(wx + ox, wz + oz, _config.seed + 1010u)
-                                < _config.biomeVegetation[static_cast<int>(nearBiome)].tree)
+                                < _config.biomeVegetation[static_cast<int>(nearBiome)].tree
+                                    * TreeClump(wx + ox, wz + oz, nearBiome, _config))
                             {
                                 nearTree = true;
                                 break;
@@ -543,22 +546,22 @@ namespace WORLDGEN
                     {
                         case TREE::OAK:
                         {
-                            StampOak (_chunk, lx, land, lz, shape);
+                            StampOak (_chunk, lx, land, lz, shape, details.treeMinHeight, details.treeMaxHeight);
                             break;
                         }
                         case TREE::SPRUCE_TALL:
                         {
-                            StampSpruceTall(_chunk, lx, land, lz, shape);
+                            StampSpruceTall(_chunk, lx, land, lz, shape, details.treeMinHeight, details.treeMaxHeight);
                             break;
                         }
                         case TREE::SPRUCE_SMALL:
                         {
-                            StampSpruceSmall(_chunk, lx, land, lz, shape);
+                            StampSpruceSmall(_chunk, lx, land, lz, shape, details.treeMinHeight, details.treeMaxHeight);
                             break;
                         }
                         case TREE::ACACIA:
                         {
-                            StampAcacia(_chunk, lx, land, lz, shape);
+                            StampAcacia(_chunk, lx, land, lz, shape, details.treeMinHeight, details.treeMaxHeight);
                             break;
                         }
                         default:

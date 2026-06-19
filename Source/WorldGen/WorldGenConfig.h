@@ -9,13 +9,16 @@ namespace WORLDGEN
     // Per-biome vegetation densities
     struct BiomeVeg
     {
-        float tree      = 0.0f;
-        float grass     = 0.0f;
-        float tallGrass = 0.0f;  // fraction of short grass that becomes tall grass
-        float flower    = 0.0f;
-        float bush      = 0.0f;
-        float cactus    = 0.0f;
-        float boulder   = 0.0f;
+        float tree          = 0.0f;
+        float grass         = 0.0f;
+        float tallGrass     = 0.0f;  // fraction of short grass that becomes tall grass
+        float flower        = 0.0f;
+        float bush          = 0.0f;
+        float cactus        = 0.0f;
+        float boulder       = 0.0f;
+        float clumpAmount   = 0.0f;  // 0 = uniform scatter, 1 = full clump field
+        int   treeMinHeight = 0;     // trunk height range in blocss
+        int   treeMaxHeight = 0;
     };
 
     // Generation configuration panel
@@ -87,19 +90,28 @@ namespace WORLDGEN
         // VEGETATION --------------------------------------------------------------------------------------------------
 
         // Per biome vegetation density
+        //                  tree     grass   tallG  flower  bush    cactus  boulder clump  tMin tMax
         BiomeVeg biomeVegetation[static_cast<int>(BIOME::COUNT)] = {
-            /* PLAINS    */ { 0.0008f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f },
-            /* FOREST    */ { 0.030f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f },
-            /* DESERT    */ { 0.000f,  0.03f,  0.00f, 0.000f, 0.014f, 0.004f, 0.000f },
-            /* MESA      */ { 0.000f,  0.015f, 0.00f, 0.000f, 0.020f, 0.000f, 0.000f },
-            /* TAIGA     */ { 0.006f,  0.03f,  0.00f, 0.000f, 0.005f, 0.000f, 0.004f },
-            /* TUNDRA    */ { 0.003f,  0.028f, 0.00f, 0.003f, 0.000f, 0.000f, 0.000f },
-            /* MOUNTAINS */ { 0.000f,  0.07f,  0.00f, 0.000f, 0.000f, 0.000f, 0.000f },
-            /* SAVANNA   */ { 0.006f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f },
+            /* PLAINS    */ { 0.0008f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f, 0.30f,  5,  8 },
+            /* FOREST    */ { 0.050f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f, 0.00f,  5, 10 },
+            /* DESERT    */ { 0.000f,  0.03f,  0.00f, 0.000f, 0.014f, 0.004f, 0.000f, 0.00f,  0,  0 },
+            /* MESA      */ { 0.000f,  0.015f, 0.00f, 0.000f, 0.020f, 0.000f, 0.000f, 0.00f,  0,  0 },
+            /* TAIGA     */ { 0.0062f, 0.03f,  0.00f, 0.000f, 0.005f, 0.000f, 0.006f, 0.27f, 24, 30 },
+            /* TUNDRA    */ { 0.0024f, 0.028f, 0.00f, 0.003f, 0.000f, 0.000f, 0.000f, 0.40f,  6,  8 },
+            /* MOUNTAINS */ { 0.000f,  0.07f,  0.00f, 0.000f, 0.000f, 0.000f, 0.000f, 0.00f,  0,  0 },
+            /* SAVANNA   */ { 0.006f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f, 0.15f,  2,  4 },
         };
 
         // Trees
         int treeSlopeMax = 3;
+
+        // Tree clumping - modulates per biome tree density
+        bool  clumpEnabled = true;
+        float clumpScale   = 90.0f;   // grove/clearing size in blocks
+        float clumpWarp    = 35.0f;   // edge organicness, lower the rounder
+        float clumpClear   = 0.42f;   // field below this clear trees
+        float clumpThick   = 0.60f;   // field above this full density trees
+        float clumpPeak    = 2.0f;    // thicket multiplier, stick around 2
 
         // TERRAIN BLEND -----------------------------------------------------------------------------------------------
         int   biomeBlendRadius = 20;     // neighbourhood radius for base/amp blending
