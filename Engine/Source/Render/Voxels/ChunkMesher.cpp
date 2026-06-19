@@ -51,14 +51,22 @@ namespace RR
         {0,1},{1,1},{1,0},{0,0}
     };
 
-    // helper to check if a block is of a solid type
-    static bool IsSolid(BlockId _id)
+    // MESH AND CHUNK VERTEX -------------------------------------------------------------------------------------------
+
+    // if a block is solid or occludes
+    static bool Occludes(BlockId _id, bool _fancyLeaves)
     {
-        return GetBlockInfo(_id).solid;
+        const BlockInfo& info = GetBlockInfo(_id);
+
+        // fancy leaves dont hide anything
+        if (_fancyLeaves && info.kind == RENDERKIND::LEAF) return false;
+
+        return info.solid;
     }
 
     // Is the neighbor cell solid?
-    static bool NeighbourSolid(const Chunk& _chunk, const ChunkBorders& _borders, int _nx, int _ny, int _nz)
+    static bool NeighbourOccludes(const Chunk& _chunk, const ChunkBorders& _borders,
+        int _nx, int _ny, int _nz, bool _fancyLeaves)
     {
         // always air above the world
         if (_ny >= kSizeY) return false;
@@ -67,22 +75,20 @@ namespace RR
 
         // check West if negative x
         if (_nx < 0)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::WEST, _nx, _ny, _nz));
+            return Occludes(_borders.GetBorderVoxel(ChunkBorders::BORDER::WEST, _nx, _ny, _nz), _fancyLeaves);
         // East if positive x
         if (_nx >= kSizeX)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::EAST, _nx, _ny, _nz));
+            return Occludes(_borders.GetBorderVoxel(ChunkBorders::BORDER::EAST, _nx, _ny, _nz), _fancyLeaves);
         // North if negative Z
         if (_nz < 0)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::NORTH, _nx, _ny, _nz));
+            return Occludes(_borders.GetBorderVoxel(ChunkBorders::BORDER::NORTH, _nx, _ny, _nz), _fancyLeaves);
         // South if positive z
         if (_nz >= kSizeZ)
-            return IsSolid(_borders.GetBorderVoxel(ChunkBorders::BORDER::SOUTH, _nx, _ny, _nz));
+            return Occludes(_borders.GetBorderVoxel(ChunkBorders::BORDER::SOUTH, _nx, _ny, _nz), _fancyLeaves);
 
         // If an interior cell has been requested
-        return IsSolid(_chunk.At(_nx, _ny, _nz));
+        return Occludes(_chunk.At(_nx, _ny, _nz), _fancyLeaves);
     }
-
-    // MESH AND CHUNK VERTEX -------------------------------------------------------------------------------------------
 
     // Builds the vertex layout for a voxel
     VertexLayout VoxelVertexLayout()
@@ -96,12 +102,119 @@ namespace RR
         return layout;
     }
 
-    MeshData MeshChunk(const Chunk &_chunk, const ChunkBorders &_borders)
+    static void EmitCube(MeshData& _out, const Chunk& _chunk, const ChunkBorders& _borders,
+                         int _x, int _y, int _z, const BlockInfo& _info,
+                         std::uint32_t& _baseVert, bool _fancyLeaves)
     {
-        MeshData chunkMesh;
-        chunkMesh.layout = VoxelVertexLayout();
+        for (int face = 0; face < 6; ++face)
+        {
+            // Hidden face cull, dont render face if neighbour in that direction is solid
+            if (NeighbourOccludes(
+                _chunk,
+                _borders,
+                _x + kFaceOffset[face][0],
+                _y + kFaceOffset[face][1],
+                _z + kFaceOffset[face][2],
+                _fancyLeaves))
+            {
+                continue;
+            }
 
-        std::uint32_t baseVert = 0;
+            const float layer = _info.faceLayer[face];
+
+            // Applies deterministic rotation on top and bottom face
+            int rot = 0;
+            const bool rotatable = (face == static_cast<int>(FACE::UP)    ||
+                                    face == static_cast<int>(FACE::DOWN)) &&
+                                   IsTexRotatable(static_cast<BLOCKTEX>(_info.faceLayer[face]));
+
+            if (rotatable)
+            {
+                const int wx = _chunk.coord.x * kSizeX + _x;
+                const int wz = _chunk.coord.z * kSizeZ + _z;
+                rot = FaceRotation(wx, wz);
+            }
+
+            // Build vertex array, each voxel face has 4 vertices
+            for (int corner = 0; corner < 4; corner++)
+            {
+                // Position
+                _out.vertices.push_back(static_cast<float>(_x) + kVoxelCorner[face][corner][0]);
+                _out.vertices.push_back(static_cast<float>(_y) + kVoxelCorner[face][corner][1]);
+                _out.vertices.push_back(static_cast<float>(_z) + kVoxelCorner[face][corner][2]);
+                // Normal
+                _out.vertices.push_back(kFaceNormal[face][0]);
+                _out.vertices.push_back(kFaceNormal[face][1]);
+                _out.vertices.push_back(kFaceNormal[face][2]);
+                // UV
+                _out.vertices.push_back(kFaceUV[(corner + rot) & 3][0]);
+                _out.vertices.push_back(kFaceUV[(corner + rot) & 3][1]);
+
+                _out.vertices.push_back(layer);
+            }
+
+            // 2 triangles per face
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 1);
+            _out.indices.push_back(_baseVert + 2);
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 2);
+            _out.indices.push_back(_baseVert + 3);
+
+            _baseVert += 4;
+        }
+    }
+
+    void EmitCross(MeshData& _out, int _x, int _y, int _z,
+                   const BlockInfo& _info, std::uint32_t& _baseVert)
+    {
+        const float layer = _info.faceLayer[0];
+
+        for (int panel = 0; panel < 2; ++panel)
+        {
+            for (int corner = 0; corner < 4; ++corner)
+            {
+                // Position
+                _out.vertices.push_back(_x + kCrossCorner[panel][corner][0]);
+                _out.vertices.push_back(_y + kCrossCorner[panel][corner][1]);
+                _out.vertices.push_back(_z + kCrossCorner[panel][corner][2]);
+                // Normal
+                _out.vertices.push_back(0.0f);
+                _out.vertices.push_back(1.0f);
+                _out.vertices.push_back(0.0f);
+                //Uvs
+                _out.vertices.push_back(kCrossUV[corner][0]);
+                _out.vertices.push_back(kCrossUV[corner][1]);
+
+                _out.vertices.push_back(layer);
+            }
+
+            // 4 traingles per face, double sided regardles of culling
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 1);
+            _out.indices.push_back(_baseVert + 2);
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 2);
+            _out.indices.push_back(_baseVert + 3);
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 2);
+            _out.indices.push_back(_baseVert + 1);
+            _out.indices.push_back(_baseVert + 0);
+            _out.indices.push_back(_baseVert + 3);
+            _out.indices.push_back(_baseVert + 2);
+
+            _baseVert += 4;
+        }
+    }
+
+    ChunkMeshes MeshChunk(const Chunk& _chunk, const ChunkBorders& _borders, bool _fancyLeaves)
+    {
+        ChunkMeshes out;
+        out.opaque.layout = VoxelVertexLayout();
+        out.veg.layout    = VoxelVertexLayout();
+
+        std::uint32_t opaqueBase     = 0;
+        std::uint32_t vegetationBase = 0;
 
         // Y fastest scan, pairs with continuos column voxels
         for (int z = 0; z < kSizeZ; z++)
@@ -110,137 +223,30 @@ namespace RR
             {
                 for (int y = 0; y < kSizeY; y++)
                 {
-                    const BlockId id = _chunk.At(x, y, z);
+                    const BlockInfo& info = GetBlockInfo(_chunk.At(x, y, z));
 
-                    // Skip if not solid
-                    if (!IsSolid(id)) continue;
-
-                    const BlockInfo& info = GetBlockInfo(id);
-
-                    // Skip anything that is not an opaque cube, vegetation has a separate layer
-                    if (info.kind != RENDERKIND::CUBE) continue;
-
-                    for (int face = 0; face < 6; ++face)
+                    switch (info.kind)
                     {
-                        // Hidden face cull, dont render face if neighbour in that direction is solid
-                        if (NeighbourSolid(_chunk, _borders,
-                            x + kFaceOffset[face][0],
-                            y + kFaceOffset[face][1],
-                            z + kFaceOffset[face][2]))
-                        {
-                            continue;
-                        }
+                        case RENDERKIND::CUBE:
+                            if (info.solid) {
+                                EmitCube(out.opaque, _chunk, _borders, x, y, z, info, opaqueBase, _fancyLeaves);
+                            }
+                            break;
 
-                        const float layer = info.faceLayer[face];
+                        case RENDERKIND::CROSS:
+                            EmitCross(out.veg, x, y, z, info, vegetationBase);
 
-                        // Applies deterministic rotation on top and bottom face
-                        int rot = 0;
-                        const bool rotatable = (face == static_cast<int>(FACE::UP)    ||
-                                                face == static_cast<int>(FACE::DOWN)) &&
-                                                IsTexRotatable(static_cast<BLOCKTEX>(info.faceLayer[face]));
+                            break;
 
-                        if (rotatable)
-                        {
-                            const int wx = _chunk.coord.x * kSizeX + x;
-                            const int wz = _chunk.coord.z * kSizeZ + z;
-                            rot = FaceRotation(wx, wz);
-                        }
-
-                        // Build vertex array, each voxel face has 4 vertices
-                        for (int corner = 0; corner < 4; corner++)
-                        {
-                            // Position
-                            chunkMesh.vertices.push_back(static_cast<float>(x) + kVoxelCorner[face][corner][0]);
-                            chunkMesh.vertices.push_back(static_cast<float>(y) + kVoxelCorner[face][corner][1]);
-                            chunkMesh.vertices.push_back(static_cast<float>(z) + kVoxelCorner[face][corner][2]);
-                            // Normal
-                            chunkMesh.vertices.push_back(kFaceNormal[face][0]);
-                            chunkMesh.vertices.push_back(kFaceNormal[face][1]);
-                            chunkMesh.vertices.push_back(kFaceNormal[face][2]);
-                            // UV
-                            chunkMesh.vertices.push_back(kFaceUV[(corner + rot) & 3][0]);
-                            chunkMesh.vertices.push_back(kFaceUV[(corner + rot) & 3][1]);
-
-                            chunkMesh.vertices.push_back(layer);
-                        }
-
-                        // 2 triangles per face
-                        chunkMesh.indices.push_back(baseVert + 0);
-                        chunkMesh.indices.push_back(baseVert + 1);
-                        chunkMesh.indices.push_back(baseVert + 2);
-                        chunkMesh.indices.push_back(baseVert + 0);
-                        chunkMesh.indices.push_back(baseVert + 2);
-                        chunkMesh.indices.push_back(baseVert + 3);
-
-                        baseVert += 4;
+                        case RENDERKIND::LEAF:
+                            EmitCube(out.veg, _chunk, _borders, x, y, z, info, vegetationBase, _fancyLeaves);
+                            break;
                     }
                 }
             }
         }
 
-        return chunkMesh;
-    }
-
-    // STUB FOR LATER
-    MeshData MeshVegetation(const Chunk& _chunk, const ChunkBorders& _borders)
-    {
-        MeshData veg;
-        veg.layout = VoxelVertexLayout();
-
-        std::uint32_t baseVert = 0;
-
-        for (int z = 0; z < kSizeZ; ++z)
-        {
-            for (int x = 0; x < kSizeX; ++x)
-            {
-                for (int y = 0; y < kSizeY; y++)
-                {
-                    const BlockInfo& info = GetBlockInfo(_chunk.At(x,y,z));
-
-                    // Block non-cross blocks
-                    if (info.kind != RENDERKIND::CROSS) continue;
-
-                    const float layer = info.faceLayer[0];
-
-                    for (int panel = 0; panel < 2; ++panel)
-                    {
-                        for (int corner = 0; corner < 4; ++corner)
-                        {
-                            // Position
-                            veg.vertices.push_back(x + kCrossCorner[panel][corner][0]);
-                            veg.vertices.push_back(y + kCrossCorner[panel][corner][1]);
-                            veg.vertices.push_back(z + kCrossCorner[panel][corner][2]);
-                            // Normal
-                            veg.vertices.push_back(0.0f);
-                            veg.vertices.push_back(1.0f);
-                            veg.vertices.push_back(0.0f);
-                            //Uvs
-                            veg.vertices.push_back(kCrossUV[corner][0]);
-                            veg.vertices.push_back(kCrossUV[corner][1]);
-
-                            veg.vertices.push_back(layer);
-                        }
-
-                        // 4 traingles per face, double sided regardles of culling
-                        veg.indices.push_back(baseVert + 0);
-                        veg.indices.push_back(baseVert + 1);
-                        veg.indices.push_back(baseVert + 2);
-                        veg.indices.push_back(baseVert + 0);
-                        veg.indices.push_back(baseVert + 2);
-                        veg.indices.push_back(baseVert + 3);
-                        veg.indices.push_back(baseVert + 0);
-                        veg.indices.push_back(baseVert + 2);
-                        veg.indices.push_back(baseVert + 1);
-                        veg.indices.push_back(baseVert + 0);
-                        veg.indices.push_back(baseVert + 3);
-                        veg.indices.push_back(baseVert + 2);
-                        baseVert += 4;
-                    }
-                }
-            }
-        }
-
-        return veg;
+        return out;
     }
 }
 

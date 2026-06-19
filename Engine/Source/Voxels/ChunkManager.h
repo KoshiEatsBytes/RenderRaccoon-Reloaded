@@ -22,6 +22,12 @@ namespace RR
         void SubmitDraws();
         void Clear();
 
+        void SetFancyLeaves(bool _fancyLeaves);
+        bool GetFancyLeaves() const;
+
+        void SetRenderDistance(float _distance);
+        bool GetRenderDistance() const;
+
     private:
         void UnloadFar(CHUNK::Coord _centre);
         void GenerateChunk(CHUNK::Coord _coord);
@@ -43,5 +49,8 @@ namespace RR
         CHUNK::Coord m_lastCoords;
         bool m_firstFrame = true;
         int m_meshRadius  = 24;
+
+        // Quality settings
+        bool m_fancyLeaves = true;
     };
 }

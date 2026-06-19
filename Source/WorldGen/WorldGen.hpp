@@ -521,6 +521,20 @@ namespace WORLDGEN
                             {
                                 _chunk.Set(x, y + 1, z, static_cast<BlockId>(BLOCK::SHORT_GRASS));
                             }
+
+                            // Debug for leaves
+                            if (block == BLOCK::GRASS && !underWater && y + 6 < kSizeY &&
+                                HashFloat(wx, wz, _config.seed + 981u) < 0.01f)
+                            {
+                                for (int t = 1; t <= 4; ++t) _chunk.Set(x, y + t, z, (BlockId)BLOCK::OAKLOG);
+                                for (int ly = 4; ly <= 6; ++ly)
+                                    for (int lx = -1; lx <= 1; ++lx)
+                                        for (int lz = -1; lz <= 1; ++lz) {
+                                            int gx = x + lx, gz = z + lz;
+                                            if (gx >= 0 && gx < kSizeX && gz >= 0 && gz < kSizeZ)
+                                                _chunk.Set(gx, y + ly, gz, (BlockId)BLOCK::LEAVES);
+                                        }
+                            }
                         }
 
                     }

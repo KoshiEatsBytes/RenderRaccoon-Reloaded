@@ -75,6 +75,12 @@ namespace RR
         std::array<CHUNK::BlockId, CHUNK::kSizeX * CHUNK::kSizeY> m_north{};
     };
 
+    struct ChunkMeshes
+    {
+        MeshData opaque;
+        MeshData veg;
+    };
+
     // Voxel vertex attribute locations
     namespace VoxelAttrib
     {
@@ -87,8 +93,7 @@ namespace RR
     VertexLayout VoxelVertexLayout();
 
     // Pure mesher, automatically culls hiding faces
-    MeshData MeshChunk     (const Chunk& _chunk, const ChunkBorders& _borders);
-    MeshData MeshVegetation(const Chunk& _chunk, const ChunkBorders& _borders);
+    ChunkMeshes MeshChunk (const Chunk& _chunk, const ChunkBorders& _borders, bool _fancyLeaves);
 }
 
 

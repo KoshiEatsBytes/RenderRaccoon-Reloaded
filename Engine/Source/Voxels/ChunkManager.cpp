@@ -85,6 +85,27 @@ namespace RR
         m_firstFrame = true;
     }
 
+    void ChunkManager::SetFancyLeaves(bool _fancyLeaves)
+    {
+        m_fancyLeaves = _fancyLeaves;
+        Clear();
+    }
+
+    bool ChunkManager::GetFancyLeaves() const
+    {
+        return m_fancyLeaves;
+    }
+
+    void ChunkManager::SetRenderDistance(float _distance)
+    {
+        m_meshRadius = _distance;
+    }
+
+    bool ChunkManager::GetRenderDistance() const
+    {
+        return m_meshRadius;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
@@ -117,16 +138,17 @@ namespace RR
     void ChunkManager::BuildChunkMesh(Chunk& _chunk)
     {
         const ChunkBorders borders = GatherBorders(_chunk.coord);
+        ChunkMeshes meshes = MeshChunk(_chunk, borders, m_fancyLeaves);
 
-        // Create chunk mesh
-        MeshData chunkData = MeshChunk(_chunk, borders);
-        _chunk.mesh        = std::make_unique<Mesh>(chunkData.layout, chunkData.vertices, chunkData.indices);
+        // mesh for chunks
+        auto& chunkMesh = meshes.opaque;
+        _chunk.mesh = std::make_unique<Mesh>(chunkMesh.layout, chunkMesh.vertices, chunkMesh.indices);
 
-        // Separate mesh for vegetation
-        MeshData vegData = MeshVegetation(_chunk, borders);
-        if (!vegData.Empty())
+        // mesh for vegetation
+        auto& meshVeg = meshes.veg;
+        if (!meshVeg.Empty())
         {
-            _chunk.vegMesh = std::make_unique<Mesh>(vegData.layout, vegData.vertices, vegData.indices);
+            _chunk.vegMesh = std::make_unique<Mesh>(meshVeg.layout, meshVeg.vertices, meshVeg.indices);
         }
 
         // chunk marked as meshed
