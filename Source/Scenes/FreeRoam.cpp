@@ -237,6 +237,40 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Jitter amp",   &m_draftConfig.snowJitterAmp, 0.f, 40.f);
     }
 
+    if (ImGui::CollapsingHeader("Mesa / Cliffs"))
+    {
+        ImGui::SeparatorText("Shape");
+        ImGui::SliderFloat("Noise scale##mesa",   &m_draftConfig.mesaNoiseScale, 50.f, 600.f);
+        ImGui::SliderInt  ("Noise octaves##mesa", &m_draftConfig.mesaNoiseOctaves, 1, 8);
+        ImGui::TextDisabled("(mesa base/amp live in Biome Heights)");
+
+        ImGui::SeparatorText("Cliffs");
+        ImGui::Checkbox   ("Enabled##cliff",      &m_draftConfig.cliffsEnabled);
+        ImGui::SliderFloat("Cluster scale##cliff",&m_draftConfig.cliffScale, 1.f, 600.f);
+        ImGui::SliderInt  ("Octaves##cliff",      &m_draftConfig.cliffOctaves, 1, 6);
+        ImGui::SliderFloat("Threshold##cliff",    &m_draftConfig.cliffThreshold, 0.0f, 1.0f);
+        ImGui::SliderFloat("Blend width##cliff",  &m_draftConfig.cliffBlendWidth, 0.01f, 0.5f);
+        ImGui::SliderFloat("Step (face)##cliff",  &m_draftConfig.cliffStep, 2.0f, 32.0f);
+        ImGui::SliderFloat("Riser##cliff",        &m_draftConfig.cliffRiser, 0.05f, 1.0f);
+        ImGui::SliderFloat("Phase scale##cliff",  &m_draftConfig.cliffPhaseScale, 50.f, 600.f);
+
+        ImGui::SeparatorText("Bands");
+        ImGui::SliderFloat("Thickness##band",     &m_draftConfig.mesaBandThickness, 1.0f, 16.0f);
+        ImGui::SliderFloat("Jitter scale##band",  &m_draftConfig.mesaBandJitterScale, 4.f, 200.f);
+        ImGui::SliderFloat("Jitter amp##band",    &m_draftConfig.mesaBandJitterAmp, 0.f, 16.f);
+
+        ImGui::SeparatorText("Apron");
+        ImGui::Checkbox   ("Mesa apron",          &m_draftConfig.mesaApron);
+        ImGui::SliderFloat("Mesa thresh##apron",  &m_draftConfig.mesaApronThresh, 0.0f, 0.99f);
+        ImGui::Checkbox   ("Mountain apron",      &m_draftConfig.mtnApron);
+        ImGui::SliderFloat("Mtn thresh##apron",   &m_draftConfig.mtnApronThresh, 0.0f, 0.99f);
+
+        ImGui::SeparatorText("Rim & Buffer");
+        ImGui::Checkbox   ("Rim cliffs",              &m_draftConfig.mesaRimCliffs);
+        ImGui::Checkbox   ("Mesa-Mtn plains buffer",  &m_draftConfig.mesaMtnBuffer);
+        ImGui::SliderInt  ("Buffer radius",           &m_draftConfig.mesaMtnBufferRadius, 0, 48);
+    }
+
     if (ImGui::CollapsingHeader("Strata & Ores"))
     {
         ImGui::SliderFloat("Strata scale",   &m_draftConfig.strataScale, 4.f, 100.f);

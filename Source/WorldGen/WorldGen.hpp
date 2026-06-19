@@ -215,8 +215,9 @@ namespace WORLDGEN
 
         const int   sumMesa  = _config.mesaRimCliffs ? _sum.mesa : 0;
         const int   lowCount = _total - _sum.mtn - sumMesa;
-        const float lowBase  = lowCount ? float(_sum.base) / lowCount : float(mtnBase);
-        const float lowAmp   = lowCount ? float(_sum.amp)  / lowCount : float(mtnAmp );
+        // hardcoded heights for a rare mesa on mountains collision
+        const float lowBase  = lowCount ? static_cast<float>(_sum.base) / lowCount : 64.0f;
+        const float lowAmp   = lowCount ? static_cast<float>(_sum.amp)  / lowCount : 8.0f;
 
         const float mtnMask  = MountainMask(_sum, _total, _config);
         const float mesaMask = MesaMask(_sum, _total, _config);
@@ -226,10 +227,18 @@ namespace WORLDGEN
         const float lowlandHeight  = lowBase + noise * lowAmp;
         float mountainHeight = 0.0f;
 
+        // specific mesa noise
+        const float mesaNoise  = FBM(
+            sx / _config.mesaNoiseScale,
+            sz / _config.mesaNoiseScale,
+            _config.seed + 953u,
+            _config.mesaNoiseOctaves,
+            _config.useGradientNoise);
+
         const float mesaHeight = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)]
-                               + noise * _config.biomeAmplitude[static_cast<int>(BIOME::MESA)];
+                                + mesaNoise * _config.biomeAmplitude[static_cast<int>(BIOME::MESA)];
 
-
+        // Behaves differently if mountains have ridges
         if (_config.ridgeMountains)
         {
             const float ridged = 1.0f - std::abs(noise * 2.0f - 1.0f);

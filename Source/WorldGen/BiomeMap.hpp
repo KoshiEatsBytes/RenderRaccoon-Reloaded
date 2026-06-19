@@ -221,9 +221,57 @@ namespace WORLDGEN
     // fwd decl — SmoothArea is self-recursive
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config);
 
+    // Mesa mountain clash buffer, add a plain between the two to prevent glitches
+    inline std::vector<BIOME> BufferArea(int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
+    {
+        const int bufferRad  = _config.mesaMtnBufferRadius;
+        const int pw = _w + 2 * bufferRad;
+        const int ph = _h + 2 * bufferRad;
+
+        // unbuffered pipeline
+        const std::vector<BIOME> parent = _config.biomeSmoothPasses > 0
+            ? SmoothArea(_config.biomeSmoothPasses, _x - bufferRad, _z - bufferRad, pw, ph, _config)
+            : BuildArea (_config.biomeZoomLevels,    _x - bufferRad, _z - bufferRad, pw, ph, _config);
+
+        std::vector<BIOME> out(static_cast<size_t>(_w) * _h);
+        for (int j = 0; j < _h; ++j)
+        {
+            for (int i = 0; i < _w; ++i)
+            {
+                const BIOME center = parent[(i + bufferRad) + (j + bufferRad) * pw];
+
+                bool nearMesa = false;
+                bool nearMtn  = false;
+
+                for (int dj = -bufferRad; dj <= bufferRad && !(nearMesa && nearMtn); ++dj)
+                {
+                    for (int di = -bufferRad; di <= bufferRad; ++di)
+                    {
+                        const BIOME biome = parent[(i + bufferRad + di) + (j + bufferRad + dj) * pw];
+
+                        nearMesa |= biome == BIOME::MESA;
+                        nearMtn  |= biome == BIOME::MOUNTAINS;
+                    }
+                }
+
+                // in case of clashing replace with plains
+                if (nearMesa && nearMtn) {
+                    out[i + j * _w] = BIOME::PLAINS;
+                }
+                else {
+                    out[i + j * _w] = center;
+                }
+            }
+        }
+
+        return out;
+    }
+
     // PUBLIC biome-area entry pipeline = zoom stack + optional smooth passes
     inline std::vector<BIOME> FinalArea(int _x, int _z, int _w, int _h, const WorldGenConfig& _config)
     {
+        if (_config.mesaMtnBuffer) return BufferArea(_x, _z, _w, _h, _config);
+
         if (_config.biomeSmoothPasses <= 0)
         {
             return BuildArea(_config.biomeZoomLevels, _x, _z, _w, _h, _config);
