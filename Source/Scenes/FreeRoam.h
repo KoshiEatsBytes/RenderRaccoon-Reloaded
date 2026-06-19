@@ -36,8 +36,9 @@ private:
     WORLDGEN::WorldGenConfig m_genConfig;
     WORLDGEN::WorldGenConfig m_draftConfig;
 
-    bool m_uiMode     = false;
-    bool m_tabWasDown = false;
+    bool m_uiMode      = false;
+    bool m_tabWasDown  = false;
+    bool m_fancyLeaves = true;
 
 };
 

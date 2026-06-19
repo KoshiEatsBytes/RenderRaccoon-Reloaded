@@ -332,6 +332,14 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Dripstone frac",    &m_draftConfig.dripstoneFraction, 0.0f, 1.0f);
     }
 
+    if (ImGui::CollapsingHeader("Rendering"))
+    {
+        if (ImGui::Checkbox("Fancy leaves", &m_fancyLeaves))
+        {
+            m_chunkManager->SetFancyLeaves(m_fancyLeaves);
+        }
+    }
+
     ImGui::Separator();
     ImGui::InputScalar("Seed", ImGuiDataType_U32, &m_draftConfig.seed);
     ImGui::SameLine();
