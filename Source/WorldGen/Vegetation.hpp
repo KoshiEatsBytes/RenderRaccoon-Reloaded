@@ -45,7 +45,7 @@ namespace WORLDGEN
     };
 
     // tree margin
-    constexpr int kTreeMargin = 3;
+    constexpr int kTreeMargin = 6;  
 
     // Indexed by biome
     inline constexpr BiomeVegTypes kVegTypes[] = {
@@ -132,12 +132,12 @@ namespace WORLDGEN
         const uInt32         seed      = _config.seed;
         const bool           onSurface = _surface == GetBiome(_biome).surface;
 
-        // Cactuses 2 to 4 blocks tall
+        // Cactuses 3 to 5 blocks tall
         const float cactusHash = HashFloat(_wx, _wz, seed + 1001u);
         if (types.cactus && onSurface && cactusHash < details.cactus)
         {
             // hash returns from 0 to 2
-            const int height = 2 + static_cast<int>(HashFloat(_wx, _wz, seed + 1002u) * 3.0f);
+            const int height = 3 + static_cast<int>(HashFloat(_wx, _wz, seed + 1002u) * 3.0f);
 
             for (int i = 0; i < height && y + i < kSizeY; ++i)
             {
@@ -249,39 +249,54 @@ namespace WORLDGEN
         }
     }
 
-    // Generate tall spruce at coords
+    // Generate tall spruce 2x2 trunk, wide tiered skirts 
     inline void StampSpruceTall(RR::Chunk& _chunk, int _lx, int _rootY, int _lz, uInt32 _hash)
     {
         using namespace RR::CHUNK;
 
-        // tall spruce is 10 to 14
-        const int trunkHeight = 10 + static_cast<int>(_hash % 5u);
+        // height 22 to 26 unless tweaked
+        const int trunkHeight = 22 + static_cast<int>(_hash % 5u);   
         const int topY        = _rootY + trunkHeight;
 
-        for (int y =_rootY + 1; y <= topY; ++y)
+        // 2x2 trunk
+        for (int y = _rootY + 1; y <= topY; ++y)
         {
-            SetClipped(_chunk, _lx, y, _lz, BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx,     y, _lz,     BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx + 1, y, _lz,     BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx,     y, _lz + 1, BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx + 1, y, _lz + 1, BLOCK::SPRUCE_LOG);
         }
-        SetClippedIfAir(_chunk, _lx, topY + 1, _lz, BLOCK::SPRUCE_LEAVES);
 
-        for (int y = topY; y >= _rootY + 3; --y)
+        // pointed tip over the 2x2
+        for (int tz = 0; tz <= 1; ++tz)
+            for (int tx = 0; tx <= 1; ++tx)
+                SetClippedIfAir(_chunk, _lx + tx, topY + 1, _lz + tz, BLOCK::SPRUCE_LEAVES);
+
+        // tiered skirts around the trunk
+        const int canopyBottom = _rootY + 6;
+        for (int y = topY; y >= canopyBottom; --y)
         {
-            // spruce customization knob
-            const int depth  = topY - y;
-            const int radius = (depth % 3 == 0) ? 1 : 2;
+            const int depth = topY - y;                       
+            int radius      = depth / 2;  
 
-            for (int dz=-radius; dz<=radius; ++dz)
+            // fallbacks to prevent weird shapes
+            if (radius > 5) radius = 5;                        
+            if (depth % 3 == 0 && radius > 0) radius -= 1;      
+
+            for (int dz = -radius; dz <= radius + 1; ++dz)
             {
-                for (int dx=-radius; dx<=radius; ++dx)
+                for (int dx = -radius; dx <= radius + 1; ++dx)
                 {
-                    // roundish tree skirt
-                    if (dx*dx + dz*dz <= radius*radius)
+                    // distance outside, symmetric skirt
+                    const int ox = (dx < 0) ? -dx : (dx > 1 ? dx - 1 : 0);
+                    const int oz = (dz < 0) ? -dz : (dz > 1 ? dz - 1 : 0);
+
+                    if (ox * ox + oz * oz <= radius * radius)
                     {
-                        SetClippedIfAir(_chunk, _lx+dx, y, _lz+dz,  BLOCK::SPRUCE_LEAVES);
+                        SetClippedIfAir(_chunk, _lx + dx, y, _lz + dz, BLOCK::SPRUCE_LEAVES);
                     }
                 }
             }
-
         }
     }
 
@@ -290,8 +305,8 @@ namespace WORLDGEN
     {
         using namespace RR::CHUNK;
 
-        // Small spruce are 4 to 6 tall
-        const int trunkHeight = 4 + static_cast<int>(_hash % 3u);
+        // Small spruce are 6 to 8 tall
+        const int trunkHeight = 6 + static_cast<int>(_hash % 3u);
         const int topY        = _rootY + trunkHeight;
 
         for (int y=_rootY+1; y<=topY; ++y)
@@ -325,25 +340,57 @@ namespace WORLDGEN
     {
         using namespace RR::CHUNK;
 
-        // acacias 5 to 7
-        const int trunkHeight = 5 + static_cast<int>(_hash % 3u);
-        const int topY        = _rootY + trunkHeight;
+        // for acacia create a two layer tree
+        auto plate = [&](int _cx, int _cy, int _cz)
+        {
+            for (int dz = -3; dz <= 3; ++dz)
+            {
+                for (int dx = -3; dx <= 3; ++dx)
+                {
+                    const int dist2 = dx * dx + dz * dz;
 
-        for (int y = _rootY + 1; y <= topY; ++y)
+                    if (dist2 <= 9) SetClippedIfAir(_chunk, _cx + dx, _cy,     _cz + dz, BLOCK::ACACIA_LEAVES);
+                    if (dist2 <= 4) SetClippedIfAir(_chunk, _cx + dx, _cy + 1, _cz + dz, BLOCK::ACACIA_LEAVES);
+                }
+            }
+        };
+
+        // Acacia has diagonal tree braches before leaves 
+        auto branch = [&](int _bx, int _bz, int _by, int _dirX, int _dirZ, int _len)
+        {
+            for (int i = 0; i < _len; ++i)
+            {
+                _bx += _dirX; 
+                _bz += _dirZ; 
+                _by += 1;
+
+                SetClipped(_chunk, _bx, _by, _bz, BLOCK::ACACIA_LOG);
+            }
+            plate(_bx, _by, _bz);
+        };
+
+        // lower straight trunk, then bend
+        const int baseH = 2 + static_cast<int>(_hash % 3u);     
+        const int bendY = _rootY + baseH;
+
+        for (int y = _rootY + 1; y <= bendY; ++y)
         {
             SetClipped(_chunk, _lx, y, _lz, BLOCK::ACACIA_LOG);
         }
 
-        // flat 2 layer plate
-        for (int dz = -3; dz <= 3; ++dz)
+        const int DX[4] = { 1, -1, 0, 0 };
+        const int DZ[4] = { 0, 0, 1, -1 };
+
+        // main branch 
+        const int d0 = static_cast<int>((_hash >> 8) & 3u);
+        branch(_lx, _lz, bendY, DX[d0], DZ[d0], 2 + static_cast<int>((_hash >> 4) & 1u));
+
+        // half chanche of a second shorter branch
+        if (((_hash >> 12) & 1u) == 0u)
         {
-            for (int dx = -3; dx <= 3; ++dx)
-            {
-                const int dist2 = dx * dx + dz * dz;
-                // upper ring and lower ring
-                if (dist2 <= 9) SetClippedIfAir(_chunk, _lx + dx, topY, _lz + dz, BLOCK::ACACIA_LEAVES);
-                if (dist2 <= 4) SetClippedIfAir(_chunk, _lx + dx, topY + 1, _lz + dz, BLOCK::ACACIA_LEAVES);
-            }
+            const int d1 = (d0 + 1 + static_cast<int>((_hash >> 13) & 1u)) & 3;
+            
+            branch(_lx, _lz, bendY, DX[d1], DZ[d1], 1 + static_cast<int>((_hash >> 14) & 1u));
         }
     }
 

@@ -88,14 +88,14 @@ namespace WORLDGEN
 
         // Per biome vegetation density
         BiomeVeg biomeVegetation[static_cast<int>(BIOME::COUNT)] = {
-            /* PLAINS    */ { 0.0015f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f },
+            /* PLAINS    */ { 0.0008f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f },
             /* FOREST    */ { 0.030f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f },
             /* DESERT    */ { 0.000f,  0.03f,  0.00f, 0.000f, 0.014f, 0.004f, 0.000f },
             /* MESA      */ { 0.000f,  0.015f, 0.00f, 0.000f, 0.020f, 0.000f, 0.000f },
-            /* TAIGA     */ { 0.025f,  0.03f,  0.00f, 0.000f, 0.005f, 0.000f, 0.004f },
-            /* TUNDRA    */ { 0.006f,  0.028f, 0.00f, 0.003f, 0.000f, 0.000f, 0.000f },
+            /* TAIGA     */ { 0.006f,  0.03f,  0.00f, 0.000f, 0.005f, 0.000f, 0.004f },
+            /* TUNDRA    */ { 0.003f,  0.028f, 0.00f, 0.003f, 0.000f, 0.000f, 0.000f },
             /* MOUNTAINS */ { 0.000f,  0.07f,  0.00f, 0.000f, 0.000f, 0.000f, 0.000f },
-            /* SAVANNA   */ { 0.012f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f },
+            /* SAVANNA   */ { 0.006f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f },
         };
 
         // Trees
@@ -143,11 +143,11 @@ namespace WORLDGEN
         int   riverDepth       = 6;      // deep channel depth
         int   riverShelfDepth  = 2;      // shallow outer shelf depth 
         float channelThreshold = 0.525f; // valleyTerr above this carves the deep channel
-        float riverScale       = 200.0f; // river "wrinkle" size (HEHE WRINKLEE)
-        int   riverNoiseOct    = 3;
+        float riverScale       = 320.0f; // river "wrinkle" size (HEHE WRINKLEE)
+        int   riverNoiseOct    = 1;
         float riverValleyWidth = 0.08f;
         int   riverMaxHeight   = 120;    // Y where open rivers fade out 
-        float riverFade        = 10.f;   // fade range in blocks
+        float riverFade        = 12.f;   // fade range in blocks
         bool  taigaRivers      = false;  // allow rivers through taiga 
         // River meander warp
         bool  riverWarpEnabled = false;

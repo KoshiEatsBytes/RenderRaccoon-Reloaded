@@ -346,7 +346,7 @@ namespace WORLDGEN
         return kMesaPalette[(band % num + num) % num];
     }
 
-    // Which stone/ore fills a deep block: 3D noise fields pick rare ore veins
+    // Which stone/ore fills a deep block
     inline BLOCK StoneAt(int _wx, int _wy, int _wz, const WorldGenConfig& _config)
     {
         const uInt32 seed = _config.seed;
@@ -475,7 +475,7 @@ namespace WORLDGEN
                 const int land = LandHeightAt(area, areaOriginX, areaOriginZ,
                                               areaWidth, wx, wz, _config, &rootSums);
 
-                // Match GenerateColumn's taiga river-fade so trees don't avoid phantom rivers
+                // fix so trees dont avoid phantom rivers
                 float profile = RiverProfile(wx, wz, _config);
                 if (!_config.taigaRivers)
                 {
@@ -510,6 +510,30 @@ namespace WORLDGEN
 
                 // too steep, cant spawn, discard
                 if (highHeight - lowHeight > _config.treeSlopeMax) continue;
+
+                // dont generate boulders on tree trunks
+                if (placeBoulder)
+                {
+                    bool nearTree = false;
+                    for (int oz = -3; oz <= 3 && !nearTree; ++oz)
+                    {
+                        for (int ox = -3; ox <= 3; ++ox)
+                        {
+                            const BIOME nearBiome = area[(wx + ox - areaOriginX) + (wz + oz - areaOriginZ) * areaWidth];
+
+                            // Discard if biome has no type of tree
+                            if (GetVegTypes(nearBiome).tree == TREE::NONE) continue;
+
+                            if (HashFloat(wx + ox, wz + oz, _config.seed + 1010u)
+                                < _config.biomeVegetation[static_cast<int>(nearBiome)].tree)
+                            {
+                                nearTree = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (nearTree) continue;
+                }
 
                 // Valid spawn point, hash and pick for biome
                 const uInt32 shape = HashU32(wx, wz, _config.seed + 1011u);
@@ -547,7 +571,7 @@ namespace WORLDGEN
     }
 
     // Generate every column of a chunk: pick the biome from cellular grid
-    // This is the injected ChunkGenerator callback: pure, runs once per chunk
+    // This is the injected ChunkGenerator callback, runs once per chunk
     inline void GenerateColumn(RR::Chunk& _chunk, const WorldGenConfig& _config)
     {
         using namespace RR::CHUNK;
@@ -572,7 +596,7 @@ namespace WORLDGEN
                 const BIOME biome = grid.At(wx, wz);
                 const BiomeParams& bParams = GetBiome(biome);
                 const BlendSums& sum = sums[x + z * 16];
-                // Land height + mountain mask (mask shared with the tunnel gate)
+                // Land height + mountain mask 
                 const int   land    = TerrainHeightFromSums(sum, wx, wz, total, _config);
                 const float mtnMask = MountainMask(sum, total, _config);
                 const float mesaMask  = MesaMask(sum, total, _config);
