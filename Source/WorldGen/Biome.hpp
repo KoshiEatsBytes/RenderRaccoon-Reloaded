@@ -22,7 +22,7 @@ namespace WORLDGEN
         /* PLAINS     */ { BLOCK::GRASS,         BLOCK::DIRT,          false },
         /* FOREST     */ { BLOCK::GRASS,         BLOCK::DIRT,          false },
         /* DESERT     */ { BLOCK::SAND,          BLOCK::SANDSTONE,     false },
-        /* RED_DESERT */ { BLOCK::RED_SAND,      BLOCK::RED_SANDSTONE, false },
+        /* MESA       */ { BLOCK::RED_SAND,      BLOCK::RED_SANDSTONE, false },
         /* TAIGA      */ { BLOCK::PODZOL,        BLOCK::DIRT,          false },
         /* TUNDRA     */ { BLOCK::SNOWY_GRASS,   BLOCK::DIRT,          false },
         /* MOUNTAINS  */ { BLOCK::GRASS,         BLOCK::STONE,         true  },

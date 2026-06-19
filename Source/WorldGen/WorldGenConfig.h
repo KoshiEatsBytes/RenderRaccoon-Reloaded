@@ -43,7 +43,7 @@ namespace WORLDGEN
         float tundraHumidThresh = 0.5f;   // cold:      < tundra else taiga
         float plainsHumidThresh = 0.5f;   // temperate: < plains else forest
         float desertHumidThresh = 0.5f;   // hot:       < desert else savanna
-        float redDesertRarity   = 0.835f; // 1 = rarest
+        float mesaRarity        = 0.835f; // 1 = rarest
 
         // BIOME MAP --------------------------------------------------------------------------------------------------
         int biomeZoomLevels   = 8;  // coarse-cell size 
@@ -55,7 +55,7 @@ namespace WORLDGEN
             66,  // PLAINS
             71,  // FOREST
             64,  // DESERT
-            64,  // RED_DESERT
+            64,  // MESA
             73,  // TAIGA
             65,  // TUNDRA
             102, // MOUNTAINS
@@ -65,7 +65,7 @@ namespace WORLDGEN
             10,  // PLAINS
             15,  // FOREST
             7,   // DESERT
-            8,   // RED_DESERT
+            8,   // MESA
             35,  // TAIGA
             12,  // TUNDRA
             105, // MOUNTAINS

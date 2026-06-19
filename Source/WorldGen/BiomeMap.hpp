@@ -50,8 +50,8 @@ namespace WORLDGEN
         // HOT
         if (temp > _config.tempHot)
         {
-            if (HashFloat(_cx, _cz, _config.seed + kSaltRare) > _config.redDesertRarity) {
-                return BIOME::RED_DESERT;
+            if (HashFloat(_cx, _cz, _config.seed + kSaltRare) > _config.mesaRarity) {
+                return BIOME::MESA;
             }
 
             // Desert or savanna;

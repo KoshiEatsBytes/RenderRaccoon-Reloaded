@@ -70,7 +70,7 @@ bool FreeRoam::Init()
         auto big = WORLDGEN::FinalArea(0, 0, 2048, 2048, m_genConfig);
         int zh[(int)WORLDGEN::BIOME::COUNT] = {};
         for (WORLDGEN::BIOME b : big) zh[(int)b]++;
-        RR::InfoLog("[ZOOM] plains=", zh[0], " forest=", zh[1], " desert=", zh[2], " redDesert=", zh[3],
+        RR::InfoLog("[ZOOM] plains=", zh[0], " forest=", zh[1], " desert=", zh[2], " mesa=", zh[3],
                     " taiga=", zh[4], " tundra=", zh[5], " mountains=", zh[6], " savanna=", zh[7]);
     }
 
@@ -165,7 +165,7 @@ void FreeRoam::OnGui()
     ImGui::Begin("World Gen", nullptr);
 
     static const char* kBiomeNames[(int)WORLDGEN::BIOME::COUNT] =
-    { "Plains", "Forest", "Desert", "Red Desert", "Taiga", "Tundra", "Mountains", "Savanna" };
+    { "Plains", "Forest", "Desert", "Mesa", "Taiga", "Tundra", "Mountains", "Savanna" };
 
     if (ImGui::CollapsingHeader("Terrain Shape", ImGuiTreeNodeFlags_DefaultOpen))
     {
@@ -201,7 +201,7 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.tundraHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Plains humidity",   &m_draftConfig.plainsHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Desert humidity",   &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Red desert rarity", &m_draftConfig.redDesertRarity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Mesa rarity", &m_draftConfig.mesaRarity, 0.0f, 1.0f);
     }
 
     if (ImGui::CollapsingHeader("Biome Map (cellular)"))

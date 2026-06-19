@@ -352,7 +352,7 @@ namespace WORLDGEN
                             }
 
                             // desert uses grass instead of sand for river
-                            const bool  arid       = (biome == BIOME::DESERT || biome == BIOME::RED_DESERT);
+                            const bool  arid       = (biome == BIOME::DESERT || biome == BIOME::MESA);
                             const BLOCK beachBlock = (arid && _config.desertRiverGrass) ? BLOCK::GRASS : BLOCK::SAND;
 
                             if (valleyTerr > 0.0f && waterT - valleyTerr <= _config.beachBand)

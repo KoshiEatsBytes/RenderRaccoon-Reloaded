@@ -9,7 +9,7 @@ namespace WORLDGEN
         PLAINS,
         FOREST,
         DESERT,
-        RED_DESERT,
+        MESA,
         TAIGA,
         TUNDRA,
         MOUNTAINS,

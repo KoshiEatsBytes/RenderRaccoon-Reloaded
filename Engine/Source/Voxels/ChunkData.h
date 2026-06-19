@@ -50,6 +50,23 @@ namespace RR::CHUNK
         ACACIA_LEAVES,
         CALCITE,
         DRIPSTONE,
+        TERRACOTTA,
+        WHITE_TERRACOTTA,
+        ORANGE_TERRACOTTA,
+        MAGENTA_TERRACOTTA,
+        LIGHT_BLUE_TERRACOTTA,
+        YELLOW_TERRACOTTA,
+        LIME_TERRACOTTA,
+        PINK_TERRACOTTA,
+        GRAY_TERRACOTTA,
+        LIGHT_GRAY_TERRACOTTA,
+        CYAN_TERRACOTTA,
+        PURPLE_TERRACOTTA,
+        BLUE_TERRACOTTA,
+        BROWN_TERRACOTTA,
+        GREEN_TERRACOTTA,
+        RED_TERRACOTTA,
+        BLACK_TERRACOTTA,
 
         COUNT
     };
@@ -97,6 +114,23 @@ namespace RR::CHUNK
         ACACIA_LEAVES,
         CALCITE,
         DRIPSTONE,
+        TERRACOTTA,
+        WHITE_TERRACOTTA,
+        ORANGE_TERRACOTTA,
+        MAGENTA_TERRACOTTA,
+        LIGHT_BLUE_TERRACOTTA,
+        YELLOW_TERRACOTTA,
+        LIME_TERRACOTTA,
+        PINK_TERRACOTTA,
+        GRAY_TERRACOTTA,
+        LIGHT_GRAY_TERRACOTTA,
+        CYAN_TERRACOTTA,
+        PURPLE_TERRACOTTA,
+        BLUE_TERRACOTTA,
+        BROWN_TERRACOTTA,
+        GREEN_TERRACOTTA,
+        RED_TERRACOTTA,
+        BLACK_TERRACOTTA,
 
         COUNT
     };
@@ -143,6 +177,23 @@ namespace RR::CHUNK
         false, // ACACIA_LEAVES
         false, // CALCITE
         false, // DRIPSTONE
+        true,  // TERRACOTTA
+        true,  // WHITE_TERRACOTTA
+        true,  // ORANGE_TERRACOTTA
+        true,  // MAGENTA_TERRACOTTA
+        true,  // LIGHT_BLUE_TERRACOTTA
+        true,  // YELLOW_TERRACOTTA
+        true,  // LIME_TERRACOTTA
+        true,  // PINK_TERRACOTTA
+        true,  // GRAY_TERRACOTTA
+        true,  // LIGHT_GRAY_TERRACOTTA
+        true,  // CYAN_TERRACOTTA
+        true,  // PURPLE_TERRACOTTA
+        true,  // BLUE_TERRACOTTA
+        true,  // BROWN_TERRACOTTA
+        true,  // GREEN_TERRACOTTA
+        true,  // RED_TERRACOTTA
+        true,  // BLACK_TERRACOTTA
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -210,7 +261,24 @@ namespace RR::CHUNK
             /* Acacia Log    */ SidedBlock  (ACACIA_LOG_SIDE, ACACIA_LOG_END, ACACIA_LOG_END),
             /* Acacia Leaves */ UniformBlock(ACACIA_LEAVES),
             /* Calcite       */ UniformBlock(CALCITE),
-            /* Dripstone     */ UniformBlock(DRIPSTONE)
+            /* Dripstone     */ UniformBlock(DRIPSTONE),
+            /* Terracotta    */ UniformBlock(TERRACOTTA),
+            /* White Terra   */ UniformBlock(WHITE_TERRACOTTA),
+            /* Orange Terra  */ UniformBlock(ORANGE_TERRACOTTA),
+            /* Magenta Terra */ UniformBlock(MAGENTA_TERRACOTTA),
+            /* LightBlue Ter */ UniformBlock(LIGHT_BLUE_TERRACOTTA),
+            /* Yellow Terra  */ UniformBlock(YELLOW_TERRACOTTA),
+            /* Lime Terra    */ UniformBlock(LIME_TERRACOTTA),
+            /* Pink Terra    */ UniformBlock(PINK_TERRACOTTA),
+            /* Gray Terra    */ UniformBlock(GRAY_TERRACOTTA),
+            /* LightGray Ter */ UniformBlock(LIGHT_GRAY_TERRACOTTA),
+            /* Cyan Terra    */ UniformBlock(CYAN_TERRACOTTA),
+            /* Purple Terra  */ UniformBlock(PURPLE_TERRACOTTA),
+            /* Blue Terra    */ UniformBlock(BLUE_TERRACOTTA),
+            /* Brown Terra   */ UniformBlock(BROWN_TERRACOTTA),
+            /* Green Terra   */ UniformBlock(GREEN_TERRACOTTA),
+            /* Red Terra     */ UniformBlock(RED_TERRACOTTA),
+            /* Black Terra   */ UniformBlock(BLACK_TERRACOTTA)
         }
     };
 

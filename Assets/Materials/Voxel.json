@@ -49,7 +49,24 @@
           { "Path": "Textures/Blocks/Acacia Tree/acacia_log_top.png" },
           { "Path": "Textures/Blocks/Acacia Tree/acacia_leaves.png",      "Tint": [0.52, 0.55, 0.24] },
           { "Path": "Textures/Blocks/calcite.png" },
-          { "Path": "Textures/Blocks/dripstone_block.png" }
+          { "Path": "Textures/Blocks/dripstone_block.png" },
+          { "Path": "Textures/Blocks/Terracotta/terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/white_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/orange_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/magenta_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/light_blue_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/yellow_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/lime_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/pink_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/gray_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/light_gray_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/cyan_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/purple_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/blue_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/brown_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/green_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/red_terracotta.png" },
+          { "Path": "Textures/Blocks/Terracotta/black_terracotta.png" }
         ]
       }
     ]
