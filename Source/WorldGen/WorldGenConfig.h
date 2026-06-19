@@ -6,6 +6,18 @@
 
 namespace WORLDGEN
 {
+    // Per-biome vegetation densities
+    struct BiomeVeg
+    {
+        float tree      = 0.0f;
+        float grass     = 0.0f;
+        float tallGrass = 0.0f;  // fraction of short grass that becomes tall grass
+        float flower    = 0.0f;
+        float bush      = 0.0f;
+        float cactus    = 0.0f;
+        float boulder   = 0.0f;
+    };
+
     // Generation configuration panel
     struct WorldGenConfig
     {
@@ -70,6 +82,18 @@ namespace WORLDGEN
             12,  // TUNDRA
             105, // MOUNTAINS
             10,  // SAVANNA
+        };
+
+        // inside WorldGenConfig, indexed by BIOME (order matches BiomeID.h)
+        BiomeVeg biomeVegetation[static_cast<int>(BIOME::COUNT)] = {
+            /* PLAINS    */ { 0.0015f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f },
+            /* FOREST    */ { 0.030f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f },
+            /* DESERT    */ { 0.000f,  0.03f,  0.00f, 0.000f, 0.014f, 0.004f, 0.000f },
+            /* MESA      */ { 0.000f,  0.015f, 0.00f, 0.000f, 0.020f, 0.000f, 0.000f },
+            /* TAIGA     */ { 0.025f,  0.03f,  0.00f, 0.000f, 0.005f, 0.000f, 0.004f },
+            /* TUNDRA    */ { 0.006f,  0.028f, 0.00f, 0.003f, 0.000f, 0.000f, 0.000f },
+            /* MOUNTAINS */ { 0.000f,  0.07f,  0.00f, 0.000f, 0.000f, 0.000f, 0.000f },
+            /* SAVANNA   */ { 0.012f,  0.084f, 0.00f, 0.007f, 0.000f, 0.000f, 0.000f },
         };
 
         // TERRAIN BLEND -----------------------------------------------------------------------------------------------

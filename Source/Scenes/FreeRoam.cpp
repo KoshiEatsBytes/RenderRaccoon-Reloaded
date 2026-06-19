@@ -101,6 +101,23 @@ bool FreeRoam::Init()
 
 
 
+    {
+        const int cx = 3, cz = -2;
+        const int margin = m_genConfig.biomeBlendRadius;
+        const auto grid = WORLDGEN::BuildBiomeGrid(cx, cz, margin, m_genConfig);
+        const auto sums = WORLDGEN::BuildBlendSums(grid, m_genConfig);
+        const int total = (2*margin+1) * (2*margin+1);
+        bool ok = true;
+        for (int z = 0; z < 16 && ok; ++z)
+            for (int x = 0; x < 16; ++x)
+            {
+                const int wx = cx*16 + x, wz = cz*16 + z;
+                const int chunkLand = WORLDGEN::TerrainHeightFromSums(sums[x + z*16], wx, wz, total, m_genConfig);
+                if (chunkLand != WORLDGEN::LandHeight(wx, wz, m_genConfig)) { ok = false; break; }
+            }
+        RR::InfoLog("[LANDHEIGHT] oracle ", ok ? "PASS" : "FAIL");
+    }
+
 
 
     return true;

@@ -39,6 +39,7 @@ set(PROJECT_SOURCE_FILES
         Source/WorldGen/PerlinNoise.h
         Source/WorldGen/BiomeID.h
         Source/WorldGen/BiomeMap.hpp
+        Source/WorldGen/Vegetation.hpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

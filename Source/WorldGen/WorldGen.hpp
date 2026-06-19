@@ -7,6 +7,7 @@
 #include "Noise.hpp"
 #include "WorldGenConfig.h"
 #include "Biome.hpp"
+#include "Vegetation.hpp"
 
 namespace WORLDGEN
 {
@@ -278,6 +279,62 @@ namespace WORLDGEN
         return static_cast<int>(height);
     }
 
+    // Surface height at ANY world column, rebuilds the blend window, has to be same
+    inline int LandHeight(int _wx, int _wz, const WorldGenConfig& _config)
+    {
+        const int radius = _config.biomeBlendRadius;
+        const int width  = 2 * radius + 1;
+
+        // Zoom pyramid amortises across the whole window
+        const std::vector<BIOME> area = FinalArea(_wx - radius, _wz - radius, width, width, _config);
+
+        BlendSums sum{};
+        for (BIOME biome : area)
+        {
+            if (biome == BIOME::MOUNTAINS)
+            {
+                sum.mtn += 1;
+            }
+            else if (biome == BIOME::MESA)
+            {
+                sum.mesa += 1;
+                if (!_config.mesaRimCliffs)
+                {
+                    sum.base += _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
+                    sum.amp  += _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
+                }
+            }
+            else
+            {
+                sum.base += _config.biomeBaseHeight[static_cast<int>(biome)];
+                sum.amp  += _config.biomeAmplitude [static_cast<int>(biome)];
+                if (biome == BIOME::TAIGA) sum.taiga += 1;
+            }
+        }
+        return TerrainHeightFromSums(sum, _wx, _wz, width * width, _config);
+    }
+
+    // Max land height, rejects trees on cliffs / flanks
+    inline int SlopeSpread(int _wx, int _wz, int _radius, const WorldGenConfig& _config)
+    {
+        int lowerHeight = LandHeight(_wx, _wz, _config);
+        int higherHeight = lowerHeight;
+
+        for (int dz = -_radius; dz <= _radius; dz += _radius)
+        {
+            for (int dx = -_radius; dx <= _radius; dx += _radius)
+            {
+                if (dx == 0 && dz == 0) continue;
+
+                const int height = LandHeight(_wx + dx, _wz + dz, _config);
+                lowerHeight      = std::min(lowerHeight, height);
+                higherHeight     = std::max(higherHeight, height);
+            }
+        }
+
+        return higherHeight - lowerHeight;
+    }
+
     // Terracotta by elevation
     inline BLOCK MesaStrata(int _y, int _wx, int _wz, const WorldGenConfig& _config)
     {
@@ -513,28 +570,6 @@ namespace WORLDGEN
                             {
                                 block = bParams.surface;
                             }
-
-                            // Debug to have grass rendered
-                            if ((block == BLOCK::GRASS || block == BLOCK::SAVANNA_GRASS) &&
-                                !underWater && y + 1 < kSizeY &&
-                                HashFloat(wx, wz, _config.seed + 980u) < 0.30f)
-                            {
-                                _chunk.Set(x, y + 1, z, static_cast<BlockId>(BLOCK::SHORT_GRASS));
-                            }
-
-                            // Debug for leaves
-                            if (block == BLOCK::GRASS && !underWater && y + 6 < kSizeY &&
-                                HashFloat(wx, wz, _config.seed + 981u) < 0.01f)
-                            {
-                                for (int t = 1; t <= 4; ++t) _chunk.Set(x, y + t, z, (BlockId)BLOCK::OAKLOG);
-                                for (int ly = 4; ly <= 6; ++ly)
-                                    for (int lx = -1; lx <= 1; ++lx)
-                                        for (int lz = -1; lz <= 1; ++lz) {
-                                            int gx = x + lx, gz = z + lz;
-                                            if (gx >= 0 && gx < kSizeX && gz >= 0 && gz < kSizeZ)
-                                                _chunk.Set(gx, y + ly, gz, (BlockId)BLOCK::LEAVES);
-                                        }
-                            }
                         }
 
                     }
@@ -554,7 +589,7 @@ namespace WORLDGEN
                     }
                 }
 
-                // River-tunnel cap: solid mountain resumes above the arched void
+                // River-tunnel cap solid mountain resumes above the arched void
                 if (capBase >= 0)
                 {
                     for (int y = capBase + 1; y <= land && y < kSizeY; ++y)
@@ -572,6 +607,14 @@ namespace WORLDGEN
                         }
                         _chunk.Set(x, y, z, static_cast<BlockId>(block));
                     }
+                }
+
+                // Vegetation
+                if (!underWater && capBase < 0)
+                {
+                    const BLOCK surface = static_cast<BLOCK>(_chunk.At(x, terrHeight, z));
+
+                    PlaceGroundCover(_chunk, x, terrHeight, z, wx, wz, biome, surface, _config);
                 }
             }
         }
