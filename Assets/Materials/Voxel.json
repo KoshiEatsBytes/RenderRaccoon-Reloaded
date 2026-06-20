@@ -86,7 +86,8 @@
           { "Path": "Textures/Blocks/Vegetation/fern.png",             "Tint": [0.45, 0.60, 0.32] },
           { "Path": "Textures/Blocks/Vegetation/short_grass.png",      "Tint": [0.75, 0.72, 0.34] },
           { "Path": "Textures/Blocks/Vegetation/short_grass.png",      "Tint": [0.80, 0.84, 0.78] },
-          { "Path": "Textures/Blocks/Spruce Tree/spruce_leaves.png",   "Tint": [0.50, 0.62, 0.55] }
+          { "Path": "Textures/Blocks/Spruce Tree/spruce_leaves.png",   "Tint": [0.50, 0.62, 0.55] },
+          { "Path": "Textures/Blocks/Ores/gold_ore.png" }
         ]
       }
     ]

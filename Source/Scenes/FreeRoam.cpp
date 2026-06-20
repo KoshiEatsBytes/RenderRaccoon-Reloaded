@@ -332,6 +332,8 @@ void FreeRoam::OnGui()
         ImGui::SliderInt  ("River octaves",      &m_draftConfig.riverNoiseOct, 1, 8);
         ImGui::SliderFloat("Half width (blocks)",&m_draftConfig.riverHalfWidth, 1.f, 24.f);
         ImGui::SliderFloat("Grad cull",          &m_draftConfig.riverGradMin, 0.0f, 0.40f, "%.3f");
+        ImGui::SliderFloat("Bank sharp mtn",     &m_draftConfig.riverBankSharpnessMtn, 1.0f, 8.0f);
+        ImGui::SliderFloat("Bank sharp mesa",    &m_draftConfig.riverBankSharpnessMesa, 1.0f, 8.0f);
         ImGui::SliderInt  ("Max height (fade)",  &m_draftConfig.riverMaxHeight, 0, 200);
         ImGui::SliderFloat("Fade range",         &m_draftConfig.riverFade, 1.f, 64.f);
 
@@ -347,7 +349,10 @@ void FreeRoam::OnGui()
 
         ImGui::SeparatorText("Tunnels (karst)");
         ImGui::Checkbox   ("Enabled##tunnel",   &m_draftConfig.riverTunnels);
-        ImGui::SliderFloat("Mountain gate",     &m_draftConfig.tunnelMaskThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Biome gate mtn",    &m_draftConfig.tunnelMaskThreshMtn, 0.0f, 1.0f);
+        ImGui::SliderFloat("Biome gate mesa",   &m_draftConfig.tunnelMaskThreshMesa, 0.0f, 1.0f);
+        ImGui::SliderInt  ("Bore rise mtn",     &m_draftConfig.tunnelRiseMtn, 0, 64);
+        ImGui::SliderInt  ("Bore rise mesa",    &m_draftConfig.tunnelRiseMesa, 0, 64);
         ImGui::SliderFloat("Arch height",       &m_draftConfig.riverArchHeight, 2.0f, 30.0f);
         ImGui::SliderFloat("Ceiling scale",     &m_draftConfig.riverCeilScale, 6.0f, 64.0f);
         ImGui::SliderFloat("Ceiling jitter",    &m_draftConfig.riverCeilJitter, 0.0f, 16.0f);

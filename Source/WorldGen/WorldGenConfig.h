@@ -27,7 +27,7 @@ namespace WORLDGEN
         using uInt32 = std::uint32_t;
 
         // GENERAL -----------------------------------------------------------------------------------------------------
-        uInt32 seed = 456356;
+        uInt32 seed = 2498840564;
 
         // BASE NOISE --------------------------------------------------------------------------------------------------
         bool  useGradientNoise = true;  // gradient (Perlin) vs value noise
@@ -42,7 +42,7 @@ namespace WORLDGEN
         float warpAmp     = 100.f;
         int   warpOctaves = 3;
         int   warpLevels  = 2;          // 1 = single warp, 2 = recursive 
-        // Detail / deterracing — fixedblock roughness on the edges
+        // Detail / deterracing roughness on the edges
         bool  detailEnabled = true;
         float detailScale   = 48.0f;
         float detailAmp     = 2.0f;     // blocks of edge jitter
@@ -151,17 +151,19 @@ namespace WORLDGEN
         int  waterLevel = 58;            // water surface height
         bool iceEnabled = false;         // freeze rivers in cold biomes
         // River channel
-        int   riverLevel       = 63;     // flat river surface height
-        int   riverDepth       = 6;      // deep channel depth
-        int   riverShelfDepth  = 3;      // shallow outer shelf depth
-        float channelThreshold = 0.525f; // valleyTerr above this carves the deep channel
-        float riverScale       = 320.0f; // meander wavelength (large means weavier rivers)
-        int   riverNoiseOct    = 1;      // only stable at 1
-        float riverHalfWidth   = 12.0f;  // river half-width in blocks
-        float riverGradMin     = 0.0f;   // cull flat spots in field units 
-        int   riverMaxHeight   = 120;    // Y where open rivers fade out
-        float riverFade        = 12.f;   // fade range in blocks
-        bool  taigaRivers      = true;   // allow rivers through taiga
+        int   riverLevel             = 64;     // flat river surface height
+        int   riverDepth             = 7;      // deep channel depth
+        int   riverShelfDepth        = 3;      // shallow outer shelf depth
+        float channelThreshold       = 0.525f; // valleyTerr above this carves the deep channel
+        float riverBankSharpnessMtn  = 1.0f; // mountains: 1 = smooth valley, higher = sharp slot
+        float riverBankSharpnessMesa = 4.0f; // mesas: same, keeps terracotta terraces near the river
+        float riverScale             = 320.0f; // meander wavelength (large means weavier rivers)
+        int   riverNoiseOct          = 1;      // only stable at 1
+        float riverHalfWidth         = 12.0f;  // river half-width in blocks
+        float riverGradMin           = 0.0f;   // cull flat spots in field units
+        int   riverMaxHeight         = 120;    // Y where open rivers fade out
+        float riverFade              = 12.f;   // fade range in blocks
+        bool  taigaRivers            = true;   // allow rivers through taiga
         // River meander warp
         bool  riverWarpEnabled = true;
         float riverWarpScale   = 110.f;
@@ -172,14 +174,17 @@ namespace WORLDGEN
         bool  desertRiverGrass = true;  // desert river banks scatter grass instead of sand
 
         // RIVER TUNNELS -----------------------------------------------------------------------------------------------
-        bool  riverTunnels      = true;  // rivers bore through mountains 
-        float tunnelMaskThresh  = 0.2f;  // min mountain mask to tunnel, if lower mouths further out on the flank
-        float riverArchHeight   = 10.0f; // max arched void height above the water at the river centre
-        float riverCeilScale    = 22.0f; // ceiling-roughness wavelength, low thighter
-        float riverCeilJitter   = 5.0f;  // blocks the rock ceiling dips for irregularity
-        float calciteChance     = 0.55f; // ceiling formation scatter density
-        int   calciteBand       = 3;     // blocks above the ceiling that can turn to formation rock
-        float dripstoneFraction = 0.7f;  // formation split, currently mostly dripstone, percentage
+        bool  riverTunnels         = true;  // rivers bore through mountains AND mesas
+        float tunnelMaskThreshMtn  = 0.20f;  // mountains: min mask to allow boring (0 = wherever mountain is local majority)
+        float tunnelMaskThreshMesa = 0.05f;  // mesas: min mask to allow boring
+        int   tunnelRiseMtn        = 12;    // mountains: blocks land must rise above river level before boring
+        int   tunnelRiseMesa       = 32;    // mesas: same, split out (terraced mesa cliff ramps up differently)
+        float riverArchHeight      = 10.0f; // max arched void height above the water at the river centre
+        float riverCeilScale       = 22.0f; // ceiling-roughness wavelength, low thighter
+        float riverCeilJitter      = 7.0f;  // blocks the rock ceiling dips for irregularity
+        float calciteChance        = 0.55f; // ceiling formation scatter density
+        int   calciteBand          = 3;     // blocks above the ceiling that can turn to formation rock
+        float dripstoneFraction    = 0.7f;  // formation split, currently mostly dripstone, percentage
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size

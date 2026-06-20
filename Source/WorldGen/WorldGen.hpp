@@ -391,31 +391,34 @@ namespace WORLDGEN
     // Should stop most loops, and ugly X crossings, hopefully
     inline float RiverProfile(int _wx, int _wz, const WorldGenConfig& _config)
     {
-        float rx = static_cast<float>(_wx), rz = static_cast<float>(_wz);
+        float rangeX = static_cast<float>(_wx), rangeZ = static_cast<float>(_wz);
 
         if (_config.riverWarpEnabled)
         {
             const float px = _wx / _config.riverWarpScale, pz = _wz / _config.riverWarpScale;
-            rx += (FBM(px, pz, _config.seed + 935u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
-            rz += (FBM(px, pz, _config.seed + 936u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
+            rangeX += (FBM(px, pz, _config.seed + 935u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
+            rangeZ += (FBM(px, pz, _config.seed + 936u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
         }
 
-        const float  s    = _config.riverScale;
-        const uInt32 salt = _config.seed + 601u;
-        const int    oct  = _config.riverNoiseOct;
-        auto noiseAt = [&](float x, float z) { return FBM(x / s, z / s, salt, oct); };
+        const float  scale = _config.riverScale;
+        const uInt32 salt   = _config.seed + 601u;
+        const int    oct    = _config.riverNoiseOct;
+
+        auto noiseAt = [&](float x, float z) {
+            return FBM(x / scale, z / scale, salt, oct);
+        };
 
         // central difference gradient of the field
-        const float n    = noiseAt(rx, rz);
-        const float nx   = (noiseAt(rx + 1.0f, rz) - noiseAt(rx - 1.0f, rz)) * 0.5f;
-        const float nz   = (noiseAt(rx, rz + 1.0f) - noiseAt(rx, rz - 1.0f)) * 0.5f;
-        const float grad = std::sqrt(nx * nx + nz * nz);             
+        const float noise    = noiseAt(rangeX, rangeZ);
+        const float noiseX   = (noiseAt(rangeX + 1.0f, rangeZ) - noiseAt(rangeX - 1.0f, rangeZ)) * 0.5f;
+        const float noiseZ   = (noiseAt(rangeX, rangeZ + 1.0f) - noiseAt(rangeX, rangeZ - 1.0f)) * 0.5f;
+        const float grad     = std::sqrt(noiseX * noiseX + noiseZ * noiseZ);
 
         // If ring stop river creation, currently not utilez
-        if (grad * s < _config.riverGradMin) return 0.0f;
+        if (grad * scale < _config.riverGradMin) return 0.0f;
 
         // epsilon floor guards 0/0 
-        const float distBlocks = std::abs(n - 0.5f) / std::max(grad, 1e-6f);
+        const float distBlocks = std::abs(noise - 0.5f) / std::max(grad, 1e-6f);
 
         if (distBlocks >= _config.riverHalfWidth) return 0.0f;
 
@@ -431,18 +434,18 @@ namespace WORLDGEN
         const int areaRadius = FOOT + _config.biomeBlendRadius;
         const int areaWidth  = 2 * areaRadius + 1;
 
-        const int outX = _chunk.coord.x * kSizeX;
-        const int outZ = _chunk.coord.z * kSizeZ;
-        const int gw   = kSizeX + 2 * kTreeMargin;
+        const int outX  = _chunk.coord.x * kSizeX;
+        const int outZ  = _chunk.coord.z * kSizeZ;
+        const int gridW = kSizeX + 2 * kTreeMargin;
 
         // one biome for the margin
-        const std::vector<BIOME> biomes = FinalArea(outX - kTreeMargin, outZ - kTreeMargin, gw, gw, _config);
+        const std::vector<BIOME> biomes = FinalArea(outX - kTreeMargin, outZ - kTreeMargin, gridW, gridW, _config);
 
         for (int lz = -kTreeMargin; lz < kSizeZ + kTreeMargin; ++lz)
         {
             for (int lx = -kTreeMargin; lx < kSizeX + kTreeMargin; ++lx)
             {
-                const BIOME biome = biomes[(lx + kTreeMargin) + (lz + kTreeMargin) * gw];
+                const BIOME biome = biomes[(lx + kTreeMargin) + (lz + kTreeMargin) * gridW];
                 const BiomeVegTypes& vegTypes = GetVegTypes(biome);
                 const BiomeVeg&      details  = _config.biomeVegetation[static_cast<int>(biome)];
 
@@ -579,7 +582,7 @@ namespace WORLDGEN
         const int margin     = _config.biomeBlendRadius;
         const BiomeGrid grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, margin, _config);
 
-        // Separable blend: precompute every column's window sums once per chunk
+        // precompute every column's window sums once per chunk
         const std::array<BlendSums, 256> sums = BuildBlendSums(grid, _config);
         const int total = (2 * margin + 1) * (2 * margin + 1);
 
@@ -602,8 +605,11 @@ namespace WORLDGEN
                 // Raw meander (for tunnels) 
                 float profile = RiverProfile(wx, wz, _config);
                 if (!_config.taigaRivers) profile *= 1.0f - float(sum.taiga) / total;
-                const float riverAllow = std::clamp(float(_config.riverMaxHeight - land) / _config.riverFade, 0.0f, 1.0f);
-                const float valleyTerr = profile * riverAllow;
+
+                // mountains + mesas ignore the absolute riverMaxHeight, the bore instead 
+                const bool  boringRegion = (mtnMask > _config.tunnelMaskThreshMtn) || (mesaMask > _config.tunnelMaskThreshMesa);
+                const float riverAllow   = boringRegion ? 1.0f : std::clamp(float(_config.riverMaxHeight - land) / _config.riverFade, 0.0f, 1.0f);
+                const float valleyTerr   = profile * riverAllow;
 
                 int waterTop   = _config.waterLevel;
                 int terrHeight = land;
@@ -614,24 +620,31 @@ namespace WORLDGEN
                     const int shelfBed   = _config.riverLevel - _config.riverShelfDepth;
                     const int channelBed = _config.riverLevel - _config.riverDepth;
 
-                    // Tunnel ceiling: arched 
+                    // Tunnel ceiling
                     const float arch    = _config.riverArchHeight * Smooth(profile);
                     const float jit     = FBM(wx / _config.riverCeilScale, wz / _config.riverCeilScale, _config.seed + 960u, 2) * _config.riverCeilJitter;
                     const int   ceiling = _config.riverLevel + static_cast<int>(arch) - static_cast<int>(jit);
 
-                    if (_config.riverTunnels && mtnMask > _config.tunnelMaskThresh
+                    // check how much blocks above the river, if more than threshold stop smoothing valluy and bore into the terrain
+                    const int  boreRise  = (biome == BIOME::MESA) ? _config.tunnelRiseMesa : _config.tunnelRiseMtn;
+                    const int  boreFloor = _config.riverLevel + boreRise;
+                    const bool walledUp  = boringRegion && land > boreFloor;
+
+                    if (_config.riverTunnels && walledUp
                         && ceiling > _config.riverLevel && land > ceiling)
                     {
-                        // TUNNEL carve a channel arched void through the mountain
+                        // carve a channel arched void through the mountain or mesa
                         const float floorF = Lerp(static_cast<float>(_config.riverLevel), static_cast<float>(channelBed), profile);
                         terrHeight = static_cast<int>(floorF);
                         waterTop   = std::max(_config.waterLevel, _config.riverLevel);
-                        capBase    = ceiling;   
+                        capBase    = ceiling;
                     }
-                    else if (valleyTerr > 0.0f)
+                    else if (valleyTerr > 0.0f && !walledUp)
                     {
-                        // ramp terrain down to the channel, flat water fills it.
-                        float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), valleyTerr);
+                        // ramp terrain down to the channel, flat water fill
+                        const float sharp = (biome == BIOME::MESA) ? _config.riverBankSharpnessMesa : _config.riverBankSharpnessMtn;
+                        const float vt    = boringRegion ? std::pow(valleyTerr, sharp) : valleyTerr;
+                        float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), vt);
                         const float channelT = std::clamp((valleyTerr - _config.channelThreshold) / (1.0f - _config.channelThreshold), 0.0f, 1.0f);
                         bed = Lerp(bed, static_cast<float>(channelBed), channelT);
                         terrHeight = std::min(land, static_cast<int>(bed));
@@ -726,21 +739,30 @@ namespace WORLDGEN
                     }
                 }
 
-                // River-tunnel cap solid mountain resumes above the arched void
+                // River-tunnel cap: solid rock resumes above the arched void
                 if (capBase >= 0)
                 {
+                    const bool mesaCap = (biome == BIOME::MESA);   // bore through terracotta, not grey stone
                     for (int y = capBase + 1; y <= land && y < kSizeY; ++y)
                     {
-                        BLOCK block = (y == land) ? MountainSurface(land, wx, wz, _config)
-                                                  : StoneAt(wx, y, wz, _config);
+                        BLOCK block;
+                        if (y == land)
+                            block = mesaCap ? MesaStrata(land, wx, wz, _config)
+                                            : MountainSurface(land, wx, wz, _config);
+                        else
+                            block = mesaCap ? MesaStrata(y, wx, wz, _config)
+                                            : StoneAt(wx, y, wz, _config);
 
-                        // Dripstone/calcite formations on the tunnel ceiling & upper walls 
+                        // Formations on the tunnel ceiling & upper walls
                         if (y < land && y <= capBase + _config.calciteBand
                             && HashFloat3(wx, y, wz, _config.seed + 970u) < _config.calciteChance)
                         {
-                            // mostly dripstone, calcite accents
-                            block = (HashFloat3(wx, y, wz, _config.seed + 971u) < _config.dripstoneFraction)
-                                    ? BLOCK::DRIPSTONE : BLOCK::CALCITE;
+                            const bool primary = HashFloat3(wx, y, wz, _config.seed + 971u) < _config.dripstoneFraction;
+                            if (mesaCap)
+                                // gold-ore accents in the terracotta = the mesa interior LOD instrument
+                                block = primary ? BLOCK::GOLD_ORE : MesaStrata(y, wx, wz, _config);
+                            else
+                                block = primary ? BLOCK::DRIPSTONE : BLOCK::CALCITE;
                         }
                         _chunk.Set(x, y, z, static_cast<BlockId>(block));
                     }

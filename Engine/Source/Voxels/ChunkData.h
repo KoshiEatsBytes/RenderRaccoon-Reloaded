@@ -95,6 +95,7 @@ namespace RR::CHUNK
         SAVANNA_SHORT_GRASS,
         SNOW_SHORT_GRASS,
         TUNDRA_SPRUCE_LEAVES,
+        GOLD_ORE,
 
         COUNT
     };
@@ -179,6 +180,7 @@ namespace RR::CHUNK
         SAVANNA_SHORT_GRASS,
         SNOW_SHORT_GRASS,
         TUNDRA_SPRUCE_LEAVES,
+        GOLD_ORE,
 
         COUNT
     };
@@ -262,6 +264,7 @@ namespace RR::CHUNK
         false, // SAVANNA_SHORT_GRASS
         false, // SNOW_SHORT_GRASS
         false, // TUNDRA_SPRUCE_LEAVES
+        false, // GOLD_ORE
     };
 
     static_assert(std::size(kTexRotatable) == static_cast<std::size_t>(BLOCKTEX::COUNT),
@@ -377,7 +380,8 @@ namespace RR::CHUNK
             /* Fern          */ CrossBlock  (FERN),
             /* Savanna Grass */ CrossBlock  (SAVANNA_SHORT_GRASS),
             /* Snow Grass    */ CrossBlock  (SNOW_SHORT_GRASS),
-            /* Tundra Spruce */ LeafBlock   (TUNDRA_SPRUCE_LEAVES)
+            /* Tundra Spruce */ LeafBlock   (TUNDRA_SPRUCE_LEAVES),
+            /* Gold Ore      */ UniformBlock(GOLD_ORE)
         }
     };
 
