@@ -153,23 +153,19 @@ namespace WORLDGEN
         // River channel
         int   riverLevel       = 63;     // flat river surface height
         int   riverDepth       = 6;      // deep channel depth
-        int   riverShelfDepth  = 2;      // shallow outer shelf depth 
+        int   riverShelfDepth  = 3;      // shallow outer shelf depth
         float channelThreshold = 0.525f; // valleyTerr above this carves the deep channel
-        float riverScale       = 320.0f; // river "wrinkle" size (HEHE WRINKLEE)
-        int   riverNoiseOct    = 1;
-        float riverValleyWidth = 0.08f;
-        int   riverMaxHeight   = 120;    // Y where open rivers fade out 
+        float riverScale       = 320.0f; // meander wavelength (large means weavier rivers)
+        int   riverNoiseOct    = 1;      // only stable at 1
+        float riverHalfWidth   = 12.0f;  // river half-width in blocks
+        float riverGradMin     = 0.0f;   // cull flat spots in field units 
+        int   riverMaxHeight   = 120;    // Y where open rivers fade out
         float riverFade        = 12.f;   // fade range in blocks
-        bool  taigaRivers      = false;  // allow rivers through taiga 
+        bool  taigaRivers      = true;   // allow rivers through taiga
         // River meander warp
-        bool  riverWarpEnabled = false;
-        float riverWarpScale   = 80.f;
+        bool  riverWarpEnabled = true;
+        float riverWarpScale   = 110.f;
         float riverWarpAmp     = 15.0f;
-        // Smaller river branches
-        bool  tributariesEnabled = false;
-        float tribScale          = 90.0f;
-        float tribValleyWidth    = 0.05f;
-        float tribStrength       = 0.6f;
         // Banks
         float beachBand        = 0.20f; // how far past the water edge the beach reaches
         float beachSandChance  = 0.70f; // sand vs surface scatter 

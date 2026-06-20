@@ -387,22 +387,10 @@ namespace WORLDGEN
         return BLOCK::GRASS;
     }
 
-    // One river field's valley profile from already warped coords
-    inline float RiverFieldProfile(float _rx, float _rz, float _allow, float _scale, float _valleyWidth, uInt32 _salt, int _oct)
-    {
-        const float noise = FBM(_rx/_scale, _rz/_scale, _salt, _oct);
-        const float dist = std::abs(noise - 0.5f) * 2.0f;
-
-        if (dist >= _valleyWidth) return 0.0f;
-        const float result = Smooth(1.0f - dist/_valleyWidth) * _allow;
-
-        return result;
-    }
-
-    // Raw river meander profile 0 1 at a column 
+    // Raw river profile at column, low-freq noise measyred in blocks via gradient normalization, 
+    // Should stop most loops, and ugly X crossings, hopefully
     inline float RiverProfile(int _wx, int _wz, const WorldGenConfig& _config)
     {
-        // warp once, both fields share the same meander
         float rx = static_cast<float>(_wx), rz = static_cast<float>(_wz);
 
         if (_config.riverWarpEnabled)
@@ -412,21 +400,26 @@ namespace WORLDGEN
             rz += (FBM(px, pz, _config.seed + 936u, _config.warpOctaves) - 0.5f) * 2.0f * _config.riverWarpAmp;
         }
 
-        // trunk = wide full-depth main rivers
-        float profile = RiverFieldProfile(
-            rx, rz, 1.0f,
-            _config.riverScale,
-            _config.riverValleyWidth,
-            _config.seed + 601u,
-            _config.riverNoiseOct);
+        const float  s    = _config.riverScale;
+        const uInt32 salt = _config.seed + 601u;
+        const int    oct  = _config.riverNoiseOct;
+        auto noiseAt = [&](float x, float z) { return FBM(x / s, z / s, salt, oct); };
 
-        // tributaries: smaller scale, narrower, shallower, merge into trunks via max
-        if (_config.tributariesEnabled)
-        {
-            const float trib = RiverFieldProfile(rx, rz, 1.0f, _config.tribScale, _config.tribValleyWidth, _config.seed + 603u, _config.riverNoiseOct);
-            profile = std::max(profile, trib * _config.tribStrength);
-        }
-        return profile;
+        // central difference gradient of the field
+        const float n    = noiseAt(rx, rz);
+        const float nx   = (noiseAt(rx + 1.0f, rz) - noiseAt(rx - 1.0f, rz)) * 0.5f;
+        const float nz   = (noiseAt(rx, rz + 1.0f) - noiseAt(rx, rz - 1.0f)) * 0.5f;
+        const float grad = std::sqrt(nx * nx + nz * nz);             
+
+        // If ring stop river creation, currently not utilez
+        if (grad * s < _config.riverGradMin) return 0.0f;
+
+        const float distBlocks = std::abs(n - 0.5f) / grad;   
+
+        if (distBlocks >= _config.riverHalfWidth) return 0.0f;
+
+        // Centre 1 bank 0
+        return Smooth(1.0f - distBlocks / _config.riverHalfWidth);   
     }
 
     inline void PlaceTrees(RR::Chunk& _chunk, const WorldGenConfig& _config)
