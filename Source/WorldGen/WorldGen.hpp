@@ -414,7 +414,8 @@ namespace WORLDGEN
         // If ring stop river creation, currently not utilez
         if (grad * s < _config.riverGradMin) return 0.0f;
 
-        const float distBlocks = std::abs(n - 0.5f) / grad;   
+        // epsilon floor guards 0/0 
+        const float distBlocks = std::abs(n - 0.5f) / std::max(grad, 1e-6f);
 
         if (distBlocks >= _config.riverHalfWidth) return 0.0f;
 
