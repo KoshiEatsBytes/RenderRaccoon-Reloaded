@@ -236,10 +236,10 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.tundraHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Plains humidity",   &m_draftConfig.plainsHumidThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Desert humidity",   &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Mesa rarity", &m_draftConfig.mesaRarity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Mesa rarity",       &m_draftConfig.mesaRarity, 0.0f, 1.0f);
     }
 
-    if (ImGui::CollapsingHeader("Biome Map (cellular)"))
+    if (ImGui::CollapsingHeader("Biome Map (cells)"))
     {
         ImGui::SliderInt("Zoom levels",   &m_draftConfig.biomeZoomLevels, 1, 10);
         ImGui::SliderInt("Smooth passes", &m_draftConfig.biomeSmoothPasses, 0, 5);
@@ -272,7 +272,7 @@ void FreeRoam::OnGui()
         ImGui::SliderFloat("Jitter amp",   &m_draftConfig.snowJitterAmp, 0.f, 40.f);
     }
 
-    if (ImGui::CollapsingHeader("Mesa / Cliffs"))
+    if (ImGui::CollapsingHeader("Mesa & Cliffs"))
     {
         ImGui::SeparatorText("Shape");
         ImGui::SliderFloat("Noise scale##mesa",   &m_draftConfig.mesaNoiseScale, 50.f, 600.f);
@@ -308,46 +308,51 @@ void FreeRoam::OnGui()
 
     if (ImGui::CollapsingHeader("Strata & Ores"))
     {
+        ImGui::SeparatorText("Strata");
         ImGui::SliderFloat("Strata scale",   &m_draftConfig.strataScale, 4.f, 100.f);
         ImGui::SliderFloat("Diorite thresh", &m_draftConfig.dioriteThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Granite thresh", &m_draftConfig.graniteThresh, 0.0f, 1.0f);
+
+        ImGui::SeparatorText("Ores");
         ImGui::SliderFloat("Ore scale",      &m_draftConfig.oreScale, 2.f, 40.f);
         ImGui::SliderFloat("Coal thresh",    &m_draftConfig.coalThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Iron thresh",    &m_draftConfig.ironThresh, 0.0f, 1.0f);
         ImGui::SliderFloat("Copper thresh",  &m_draftConfig.copperThresh, 0.0f, 1.0f);
     }
 
-    if (ImGui::CollapsingHeader("Water"))
+    if (ImGui::CollapsingHeader("Rivers"))
     {
-        ImGui::SliderInt  ("Water level",        &m_draftConfig.waterLevel, 0, 128);
-        ImGui::Checkbox   ("Ice in cold biomes", &m_draftConfig.iceEnabled);
-
-        ImGui::SeparatorText("Rivers");
+        ImGui::SliderInt  ("Water level",          &m_draftConfig.waterLevel, 0, 128);
+        ImGui::Checkbox   ("Ice in cold biomes",   &m_draftConfig.iceEnabled);
         ImGui::Checkbox   ("Rivers through taiga", &m_draftConfig.taigaRivers);
-        ImGui::SliderInt  ("River level",        &m_draftConfig.riverLevel, 0, 128);
-        ImGui::SliderInt  ("Channel depth",      &m_draftConfig.riverDepth, 0, 32);
-        ImGui::SliderInt  ("Shelf depth",        &m_draftConfig.riverShelfDepth, 0, 32);
-        ImGui::SliderFloat("Channel threshold",  &m_draftConfig.channelThreshold, 0.0f, 1.0f);
+
+        ImGui::SeparatorText("River path");
         ImGui::SliderFloat("River scale",        &m_draftConfig.riverScale, 50.f, 600.f);
         ImGui::SliderInt  ("River octaves",      &m_draftConfig.riverNoiseOct, 1, 8);
         ImGui::SliderFloat("Half width (blocks)",&m_draftConfig.riverHalfWidth, 1.f, 24.f);
         ImGui::SliderFloat("Grad cull",          &m_draftConfig.riverGradMin, 0.0f, 0.40f, "%.3f");
+        ImGui::Checkbox   ("Warp##rwarp",        &m_draftConfig.riverWarpEnabled);
+        ImGui::SliderFloat("Warp scale##rwarp",  &m_draftConfig.riverWarpScale, 20.f, 600.f);
+        ImGui::SliderFloat("Warp amp##rwarp",    &m_draftConfig.riverWarpAmp, 0.f, 200.f);
+
+        ImGui::SeparatorText("River channel");
+        ImGui::SliderInt  ("River level",        &m_draftConfig.riverLevel, 0, 128);
+        ImGui::SliderInt  ("Channel depth",      &m_draftConfig.riverDepth, 0, 32);
+        ImGui::SliderInt  ("Shelf depth",        &m_draftConfig.riverShelfDepth, 0, 32);
+        ImGui::SliderFloat("Channel threshold",  &m_draftConfig.channelThreshold, 0.0f, 1.0f);
         ImGui::SliderFloat("Bank sharp mtn",     &m_draftConfig.riverBankSharpnessMtn, 1.0f, 8.0f);
         ImGui::SliderFloat("Bank sharp mesa",    &m_draftConfig.riverBankSharpnessMesa, 1.0f, 8.0f);
+
+        ImGui::SeparatorText("River reach");
         ImGui::SliderInt  ("Max height (fade)",  &m_draftConfig.riverMaxHeight, 0, 200);
         ImGui::SliderFloat("Fade range",         &m_draftConfig.riverFade, 1.f, 64.f);
 
-        ImGui::SeparatorText("River warp");
-        ImGui::Checkbox   ("Enabled##rwarp",     &m_draftConfig.riverWarpEnabled);
-        ImGui::SliderFloat("Scale##rwarp",       &m_draftConfig.riverWarpScale, 20.f, 600.f);
-        ImGui::SliderFloat("Amp##rwarp",         &m_draftConfig.riverWarpAmp, 0.f, 200.f);
-
-        ImGui::SeparatorText("Beaches");
+        ImGui::SeparatorText("Banks");
         ImGui::SliderFloat("Beach band",            &m_draftConfig.beachBand, 0.0f, 0.5f);
         ImGui::SliderFloat("Sand density",          &m_draftConfig.beachSandChance, 0.0f, 1.0f);
         ImGui::Checkbox   ("Desert -> grass banks", &m_draftConfig.desertRiverGrass);
 
-        ImGui::SeparatorText("Tunnels (karst)");
+        ImGui::SeparatorText("Tunnels");
         ImGui::Checkbox   ("Enabled##tunnel",   &m_draftConfig.riverTunnels);
         ImGui::SliderFloat("Biome gate mtn",    &m_draftConfig.tunnelMaskThreshMtn, 0.0f, 1.0f);
         ImGui::SliderFloat("Biome gate mesa",   &m_draftConfig.tunnelMaskThreshMesa, 0.0f, 1.0f);
@@ -366,7 +371,7 @@ void FreeRoam::OnGui()
         ImGui::SeparatorText("Trees");
         ImGui::SliderInt("Max slope", &m_draftConfig.treeSlopeMax, 0, 16);
 
-        ImGui::SeparatorText("Clumping (thickets & clearings)");
+        ImGui::SeparatorText("Clumping");
         ImGui::Checkbox   ("Enabled##clump",    &m_draftConfig.clumpEnabled);
         ImGui::SliderFloat("Scale##clump",      &m_draftConfig.clumpScale, 20.f, 400.f);
         ImGui::SliderFloat("Warp##clump",       &m_draftConfig.clumpWarp, 0.f, 120.f);

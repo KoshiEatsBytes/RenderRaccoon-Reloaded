@@ -55,10 +55,10 @@ namespace WORLDGEN
         float tempCold          = 0.40f;  // < this = cold band 
         float tempHot           = 0.60f;  // > this = hot band  
         float mountainChance    = 0.2f;   // fraction of coarse cells rolled as mountains
-        float tundraHumidThresh = 0.5f;   // cold:      < tundra else taiga
+        float tundraHumidThresh = 0.5f;   // cold: < tundra else taiga
         float plainsHumidThresh = 0.5f;   // temperate: < plains else forest
-        float desertHumidThresh = 0.5f;   // hot:       < desert else savanna
-        float mesaRarity        = 0.7f;   // 1 = rarest
+        float desertHumidThresh = 0.5f;   // hot: < desert else savanna
+        float mesaRarity        = 0.75f;  // 1 = rarest
 
         // BIOME MAP --------------------------------------------------------------------------------------------------
         int biomeZoomLevels   = 8;  // coarse-cell size 
@@ -90,7 +90,6 @@ namespace WORLDGEN
         // VEGETATION --------------------------------------------------------------------------------------------------
 
         // Per biome vegetation density
-        //                  tree     grass   tallG  flower  bush    cactus  boulder clump  tMin tMax
         BiomeVeg biomeVegetation[static_cast<int>(BIOME::COUNT)] = {
             /* PLAINS    */ { 0.0008f, 0.28f,  0.10f, 0.020f, 0.000f, 0.000f, 0.000f, 0.30f,  5,  8 },
             /* FOREST    */ { 0.050f,  0.03f,  0.00f, 0.005f, 0.020f, 0.000f, 0.000f, 0.00f,  5, 10 },
@@ -105,7 +104,7 @@ namespace WORLDGEN
         // Trees
         int treeSlopeMax = 3;
 
-        // Tree clumping - modulates per biome tree density
+        // Tree clumping biome density
         bool  clumpEnabled = true;
         float clumpScale   = 90.0f;   // grove/clearing size in blocks
         float clumpWarp    = 35.0f;   // edge organicness, lower the rounder
@@ -132,7 +131,7 @@ namespace WORLDGEN
         bool  mesaRimCliffs       = true;
         float mesaNoiseScale      = 260.0f;  // broad makes gentle slopes, narrow wide plateaus
         int   mesaNoiseOctaves    = 3;       // fewer is smoother
-        bool  mesaMtnBuffer       = true;    // drop plains where mesa meets mountaisnn
+        bool  mesaMtnBuffer       = true;    // drop plains where mesa meets mountains
         int   mesaMtnBufferRadius = 1;
         //Mesa Cliffs
         bool  cliffsEnabled       = true;
@@ -148,43 +147,44 @@ namespace WORLDGEN
         float cliffPhaseScale     = 300.0f; // wavelength of the region terrace phase offset
 
         // WATER & RIVERS ----------------------------------------------------------------------------------------------
-        int  waterLevel = 58;            // water surface height
-        bool iceEnabled = false;         // freeze rivers in cold biomes
+        int  waterLevel              = 58;     // water surface height
+        bool iceEnabled              = false;  // freeze rivers in cold biomes
+        bool taigaRivers             = true;   // allow rivers through taiga
+        // River path
+        float riverScale             = 320.0f; // meander wavelength (large = weavier rivers)
+        int   riverNoiseOct          = 1;      // keep at 1, else unstable
+        float riverHalfWidth         = 12.0f;  // river half-width in blocks
+        float riverGradMin           = 0.0f;   // cull flat spots in fields
+        bool  riverWarpEnabled       = true;   // meander warp
+        float riverWarpScale         = 110.f;
+        float riverWarpAmp           = 15.0f;
         // River channel
         int   riverLevel             = 64;     // flat river surface height
         int   riverDepth             = 7;      // deep channel depth
         int   riverShelfDepth        = 3;      // shallow outer shelf depth
         float channelThreshold       = 0.525f; // valleyTerr above this carves the deep channel
-        float riverBankSharpnessMtn  = 1.0f; // mountains: 1 = smooth valley, higher = sharp slot
-        float riverBankSharpnessMesa = 4.0f; // mesas: same, keeps terracotta terraces near the river
-        float riverScale             = 320.0f; // meander wavelength (large means weavier rivers)
-        int   riverNoiseOct          = 1;      // only stable at 1
-        float riverHalfWidth         = 12.0f;  // river half-width in blocks
-        float riverGradMin           = 0.0f;   // cull flat spots in field units
+        float riverBankSharpnessMtn  = 1.0f;   // for mountains, smoothes river bore entrance
+        float riverBankSharpnessMesa = 4.0f;   // same as above but for mesas
+        // River reach
         int   riverMaxHeight         = 120;    // Y where open rivers fade out
         float riverFade              = 12.f;   // fade range in blocks
-        bool  taigaRivers            = true;   // allow rivers through taiga
-        // River meander warp
-        bool  riverWarpEnabled = true;
-        float riverWarpScale   = 110.f;
-        float riverWarpAmp     = 15.0f;
-        // Banks
-        float beachBand        = 0.20f; // how far past the water edge the beach reaches
-        float beachSandChance  = 0.70f; // sand vs surface scatter 
-        bool  desertRiverGrass = true;  // desert river banks scatter grass instead of sand
+        // River banks
+        float beachBand              = 0.20f;  // how far past the water edge the beach reaches
+        float beachSandChance        = 0.70f;  // sand vs surface scatter
+        bool  desertRiverGrass       = true;   // desert river banks scatter grass instead of sand
 
         // RIVER TUNNELS -----------------------------------------------------------------------------------------------
-        bool  riverTunnels         = true;  // rivers bore through mountains AND mesas
-        float tunnelMaskThreshMtn  = 0.20f;  // mountains: min mask to allow boring (0 = wherever mountain is local majority)
-        float tunnelMaskThreshMesa = 0.05f;  // mesas: min mask to allow boring
-        int   tunnelRiseMtn        = 12;    // mountains: blocks land must rise above river level before boring
-        int   tunnelRiseMesa       = 32;    // mesas: same, split out (terraced mesa cliff ramps up differently)
-        float riverArchHeight      = 10.0f; // max arched void height above the water at the river centre
-        float riverCeilScale       = 22.0f; // ceiling-roughness wavelength, low thighter
-        float riverCeilJitter      = 7.0f;  // blocks the rock ceiling dips for irregularity
-        float calciteChance        = 0.55f; // ceiling formation scatter density
-        int   calciteBand          = 3;     // blocks above the ceiling that can turn to formation rock
-        float dripstoneFraction    = 0.7f;  // formation split, currently mostly dripstone, percentage
+        bool  riverTunnels         = true;   // rivers bore through mountains and mesas
+        float tunnelMaskThreshMtn  = 0.20f;  // path of biome on the edges before boring can happen
+        float tunnelMaskThreshMesa = 0.05f;  // same as before for mesas
+        int   tunnelRiseMtn        = 12;     // Amout of blocks above river to start boring
+        int   tunnelRiseMesa       = 32;     // same as above for mesas
+        float riverArchHeight      = 10.0f;  // max arched void height above the water at the river centre
+        float riverCeilScale       = 22.0f;  // ceiling roughness wavelength, low thighter
+        float riverCeilJitter      = 7.0f;   // blocks the rock ceiling dips for irregularity
+        float calciteChance        = 0.55f;  // ceiling formation scatter density
+        int   calciteBand          = 3;      // blocks above the ceiling that can turn to formation rock
+        float dripstoneFraction    = 0.7f;   // formation split, currently mostly dripstone, percentage
 
         // STRATA & ORES -----------------------------------------------------------------------------------------------
         float strataScale   = 22.0f;   // diorite/granite clump size
