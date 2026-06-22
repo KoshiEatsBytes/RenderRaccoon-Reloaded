@@ -14,8 +14,12 @@ int main()
     RR::PrintLogo();
 
     RR::Engine& engine = RR::Engine::GetInstance();
-    engine.GetAppManager().RequestSceneLoad<FreeRoam>();
     engine.GetAppManager().AddSubSystem<RR::BenchmarkSubSystem>();
+
+    WORLDGEN::WorldGenConfig cfg;
+    RR::RunInfo runInfo;
+    runInfo.seed = 2498846564;
+    engine.GetAppManager().RequestSceneLoad<FreeRoam>(runInfo, cfg);
 
 
     if (engine.Init(1920, 1080, "RenderRaccoon", 5, 0))

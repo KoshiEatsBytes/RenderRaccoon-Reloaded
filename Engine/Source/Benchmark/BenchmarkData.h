@@ -20,13 +20,14 @@ namespace RR
     // Saved as part of the CSV header, is-per-run
     struct RunInfo
     {
-        std::string name  = "";          
-        std::string scene = "unknown";   
-        std::string config   = "debug";
-        uint32_t seed  = 0;
-        bool completed = false;
-        bool deterministic = false; 
+        std::string name          = "";
+        std::string scene         = "unknown";
+        std::string config        = "debug";
+        uint32_t    seed          = 0;
+        bool        completed     = false;
+        bool        deterministic = false; 
 
+        // Optimizations
         bool lod        = false;
         bool async      = false;
         bool scheduling = false;

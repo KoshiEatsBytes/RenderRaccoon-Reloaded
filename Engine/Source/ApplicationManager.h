@@ -51,13 +51,14 @@ namespace RR
          * @brief Queues up a scene to load next end of frame
          * @tparam T Scene to load
          */
-        template <SceneType T>
-        void RequestSceneLoad()
+        template <SceneType T, typename... Args>
+        void RequestSceneLoad(Args&&... args)
         {
             // This lambda represents what will happen LATER
-            m_pendingScene = []() -> std::unique_ptr<Scene>
+            m_pendingScene = [...args = std::forward<Args>(args)]()
+            mutable -> std::unique_ptr<Scene>
             {
-                return std::make_unique<T>();
+                return std::make_unique<T>(std::move(args)...);
             };
         }
 

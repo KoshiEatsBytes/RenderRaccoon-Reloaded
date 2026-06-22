@@ -8,6 +8,7 @@
 #include "WorldGenConfig.h"
 #include "Biome.hpp"
 #include "Vegetation.hpp"
+#include "BiomeMap.hpp"
 
 namespace WORLDGEN
 {

@@ -1,27 +1,23 @@
-#include <cstring>
-
-#include "FreeRoam.h"
 
 #include <random>
 
-#include "Components/FreeCameraComponent.h"
-#include "Render/MeshData.h"
-#include "Render/Voxels/ChunkMesher.h"
-#include "Voxels/Chunk.h"
-#include "Voxels/ChunkData.h"
-#include "Render/Mesh.h"
-#include "Render/RenderQueue.h"
-#include "Engine.h"
-#include "GLFW/glfw3.h"
-#include "Voxels/ChunkManager.h"
+#include "FreeRoam.h"
 #include "imgui.h"
-#include "WorldGen/Biome.hpp"
-#include "WorldGen/BiomeMap.hpp"
-#include "WorldGen/Noise.hpp"
-#include "WorldGen/WorldGen.hpp"
-#include "WorldGen/WorldGenConfig.h"
+#include "GLFW/glfw3.h"
 
-FreeRoam::FreeRoam() : Scene("Free Roam") {}
+// PUBLIC --------------------------------------------------------------------------------------------------------------
+
+FreeRoam::FreeRoam(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _config)
+    : VoxelScene("FreeRoam", _runInfo, _config)
+{
+    m_draftConfig = m_genConfig;
+}
+
+FreeRoam::FreeRoam(const RR::RunInfo& _runInfo)
+    : VoxelScene("FreeRoam", _runInfo)
+{
+    m_draftConfig = m_genConfig;
+}
 
 FreeRoam::~FreeRoam()
 = default;
@@ -32,137 +28,52 @@ void FreeRoam::Regenerate()
     m_chunkManager->Clear();
 }
 
-bool FreeRoam::Init()
+// PROTECTED -----------------------------------------------------------------------------------------------------------
+
+void FreeRoam::OnInit()
 {
     SetCursorEnabled(false);
 
+    // Create flying camera for free roam
     m_cam = CreateObject("FlyCam");
     m_camComp = m_cam->AddComponent<RR::FreeCameraComponent>();
     m_camComp->SetSprintSpeed(80.f);
     m_cam->SetPosition(vec3(0.f, 100.f, 0.f));
     SetMainCamera(m_cam);
-
-    m_voxelMat = RR::Material::Load("Materials/Voxel.json");
-
-    auto arr = m_voxelMat->GetTextureArray("uBlockTex");
-    assert(arr && arr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
-
-    m_vegMat = RR::Material::Load("Materials/VoxelVegetation.json");
-    auto vegArr = m_vegMat->GetTextureArray("uBlockTex");
-    assert(vegArr && vegArr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
-
-
-    RR::ChunkGenerator gen = [this](RR::Chunk& c) {
-        WORLDGEN::GenerateColumn(c, m_genConfig);
-    };
-    m_chunkManager = std::make_unique<RR::ChunkManager>(gen, m_voxelMat, m_vegMat);
-
-    auto checkArea = [&](int ax, int az, int aw, int ah, const char* tag)
-    {
-        auto area = WORLDGEN::FinalArea(ax, az, aw, ah, m_genConfig);    
-        bool ok = true;
-        for (int j = 0; j < ah && ok; ++j)
-            for (int i = 0; i < aw && ok; ++i)
-                if (area[i + j * aw] != WORLDGEN::BiomeAtFinal(ax + i, az + j, m_genConfig)) ok = false;
-        RR::InfoLog("[ZOOM] area==point ", tag, ": ", ok ? "PASS" : "FAIL");
-    };
-    checkArea(0, 0, 8, 8, "aligned");
-    checkArea(3, -5, 7, 6, "offset-odd-neg");
-
-    // proportions over many coarse cells
-    {
-        auto big = WORLDGEN::FinalArea(0, 0, 2048, 2048, m_genConfig);
-        int zh[(int)WORLDGEN::BIOME::COUNT] = {};
-        for (WORLDGEN::BIOME b : big) zh[(int)b]++;
-        RR::InfoLog("[ZOOM] plains=", zh[0], " forest=", zh[1], " desert=", zh[2], " mesa=", zh[3],
-                    " taiga=", zh[4], " tundra=", zh[5], " mountains=", zh[6], " savanna=", zh[7]);
-    }
-
-    {
-        using namespace RR::CHUNK;
-
-        bool reproducible = true;
-        for (Coord c : { Coord{0, 0}, Coord{-3, 5}, Coord{12, -7} })
-        {
-            RR::Chunk a(c), b(c);
-            WORLDGEN::GenerateColumn(a, m_genConfig);
-            WORLDGEN::GenerateColumn(b, m_genConfig);
-            if (a.voxels != b.voxels) reproducible = false;     
-        }
-        RR::InfoLog("[DETERMINISM] same seed twice == identical: ", reproducible ? "PASS" : "FAIL");
-
-        WORLDGEN::WorldGenConfig other = m_genConfig;
-        other.seed += 1u;
-        RR::Chunk s0(Coord{0, 0}), s1(Coord{0, 0});
-        WORLDGEN::GenerateColumn(s0, m_genConfig);
-        WORLDGEN::GenerateColumn(s1, other);
-        RR::InfoLog("[DETERMINISM] seed changes the world: ", (s0.voxels != s1.voxels) ? "PASS" : "FAIL");
-    }
-
-
-
-    {
-        const int cx = 3, cz = -2;
-        const int margin = m_genConfig.biomeBlendRadius;
-        const auto grid = WORLDGEN::BuildBiomeGrid(cx, cz, margin, m_genConfig);
-        const auto sums = WORLDGEN::BuildBlendSums(grid, m_genConfig);
-        const int total = (2*margin+1) * (2*margin+1);
-        bool ok = true;
-        for (int z = 0; z < 16 && ok; ++z)
-            for (int x = 0; x < 16; ++x)
-            {
-                const int wx = cx*16 + x, wz = cz*16 + z;
-                const int chunkLand = WORLDGEN::TerrainHeightFromSums(sums[x + z*16], wx, wz, total, m_genConfig);
-                if (chunkLand != WORLDGEN::LandHeight(wx, wz, m_genConfig)) { ok = false; break; }
-            }
-        RR::InfoLog("[LANDHEIGHT] oracle ", ok ? "PASS" : "FAIL");
-    }
-
-
-
-    return true;
 }
 
 void FreeRoam::PreUpdate(float _deltaTime)
 {
-    auto& input = RR::Engine::GetInstance().GetInputManager();
+    const auto& input = RR::Engine::GetInstance().GetInputManager();
 
     if (input.IsKeyPressed(GLFW_KEY_ESCAPE))
         RR::Engine::GetInstance().SetShouldClose(true);
 
+    // Open World Gen tweaks menu
     const bool tabDown = input.IsKeyPressed(GLFW_KEY_TAB);
     if (tabDown && !m_tabWasDown)
     {
         m_uiMode = !m_uiMode;
-        SetCursorEnabled(m_uiMode);     
+        SetCursorEnabled(m_uiMode);
         m_camComp->SetDiscardInput(m_uiMode);
     }
     m_tabWasDown = tabDown;
 }
 
-void FreeRoam::Update(float _deltaTime)
+void FreeRoam::OnUpdate(float _deltaTime)
 {
-    if (!m_chunkManager || !m_cam) return;
-    const vec3 camPos = vec3(m_cam->GetWorldTransform()[3]);
-
-    m_chunkManager->Update(camPos);
-    m_chunkManager->SubmitDraws();
 }
 
 void FreeRoam::LateUpdate(float _deltaTime)
 {
 }
 
-void FreeRoam::Destroy()
-{
-}
-
 void FreeRoam::OnGui()
 {
     // Passive FPS readout
-    const ImGuiViewport* vp = ImGui::GetMainViewport();
-    const float pad = 10.0f;
-    const ImVec2 pos(vp->WorkPos.x + vp->WorkSize.x - pad, vp->WorkPos.y + pad);
+    const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+    constexpr float padding = 10.0f;
+    const ImVec2 pos(viewPort->WorkPos.x + viewPort->WorkSize.x - padding, viewPort->WorkPos.y + padding);
     ImGui::SetNextWindowPos(pos, ImGuiCond_Always, ImVec2(1.0f, 0.0f));
     ImGui::SetNextWindowBgAlpha(0.5f);
 
@@ -170,7 +81,7 @@ void FreeRoam::OnGui()
         ImGuiWindowFlags_NoDecoration   | ImGuiWindowFlags_AlwaysAutoResize |
         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
         ImGuiWindowFlags_NoNav          | ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoInputs;      
+        ImGuiWindowFlags_NoInputs;
 
     if (ImGui::Begin("##fps_overlay", nullptr, flags))
     {
@@ -185,37 +96,38 @@ void FreeRoam::OnGui()
     }
     ImGui::End();
 
-    // World Gen panel 
+    // World Gen panel
     ImGui::SetNextWindowPos(ImVec2(10.0f, 10.0f), ImGuiCond_Once);
+    ImGui::SetNextWindowSize(ImVec2(512.f, 1050.f), ImGuiCond_Once);
     ImGui::SetNextWindowCollapsed(!m_uiMode, ImGuiCond_Always);
     ImGui::Begin("World Gen (PRESS TAB)", nullptr, ImGuiWindowFlags_NoSavedSettings);
 
-    static const char* kBiomeNames[(int)WORLDGEN::BIOME::COUNT] =
-    { 
-        "Plains", 
-        "Forest", 
-        "Desert", 
-        "Mesa", 
-        "Taiga", 
-        "Tundra", 
-        "Mountains", 
-        "Savanna" 
+    static const char* kBiomeNames[static_cast<int>(WORLDGEN::BIOME::COUNT)] =
+    {
+        "Plains",
+        "Forest",
+        "Desert",
+        "Mesa",
+        "Taiga",
+        "Tundra",
+        "Mountains",
+        "Savanna"
         };
 
     if (ImGui::CollapsingHeader("Terrain Shape", ImGuiTreeNodeFlags_DefaultOpen))
     {
         ImGui::SeparatorText("Base noise");
         ImGui::Checkbox   ("Gradient noise (Perlin)", &m_draftConfig.useGradientNoise);
-        ImGui::SliderFloat("Height scale", &m_draftConfig.heightScale, 16.f, 512.f);
-        ImGui::SliderInt  ("Octaves",      &m_draftConfig.heightOctaves, 1, 8);
-        ImGui::SliderInt  ("Dirt depth",   &m_draftConfig.dirtDepth, 1, 32);
+        ImGui::SliderFloat("Height scale",            &m_draftConfig.heightScale, 16.f, 512.f);
+        ImGui::SliderInt  ("Octaves",                 &m_draftConfig.heightOctaves, 1, 8);
+        ImGui::SliderInt  ("Dirt depth",              &m_draftConfig.dirtDepth, 1, 32);
 
         ImGui::SeparatorText("Domain warp");
         ImGui::Checkbox   ("Enabled##warp", &m_draftConfig.warpEnabled);
         ImGui::SliderFloat("Scale##warp",   &m_draftConfig.warpScale, 20.f, 1024.f);
         ImGui::SliderFloat("Amp##warp",     &m_draftConfig.warpAmp, 1.f, 384.f);
         ImGui::SliderInt  ("Octaves##warp", &m_draftConfig.warpOctaves, 1, 10);
-        ImGui::SliderInt  ("Levels##warp", &m_draftConfig.warpLevels, 1, 2);
+        ImGui::SliderInt  ("Levels##warp",  &m_draftConfig.warpLevels, 1, 2);
 
         ImGui::SeparatorText("Detail / terracing");
         ImGui::Checkbox   ("Enabled##detail", &m_draftConfig.detailEnabled);
@@ -230,13 +142,13 @@ void FreeRoam::OnGui()
 
     if (ImGui::CollapsingHeader("Climate (biome selection)"))
     {
-        ImGui::SliderFloat("Cold threshold",    &m_draftConfig.tempCold, 0.0f, 0.5f);
-        ImGui::SliderFloat("Hot threshold",     &m_draftConfig.tempHot, 0.5f, 1.0f); 
-        ImGui::SliderFloat("Mountain chance",   &m_draftConfig.mountainChance, 0.0f, 0.5f);
-        ImGui::SliderFloat("Tundra humidity",   &m_draftConfig.tundraHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Plains humidity",   &m_draftConfig.plainsHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Desert humidity",   &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
-        ImGui::SliderFloat("Mesa rarity",       &m_draftConfig.mesaRarity, 0.0f, 1.0f);
+        ImGui::SliderFloat("Cold threshold",  &m_draftConfig.tempCold, 0.0f, 0.5f);
+        ImGui::SliderFloat("Hot threshold",   &m_draftConfig.tempHot, 0.5f, 1.0f);
+        ImGui::SliderFloat("Mountain chance", &m_draftConfig.mountainChance, 0.0f, 0.5f);
+        ImGui::SliderFloat("Tundra humidity", &m_draftConfig.tundraHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Plains humidity", &m_draftConfig.plainsHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Desert humidity", &m_draftConfig.desertHumidThresh, 0.0f, 1.0f);
+        ImGui::SliderFloat("Mesa rarity",     &m_draftConfig.mesaRarity, 0.0f, 1.0f);
     }
 
     if (ImGui::CollapsingHeader("Biome Map (cells)"))
@@ -248,12 +160,12 @@ void FreeRoam::OnGui()
 
     if (ImGui::CollapsingHeader("Biome Heights"))
     {
-        for (int b = 0; b < (int)WORLDGEN::BIOME::COUNT; ++b)
+        for (int biome = 0; biome < (int)WORLDGEN::BIOME::COUNT; ++biome)
         {
-            ImGui::PushID(b);
-            ImGui::Text("%s", kBiomeNames[b]);
-            ImGui::SliderInt("base", &m_draftConfig.biomeBaseHeight[b], 0, 200);
-            ImGui::SliderInt("amp",  &m_draftConfig.biomeAmplitude[b],  0, 120);
+            ImGui::PushID(biome);
+            ImGui::Text("%s", kBiomeNames[biome]);
+            ImGui::SliderInt("base", &m_draftConfig.biomeBaseHeight[biome], 0, 200);
+            ImGui::SliderInt("amp",  &m_draftConfig.biomeAmplitude[biome],  0, 120);
             ImGui::PopID();
         }
     }
@@ -375,30 +287,37 @@ void FreeRoam::OnGui()
         ImGui::Checkbox   ("Enabled##clump",    &m_draftConfig.clumpEnabled);
         ImGui::SliderFloat("Scale##clump",      &m_draftConfig.clumpScale, 20.f, 400.f);
         ImGui::SliderFloat("Warp##clump",       &m_draftConfig.clumpWarp, 0.f, 120.f);
-        ImGui::SliderFloat("Clear line##clump", &m_draftConfig.clumpClear, 0.0f, m_draftConfig.clumpThick); 
-        ImGui::SliderFloat("Thick line##clump", &m_draftConfig.clumpThick, m_draftConfig.clumpClear, 1.0f); 
+        ImGui::SliderFloat("Clear line##clump", &m_draftConfig.clumpClear, 0.0f, m_draftConfig.clumpThick);
+        ImGui::SliderFloat("Thick line##clump", &m_draftConfig.clumpThick, m_draftConfig.clumpClear, 1.0f);
         ImGui::SliderFloat("Peak##clump",       &m_draftConfig.clumpPeak, 0.5f, 5.0f);
 
         ImGui::SeparatorText("Per-biome");
-        for (int b = 0; b < (int)WORLDGEN::BIOME::COUNT; ++b)
+        for (int biome = 0; biome < static_cast<int>(WORLDGEN::BIOME::COUNT); ++biome)
         {
-            WORLDGEN::BiomeVeg& v = m_draftConfig.biomeVegetation[b];
-            ImGui::PushID(b);
-            if (ImGui::TreeNode(kBiomeNames[b]))
+            auto& [
+                tree, grass,
+                tallGrass, flower,
+                bush, cactus,
+                boulder, clumpAmount,
+                treeMinHeight, treeMaxHeight
+                ] = m_draftConfig.biomeVegetation[biome];
+
+            ImGui::PushID(biome);
+            if (ImGui::TreeNode(kBiomeNames[biome]))
             {
                 ImGui::SeparatorText("Trees");
-                ImGui::SliderFloat("Density##tree", &v.tree,          0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Clump amount",  &v.clumpAmount,   0.0f, 1.0f);
-                ImGui::SliderInt  ("Min height",    &v.treeMinHeight, 0, 40);
-                ImGui::SliderInt  ("Max height",    &v.treeMaxHeight, v.treeMinHeight, 48); 
+                ImGui::SliderFloat("Density##tree", &tree,          0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Clump amount",  &clumpAmount,   0.0f, 1.0f);
+                ImGui::SliderInt  ("Min height",    &treeMinHeight, 0, 40);
+                ImGui::SliderInt  ("Max height",    &treeMaxHeight, treeMinHeight, 48);
 
                 ImGui::SeparatorText("Ground cover");
-                ImGui::SliderFloat("Grass",      &v.grass,     0.0f, 1.0f);
-                ImGui::SliderFloat("Tall grass", &v.tallGrass, 0.0f, 1.0f);
-                ImGui::SliderFloat("Flower",     &v.flower,    0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Bush",       &v.bush,      0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Cactus",     &v.cactus,    0.0f, 0.05f, "%.4f");
-                ImGui::SliderFloat("Boulder",    &v.boulder,   0.0f, 0.05f, "%.4f");
+                ImGui::SliderFloat("Grass",      &grass,     0.0f, 1.0f);
+                ImGui::SliderFloat("Tall grass", &tallGrass, 0.0f, 1.0f);
+                ImGui::SliderFloat("Flower",     &flower,    0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Bush",       &bush,      0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Cactus",     &cactus,    0.0f, 0.05f, "%.4f");
+                ImGui::SliderFloat("Boulder",    &boulder,   0.0f, 0.05f, "%.4f");
                 ImGui::TreePop();
             }
             ImGui::PopID();
@@ -416,8 +335,10 @@ void FreeRoam::OnGui()
     ImGui::Separator();
     ImGui::InputScalar("Seed", ImGuiDataType_U32, &m_draftConfig.seed);
     ImGui::SameLine();
-    if (ImGui::Button("Roll")) {
-        std::mt19937 rng{std::random_device{}()};
+
+    if (ImGui::Button("Roll"))
+    {
+        std::mt19937 rng {std::random_device{}()};
         m_draftConfig.seed = rng();
     }
     if (ImGui::Button("Regenerate World")) Regenerate();

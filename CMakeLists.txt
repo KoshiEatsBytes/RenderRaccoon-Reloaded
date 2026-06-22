@@ -36,10 +36,11 @@ set(PROJECT_SOURCE_FILES
         Source/WorldGen/WorldGen.hpp
         Source/WorldGen/WorldGenConfig.h
         Source/WorldGen/Biome.hpp
-        Source/WorldGen/PerlinNoise.h
         Source/WorldGen/BiomeID.h
         Source/WorldGen/BiomeMap.hpp
         Source/WorldGen/Vegetation.hpp
+        Source/Scenes/Base/VoxelScene.cpp
+        Source/Scenes/Base/VoxelScene.h
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

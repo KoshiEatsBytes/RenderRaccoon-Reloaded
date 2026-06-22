@@ -54,6 +54,12 @@
 #include "Audio/ComponentAudioTracker.h"
 #include "Audio/ManagerAudioTracker.h"
 
+// Voxels
+#include "Render/Voxels/ChunkMesher.h"
+#include "Voxels/Chunk.h"
+#include "Voxels/ChunkManager.h"
+#include "Voxels/ChunkData.h"
+
 // Benchmark
 #include "Benchmark/BenchmarkData.h"
 #include "Benchmark/BenchmarkParser.hpp"
