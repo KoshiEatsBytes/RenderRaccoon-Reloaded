@@ -164,7 +164,7 @@ namespace WORLDGEN
         int   riverShelfDepth        = 3;      // shallow outer shelf depth
         float channelThreshold       = 0.525f; // valleyTerr above this carves the deep channel
         float riverBankSharpnessMtn  = 1.0f;   // for mountains, smoothes river bore entrance
-        float riverBankSharpnessMesa = 4.0f;   // same as above but for mesas
+        float riverBankSharpnessMesa = 1.5f;   // same as above but for mesas
         // River reach
         int   riverMaxHeight         = 120;    // Y where open rivers fade out
         float riverFade              = 12.f;   // fade range in blocks
