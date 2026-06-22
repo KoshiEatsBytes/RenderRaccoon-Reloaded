@@ -606,8 +606,9 @@ namespace WORLDGEN
                 float profile = RiverProfile(wx, wz, _config);
                 if (!_config.taigaRivers) profile *= 1.0f - float(sum.taiga) / total;
 
-                // mountains + mesas ignore the absolute riverMaxHeight, the bore instead 
-                const bool  boringRegion = (mtnMask > _config.tunnelMaskThreshMtn) || (mesaMask > _config.tunnelMaskThreshMesa);
+                // mountains and mesa ignore max height, rivers tunnel isntead after above blocks threshold
+                const bool  boringRegion = (biome == BIOME::MOUNTAINS && mtnMask  > _config.tunnelMaskThreshMtn)
+                                        || (biome == BIOME::MESA      && mesaMask > _config.tunnelMaskThreshMesa);
                 const float riverAllow   = boringRegion ? 1.0f : std::clamp(float(_config.riverMaxHeight - land) / _config.riverFade, 0.0f, 1.0f);
                 const float valleyTerr   = profile * riverAllow;
 
@@ -708,9 +709,8 @@ namespace WORLDGEN
                                 waterT = static_cast<float>(land - waterTop) / static_cast<float>(land - shelfBed);
                             }
 
-                            // desert uses grass instead of sand for river
-                            const bool  arid       = (biome == BIOME::DESERT || biome == BIOME::MESA);
-                            const BLOCK beachBlock = (arid && _config.desertRiverGrass) ? BLOCK::GRASS : BLOCK::SAND;
+                            // oasis grass banks only in desert
+                            const BLOCK beachBlock = (biome == BIOME::DESERT && _config.desertRiverGrass) ? BLOCK::GRASS : BLOCK::SAND;
 
                             if (valleyTerr > 0.0f && waterT - valleyTerr <= _config.beachBand)
                             {
@@ -739,10 +739,10 @@ namespace WORLDGEN
                     }
                 }
 
-                // River-tunnel cap: solid rock resumes above the arched void
+                // River-tunnel cap
                 if (capBase >= 0)
                 {
-                    const bool mesaCap = (biome == BIOME::MESA);   // bore through terracotta, not grey stone
+                    const bool mesaCap = (biome == BIOME::MESA);   
                     for (int y = capBase + 1; y <= land && y < kSizeY; ++y)
                     {
                         BLOCK block;
@@ -759,7 +759,7 @@ namespace WORLDGEN
                         {
                             const bool primary = HashFloat3(wx, y, wz, _config.seed + 971u) < _config.dripstoneFraction;
                             if (mesaCap)
-                                // gold-ore accents in the terracotta = the mesa interior LOD instrument
+                                // gold ore accents in the terracotta 
                                 block = primary ? BLOCK::GOLD_ORE : MesaStrata(y, wx, wz, _config);
                             else
                                 block = primary ? BLOCK::DRIPSTONE : BLOCK::CALCITE;

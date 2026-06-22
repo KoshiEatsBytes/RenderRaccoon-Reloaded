@@ -48,7 +48,7 @@ namespace RR
 
         CHUNK::Coord m_lastCoords;
         bool m_firstFrame = true;
-        int m_meshRadius  = 24;
+        int m_meshRadius  = 10;
 
         // Quality settings
         bool m_fancyLeaves = true;

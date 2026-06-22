@@ -27,7 +27,7 @@ namespace WORLDGEN
         using uInt32 = std::uint32_t;
 
         // GENERAL -----------------------------------------------------------------------------------------------------
-        uInt32 seed = 2498840564;
+        uInt32 seed = 2498846564;
 
         // BASE NOISE --------------------------------------------------------------------------------------------------
         bool  useGradientNoise = true;  // gradient (Perlin) vs value noise
@@ -175,7 +175,7 @@ namespace WORLDGEN
 
         // RIVER TUNNELS -----------------------------------------------------------------------------------------------
         bool  riverTunnels         = true;   // rivers bore through mountains and mesas
-        float tunnelMaskThreshMtn  = 0.20f;  // path of biome on the edges before boring can happen
+        float tunnelMaskThreshMtn  = 0.20f;  // only solid mountain interiors bore
         float tunnelMaskThreshMesa = 0.05f;  // same as before for mesas
         int   tunnelRiseMtn        = 12;     // Amout of blocks above river to start boring
         int   tunnelRiseMesa       = 32;     // same as above for mesas
