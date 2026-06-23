@@ -2,6 +2,11 @@
 #include <cassert>
 
 #include "VoxelScene.h"
+
+#include "imgui.h"
+#include "GLFW/glfw3.h"
+#include "Components/FreeCameraComponent.h"
+#include "Scenes/ArtefactMenu.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkManager.h"
 #include "WorldGen/WorldGen.hpp"
@@ -56,11 +61,38 @@ bool VoxelScene::Init()
     return true;
 }
 
+void VoxelScene::PreUpdate(float _deltaTime)
+{
+    // Lock player in menu if ESC resume is not allowed
+    if (m_paused && !m_allowResume) return;
+
+    const auto& input = RR::Engine::GetInstance().GetInputManager();
+    const bool escDown = input.IsKeyPressed(GLFW_KEY_ESCAPE);
+
+    // Open pause menu if esc pressed
+    if (escDown && !m_escWasDown)
+    {
+        m_paused = !m_paused;
+        ApplyInputMode();
+
+        // callbacks hook when menu open/closed
+        if (m_paused)
+        {
+            OnPauseEnter();
+        }
+        else
+        {
+            OnPauseExit();
+        }
+    }
+    m_escWasDown = escDown;
+}
+
 void VoxelScene::Update(float _deltaTime)
 {
-    if (m_chunkManager && GetMainCamera())
+    if (m_chunkManager && m_cam)
     {
-        const vec3 camPos = GetMainCamera()->GetWorldPosition();
+        const vec3 camPos = m_cam->GetWorldPosition();
         m_chunkManager->Update(camPos);
         m_chunkManager->SubmitDraws();
     }
@@ -68,6 +100,103 @@ void VoxelScene::Update(float _deltaTime)
     OnUpdate(_deltaTime);
 }
 
+void VoxelScene::LateUpdate(float _deltaTime)
+{
+}
+
 void VoxelScene::Destroy()
 {
 }
+
+void VoxelScene::OnGui()
+{
+    // Dont render anything if not paused
+    if (!m_paused) return;
+
+    const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewPort->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    constexpr ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+
+    ImGui::Begin("PAUSED", nullptr, flags);
+
+    //Size of buttons
+    const ImVec2 buttonSize(220.0f, 0.0f);
+
+    // menu entries
+    if (ImGui::Button(m_pausePrimaryLabel.c_str(), buttonSize))
+    {
+        if (m_allowResume)
+        {
+            m_paused = false;
+            ApplyInputMode();
+            OnPauseExit();
+            OnPausePrimary();
+
+            ImGui::End();
+            return;
+        }
+
+        OnPausePrimary();
+    }
+    if (ImGui::Button(m_pauseSecondaryLabel.c_str(), buttonSize))
+    {
+        OnPauseSecondary();
+    }
+
+    ImGui::End();
+}
+
+void VoxelScene::OnPauseSecondary()
+{
+    // Default go back to main menu
+    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<ArtefactMenu>();
+}
+
+void VoxelScene::ApplyInputMode()
+{
+    if (!m_cam || !m_camComp) return;
+
+    // Release cursor and discard camera input when in UI mode
+    const bool uiActive = m_paused || InUiMode();
+    SetCursorEnabled(uiActive);
+    m_camComp->SetDiscardInput(uiActive);
+}
+
+bool VoxelScene::InUiMode() const
+{
+    // to be overloaded func if a scene has an external UI mode
+    return false;
+}
+
+void VoxelScene::SetPrimaryButtonText(const std::string& _text)
+{
+    m_pausePrimaryLabel = _text;
+}
+
+void VoxelScene::SetSecondaryButtonText(const std::string& _text)
+{
+    m_pauseSecondaryLabel = _text;
+}
+
+void VoxelScene::SetResumable(bool _resumable)
+{
+    m_allowResume = _resumable;
+}
+
+// Optional hooks
+
+void VoxelScene::OnPausePrimary()
+{
+}
+
+void VoxelScene::OnPauseEnter()
+{
+}
+
+void VoxelScene::OnPauseExit()
+{
+}
+

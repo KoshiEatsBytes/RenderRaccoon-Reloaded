@@ -15,19 +15,16 @@ public:
     void Regenerate();
     
 protected:
-    void OnInit() override;
+    void OnInit()                    override;
     void PreUpdate(float _deltaTime) override;
-    void OnUpdate(float _deltaTime) override;
-    void LateUpdate(float _deltaTime) override;
-    void OnGui() override;
+    void OnUpdate(float _deltaTime)  override;
+    void OnGui()                     override;
+    bool InUiMode() const            override;
     
 private:
-    RR::GameObject*          m_cam     = nullptr;
-    RR::FreeCameraComponent* m_camComp = nullptr;
-    
     // Editable world gen config
     WORLDGEN::WorldGenConfig m_draftConfig;
-    
+
     bool m_uiMode      = false;
     bool m_tabWasDown  = false;
     bool m_fancyLeaves = true;

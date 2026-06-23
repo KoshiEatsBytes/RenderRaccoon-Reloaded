@@ -34,6 +34,11 @@ void FreeRoam::OnInit()
 {
     SetCursorEnabled(false);
 
+    // Customize menu
+    SetPrimaryButtonText("RESUME FREE-ROAM");
+    SetSecondaryButtonText("GO BACK TO MAIN MENU");
+    SetResumable(true);
+
     // Create flying camera for free roam
     m_cam = CreateObject("FlyCam");
     m_camComp = m_cam->AddComponent<RR::FreeCameraComponent>();
@@ -42,20 +47,35 @@ void FreeRoam::OnInit()
     SetMainCamera(m_cam);
 }
 
+bool FreeRoam::InUiMode() const
+{
+    // The worldgen panel also releases the cursor
+    return m_uiMode;
+}
+
 void FreeRoam::PreUpdate(float _deltaTime)
 {
     const auto& input = RR::Engine::GetInstance().GetInputManager();
 
-    if (input.IsKeyPressed(GLFW_KEY_ESCAPE))
-        RR::Engine::GetInstance().SetShouldClose(true);
+    // Closes world gen tab wish esc if open
+    if (input.IsKeyPressed(GLFW_KEY_ESCAPE) && m_uiMode)
+    {
+        m_uiMode = false;
+        ApplyInputMode();
+        m_escWasDown = true;
+        return;
+    }
+
+    VoxelScene::PreUpdate(_deltaTime);
+
+    if (m_paused) return;
 
     // Open World Gen tweaks menu
     const bool tabDown = input.IsKeyPressed(GLFW_KEY_TAB);
     if (tabDown && !m_tabWasDown)
     {
         m_uiMode = !m_uiMode;
-        SetCursorEnabled(m_uiMode);
-        m_camComp->SetDiscardInput(m_uiMode);
+        ApplyInputMode();
     }
     m_tabWasDown = tabDown;
 }
@@ -64,12 +84,14 @@ void FreeRoam::OnUpdate(float _deltaTime)
 {
 }
 
-void FreeRoam::LateUpdate(float _deltaTime)
-{
-}
-
 void FreeRoam::OnGui()
 {
+    // Update base overlay first
+    VoxelScene::OnGui();
+
+    // Stop rendering if paused
+    if (m_paused) return;
+
     // Passive FPS readout
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
     constexpr float padding = 10.0f;

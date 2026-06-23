@@ -7,11 +7,12 @@ namespace RR
 {
     struct Chunk;
     class ChunkManager;
+    class FreeCameraComponent;
 }
 
 class VoxelScene : public RR::Scene
 {
-    protected:
+protected:
     // Only constructable by derived
     VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo,
         const WORLDGEN::WorldGenConfig& _genConfig);
@@ -19,13 +20,30 @@ class VoxelScene : public RR::Scene
     ~VoxelScene() override;
 
     // Scene hooks
-    bool Init()                       override;
-    void Update(float _deltaTime)     override;
-    void Destroy()                    override;
+    bool Init()                        override;
+    void PreUpdate(float _deltaTime)   override;
+    void Update(float _deltaTime)      override;
+    void LateUpdate(float _deltaTime)  override;
+    void Destroy()                     override;
+    void OnGui()                       override;
 
     // Hooks for derived scene
     virtual void OnInit()                   = 0;
     virtual void OnUpdate(float _deltaTime) = 0;
+
+    // Hooks for menu logic
+    virtual void OnPausePrimary();
+    virtual void OnPauseSecondary();
+    virtual void OnPauseEnter();
+    virtual void OnPauseExit();
+    virtual bool InUiMode() const;
+
+    void ApplyInputMode();
+
+    // Menu info setters
+    void SetPrimaryButtonText  (const std::string& _text);
+    void SetSecondaryButtonText(const std::string& _text);
+    void SetResumable          (bool _resumable);
 
     // Run data
     RR::RunInfo m_runInfo;
@@ -35,6 +53,19 @@ class VoxelScene : public RR::Scene
     std::shared_ptr<RR::Material>     m_voxelBlocksMat;
     std::shared_ptr<RR::Material>     m_voxelVegMat;
     std::unique_ptr<RR::ChunkManager> m_chunkManager;
+
+    // Camera
+    RR::GameObject*          m_cam     = nullptr;
+    RR::FreeCameraComponent* m_camComp = nullptr;
+
+    bool m_escWasDown = false;
+    bool m_paused     = false;
+
+private:
+    // Menu logic
+    std::string m_pausePrimaryLabel   = "Restart Benchmark";
+    std::string m_pauseSecondaryLabel = "Exit to Main Menu";
+    bool m_allowResume = false;
 };
 
 
