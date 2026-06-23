@@ -6,9 +6,9 @@
 #include <algorithm>
 #include <string>
 
-#include "Scenes/ArtefactMenu.h"
+#include "Scenes/MainMenuScene.h"
 
-#include "FreeRoam.h"
+#include "FreeRoamScene.h"
 #include "imgui.h"
 #include "implot.h"
 #include "Testing/DemoScene.h"
@@ -16,14 +16,14 @@
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
-ArtefactMenu::ArtefactMenu() : Scene("Main Menu") {}
+MainMenuScene::MainMenuScene() : Scene("Main Menu") {}
 
-ArtefactMenu::~ArtefactMenu()
+MainMenuScene::~MainMenuScene()
 = default;
 
 // PROTECTED -----------------------------------------------------------------------------------------------------------
 
-bool ArtefactMenu::Init()
+bool MainMenuScene::Init()
 {
     SetCursorEnabled(true);
     SetSceneClearColor({0.0f, 0.0f, 0.0f, 1.0f});
@@ -31,12 +31,12 @@ bool ArtefactMenu::Init()
 }
 
 // Mandatory hooks, unused.
-void ArtefactMenu::PreUpdate(float _deltaTime) {}
-void ArtefactMenu::Update(float _deltaTime) {}
-void ArtefactMenu::LateUpdate(float _deltaTime) {}
-void ArtefactMenu::Destroy() {}
+void MainMenuScene::PreUpdate(float _deltaTime) {}
+void MainMenuScene::Update(float _deltaTime) {}
+void MainMenuScene::LateUpdate(float _deltaTime) {}
+void MainMenuScene::Destroy() {}
 
-void ArtefactMenu::OnGui()
+void MainMenuScene::OnGui()
 {
     ImGui::GetStyle().FontScaleMain = m_uiScale;
 
@@ -156,7 +156,7 @@ namespace SHARED
 
 // TOP BAR -------------------------------------------------------------------------------------------------------------
 
-void ArtefactMenu::DrawTopBar()
+void MainMenuScene::DrawTopBar()
 {
     const bool idle = m_view == TopView::NONE;
     const ImGuiStyle& style = ImGui::GetStyle();
@@ -301,7 +301,7 @@ namespace BT
     }
 }
 
-void ArtefactMenu::DrawBenchmarkPanel()
+void MainMenuScene::DrawBenchmarkPanel()
 {
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
     const float leftWidth = viewPort->WorkSize.x * SHARED::kLeftSize;
@@ -337,7 +337,7 @@ void ArtefactMenu::DrawBenchmarkPanel()
     ImGui::End();
 }
 
-void ArtefactMenu::DrawMethodologyPanel()
+void MainMenuScene::DrawMethodologyPanel()
 {
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
     const float leftWidth = viewPort->WorkSize.x * SHARED::kLeftSize;
@@ -442,7 +442,7 @@ void ArtefactMenu::DrawMethodologyPanel()
     ImGui::End();
 }
 
-void ArtefactMenu::DrawDescription(float _height)
+void MainMenuScene::DrawDescription(float _height)
 {
     if (ImGui::BeginChild("##description", ImVec2(0.0f, _height), ImGuiChildFlags_Borders))
     {
@@ -510,7 +510,7 @@ void ArtefactMenu::DrawDescription(float _height)
     ImGui::EndChild();
 }
 
-void ArtefactMenu::DrawOptimizationToggles()
+void MainMenuScene::DrawOptimizationToggles()
 {
     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_optTogFontSize);
     SHARED::CenteredText("OPTIMIZATION TOGGLES");
@@ -529,7 +529,7 @@ void ArtefactMenu::DrawOptimizationToggles()
     ImGui::PopFont();
 }
 
-void ArtefactMenu::DrawSceneSelect()
+void MainMenuScene::DrawSceneSelect()
 {
     SHARED::CenteredText("SCENE SELECT");
     ImGui::Separator();
@@ -548,7 +548,7 @@ void ArtefactMenu::DrawSceneSelect()
     //ImGui::TextDisabled("list etc etc.... (only 1 selectable)");
 }
 
-void ArtefactMenu::DrawCustomSeed()
+void MainMenuScene::DrawCustomSeed()
 {
     SHARED::CenteredText("CUSTOM SEED");
     ImGui::Separator();
@@ -798,7 +798,7 @@ namespace AT
     }
 }
 
-void ArtefactMenu::DrawAnalyzerPanel()
+void MainMenuScene::DrawAnalyzerPanel()
 {
     if (m_runListDirty) RefreshRunList();
 
@@ -949,7 +949,7 @@ void ArtefactMenu::DrawAnalyzerPanel()
     ImGui::End();
 }
 
-void ArtefactMenu::DrawResultWindows()
+void MainMenuScene::DrawResultWindows()
 {
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
 
@@ -1107,7 +1107,7 @@ namespace CT
     }
 }
 
-void ArtefactMenu::DrawComparePanel()
+void MainMenuScene::DrawComparePanel()
 {
     if (m_runListDirty) RefreshRunList();
 
@@ -1480,7 +1480,7 @@ void ArtefactMenu::DrawComparePanel()
 
 // MISC ----------------------------------------------------------------------------------------------------------------
 
-void ArtefactMenu::RefreshRunList()
+void MainMenuScene::RefreshRunList()
 {
     m_runFiles.clear();
     m_selectedRunIndex = -1;

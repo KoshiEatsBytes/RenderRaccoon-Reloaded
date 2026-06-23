@@ -25,7 +25,7 @@ namespace RR
         std::string config        = "debug";
         uint32_t    seed          = 0;
         bool        completed     = false;
-        bool        deterministic = false; 
+        bool        deterministic = false;
 
         // Optimizations
         bool lod        = false;
@@ -77,6 +77,9 @@ namespace RR
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
     // Klein et al. 2023: 4–12 ms variation is perceptible
     constexpr float kStutterDeltaMs = 8.0f;
+
+    // Curates scenes and seeds
+    
 }
 
 

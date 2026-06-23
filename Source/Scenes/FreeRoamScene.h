@@ -5,12 +5,12 @@
 #include "Components/FreeCameraComponent.h"
 #include "WorldGen/WorldGenConfig.h"
 
-class FreeRoam : public VoxelScene
+class FreeRoamScene : public VoxelScene
 {
 public:
-    explicit FreeRoam(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _config);
-    explicit FreeRoam(const RR::RunInfo& _runInfo);
-    ~FreeRoam() override;
+    explicit FreeRoamScene(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _config);
+    explicit FreeRoamScene(const RR::RunInfo& _runInfo);
+    ~FreeRoamScene() override;
     
     void Regenerate();
     

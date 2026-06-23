@@ -6,7 +6,7 @@
 #include "imgui.h"
 #include "GLFW/glfw3.h"
 #include "Components/FreeCameraComponent.h"
-#include "Scenes/ArtefactMenu.h"
+#include "Scenes/MainMenuScene.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkManager.h"
 #include "WorldGen/WorldGen.hpp"
@@ -29,17 +29,16 @@ namespace SHARED
     }
 }
 
-VoxelScene::VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo,
-    const WORLDGEN::WorldGenConfig& _genConfig)
-    : Scene(_name), m_runInfo(_runInfo), m_genConfig(_genConfig)
+VoxelScene::VoxelScene(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _genConfig)
+    : Scene(_runInfo.scene), m_runInfo(_runInfo), m_genConfig(_genConfig)
 {
     // RunInfo seed takes over
     m_genConfig.seed = _runInfo.seed;
 }
 
 // If not provided worlgen info use default
-VoxelScene::VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo)
-    : Scene(_name), m_runInfo(_runInfo)
+VoxelScene::VoxelScene(const RR::RunInfo& _runInfo)
+    : Scene(_runInfo.scene), m_runInfo(_runInfo)
 {
     m_genConfig.seed = _runInfo.seed;
 }
@@ -208,7 +207,7 @@ void VoxelScene::OnGui()
 void VoxelScene::OnPauseSecondary()
 {
     // Default go back to main menu
-    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<ArtefactMenu>();
+    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<MainMenuScene>();
 }
 
 void VoxelScene::ApplyInputMode()

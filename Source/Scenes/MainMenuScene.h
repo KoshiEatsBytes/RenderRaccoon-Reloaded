@@ -7,11 +7,11 @@
 // Artefact front end UI
 // Hopefully resolution agnostic
 // Uses ImGui and ImPlot to draw on screen
-class ArtefactMenu : public RR::Scene
+class MainMenuScene : public RR::Scene
 {
 public:
-    explicit ArtefactMenu();
-    ~ArtefactMenu() override;
+    explicit MainMenuScene();
+    ~MainMenuScene() override;
 
 protected:
     bool Init() override;

@@ -1,28 +1,28 @@
 
 #include <random>
 
-#include "FreeRoam.h"
+#include "FreeRoamScene.h"
 #include "imgui.h"
 #include "GLFW/glfw3.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
-FreeRoam::FreeRoam(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _config)
-    : VoxelScene("FreeRoam", _runInfo, _config)
+FreeRoamScene::FreeRoamScene(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _config)
+    : VoxelScene(_runInfo, _config)
 {
     m_draftConfig = m_genConfig;
 }
 
-FreeRoam::FreeRoam(const RR::RunInfo& _runInfo)
-    : VoxelScene("FreeRoam", _runInfo)
+FreeRoamScene::FreeRoamScene(const RR::RunInfo& _runInfo)
+    : VoxelScene(_runInfo)
 {
     m_draftConfig = m_genConfig;
 }
 
-FreeRoam::~FreeRoam()
+FreeRoamScene::~FreeRoamScene()
 = default;
 
-void FreeRoam::Regenerate()
+void FreeRoamScene::Regenerate()
 {
     m_genConfig = m_draftConfig;
     m_chunkManager->Clear();
@@ -30,13 +30,13 @@ void FreeRoam::Regenerate()
 
 // PROTECTED -----------------------------------------------------------------------------------------------------------
 
-void FreeRoam::OnInit()
+void FreeRoamScene::OnInit()
 {
     SetCursorEnabled(false);
 
     // Customize menu
     SetPrimaryButtonText("RESUME FREE-ROAM");
-    SetSecondaryButtonText("GO BACK TO MAIN MENU");
+    SetSecondaryButtonText("EXIT TO MAIN MENU");
     SetResumable(true);
 
     // Create flying camera for free roam
@@ -47,13 +47,13 @@ void FreeRoam::OnInit()
     SetMainCamera(m_cam);
 }
 
-bool FreeRoam::InUiMode() const
+bool FreeRoamScene::InUiMode() const
 {
     // The worldgen panel also releases the cursor
     return m_uiMode;
 }
 
-void FreeRoam::PreUpdate(float _deltaTime)
+void FreeRoamScene::PreUpdate(float _deltaTime)
 {
     const auto& input = RR::Engine::GetInstance().GetInputManager();
 
@@ -80,11 +80,11 @@ void FreeRoam::PreUpdate(float _deltaTime)
     m_tabWasDown = tabDown;
 }
 
-void FreeRoam::OnUpdate(float _deltaTime)
+void FreeRoamScene::OnUpdate(float _deltaTime)
 {
 }
 
-void FreeRoam::OnGui()
+void FreeRoamScene::OnGui()
 {
     // Update base overlay first
     VoxelScene::OnGui();

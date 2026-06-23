@@ -14,9 +14,8 @@ class VoxelScene : public RR::Scene
 {
 protected:
     // Only constructable by derived
-    VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo,
-        const WORLDGEN::WorldGenConfig& _genConfig);
-    VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo);
+    explicit VoxelScene(const RR::RunInfo& _runInfo, const WORLDGEN::WorldGenConfig& _genConfig);
+    explicit VoxelScene(const RR::RunInfo& _runInfo);
     ~VoxelScene() override;
 
     // Scene hooks
