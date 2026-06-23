@@ -397,7 +397,7 @@ void MainMenuScene::DrawMethodologyPanel()
                 {
                     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_sceneSeedFontSize);
 
-                    const float rdHeight   = ImGui::GetContentRegionAvail().y * 0.45f;
+                    const float rdHeight   = ImGui::GetContentRegionAvail().y * 0.35f;
                     const float modeHeight = ImGui::GetContentRegionAvail().y - rdHeight - style.ItemSpacing.y;
 
                     // Top is scene select or seed
@@ -550,22 +550,14 @@ void MainMenuScene::DrawSceneSelect()
     ImGui::Separator();
     ImGui::Spacing();
 
-    // Placeholder scenes
+    // Placeholder for scene selection
     static const char* scenes[] = { "SCENE 1", "SCENE 2", "SCENE 3", "SCENE 4" };
-
-    // Drop down menu for scenes
-    ImGui::TextUnformatted("Scene:");
-    ImGui::SetNextItemWidth(-FLT_MIN);
-    if (ImGui::BeginCombo("##scene_select", scenes[m_selectedScene]))
+    for (int i = 0; i < IM_ARRAYSIZE(scenes); ++i)
     {
-        for (int i = 0; i < IM_ARRAYSIZE(scenes); ++i)
+        if (ImGui::Selectable(scenes[i], m_selectedScene == i))
         {
-            if (ImGui::Selectable(scenes[i], m_selectedScene == i))
-            {
-                m_selectedScene = i;
-            }
+            m_selectedScene = i;
         }
-        ImGui::EndCombo();
     }
 }
 
@@ -598,7 +590,7 @@ void MainMenuScene::DrawRenderDistance()
     const int maxRD = m_runInfo.lod ? 384 : 32;
     m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, 2, maxRD);
 
-    ImGui::TextUnformatted("Custom Render Distance:");
+    //ImGui::TextUnformatted("Custom Render Distance:");
     ImGui::SetNextItemWidth(-FLT_MIN);
     ImGui::SliderInt("##render_distance", &m_runInfo.renderDistance, 2, maxRD,
         "%d chunks", ImGuiSliderFlags_AlwaysClamp);
