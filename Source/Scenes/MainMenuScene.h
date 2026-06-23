@@ -31,6 +31,7 @@ private:
     void DrawOptimizationToggles();
     void DrawSceneSelect();
     void DrawCustomSeed();
+    void DrawRenderDistance();
 
     // Analyzer tab
     void DrawAnalyzerPanel();

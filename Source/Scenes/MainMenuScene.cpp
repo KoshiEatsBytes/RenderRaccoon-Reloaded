@@ -392,15 +392,30 @@ void MainMenuScene::DrawMethodologyPanel()
 
                 ImGui::SameLine();
 
-                // Draws either scene select of custom seed
-                if (ImGui::BeginChild("##right_options", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders))
+                // Right column contains scene/seed select and render distance slider
+                if (ImGui::BeginChild("##right_options", ImVec2(0.0f, 0.0f)))
                 {
                     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_sceneSeedFontSize);
 
-                    if (m_selectedBenchmark == 1)
-                        DrawSceneSelect();
-                    else
-                        DrawCustomSeed();
+                    const float rdHeight   = ImGui::GetContentRegionAvail().y * 0.45f;
+                    const float modeHeight = ImGui::GetContentRegionAvail().y - rdHeight - style.ItemSpacing.y;
+
+                    // Top is scene select or seed
+                    if (ImGui::BeginChild("##mode_window", ImVec2(0.0f, modeHeight), ImGuiChildFlags_Borders))
+                    {
+                        if (m_selectedBenchmark == 1)
+                            DrawSceneSelect();
+                        else
+                            DrawCustomSeed();
+                    }
+                    ImGui::EndChild();
+
+                    // Bottom display render distance
+                    if (ImGui::BeginChild("##render_distance_window", ImVec2(0.0f, 0.0f), ImGuiChildFlags_Borders))
+                    {
+                        DrawRenderDistance();
+                    }
+                    ImGui::EndChild();
 
                     ImGui::PopFont();
                 }
@@ -535,17 +550,23 @@ void MainMenuScene::DrawSceneSelect()
     ImGui::Separator();
     ImGui::Spacing();
 
-    // Placeholder for scene selection
+    // Placeholder scenes
     static const char* scenes[] = { "SCENE 1", "SCENE 2", "SCENE 3", "SCENE 4" };
-    for (int i = 0; i < IM_ARRAYSIZE(scenes); ++i)
-    {
-        if (ImGui::Selectable(scenes[i], m_selectedScene == i))
-        {
-            m_selectedScene = i;
-        }
 
+    // Drop down menu for scenes
+    ImGui::TextUnformatted("Scene:");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##scene_select", scenes[m_selectedScene]))
+    {
+        for (int i = 0; i < IM_ARRAYSIZE(scenes); ++i)
+        {
+            if (ImGui::Selectable(scenes[i], m_selectedScene == i))
+            {
+                m_selectedScene = i;
+            }
+        }
+        ImGui::EndCombo();
     }
-    //ImGui::TextDisabled("list etc etc.... (only 1 selectable)");
 }
 
 void MainMenuScene::DrawCustomSeed()
@@ -565,6 +586,22 @@ void MainMenuScene::DrawCustomSeed()
     {
         std::snprintf(m_seedBuffer, sizeof(m_seedBuffer), "%u", BT::RandomSeed());
     }
+}
+
+void MainMenuScene::DrawRenderDistance()
+{
+    SHARED::CenteredText("RENDER DISTANCE");
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // Only unlock extra chungs with LOD enabled
+    const int maxRD = m_runInfo.lod ? 384 : 32;
+    m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, 2, maxRD);
+
+    ImGui::TextUnformatted("Custom Render Distance:");
+    ImGui::SetNextItemWidth(-FLT_MIN);
+    ImGui::SliderInt("##render_distance", &m_runInfo.renderDistance, 2, maxRD,
+        "%d chunks", ImGuiSliderFlags_AlwaysClamp);
 }
 
 // ANALYZER TAB --------------------------------------------------------------------------------------------------------
@@ -687,9 +724,11 @@ namespace AT
         // Metadata, scene, seed and config
         ImGui::Text("%s", info.scene.c_str());
         ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
-        ImGui::Text("seed %u", info.seed);
+        ImGui::Text("Seed %u", info.seed);
         ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
         ImGui::Text("%s", info.config.c_str());
+        ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
+        ImGui::Text("Render Distance %d", info.renderDistance);
 
         // Validity badge
         const bool   valid = info.completed && info.config != "Debug";
@@ -1206,7 +1245,7 @@ void MainMenuScene::DrawComparePanel()
 
     int removeIdx = -1;
     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareTableFontSize);
-    if (ImGui::BeginTable("##compare_tbl", 20, tFlags))
+    if (ImGui::BeginTable("##compare_tbl", 21, tFlags))
     {
         // narrow cols non resizable
         const float controlWidth = ImGui::GetFrameHeight() + m_tableControlWidth;
@@ -1229,6 +1268,7 @@ void MainMenuScene::DrawComparePanel()
         ImGui::TableSetupColumn("SS",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("LC",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("RD",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Scene", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch, 2.0f);
         ImGui::TableSetupColumn("##rm", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
         ImGui::TableHeadersRow();
@@ -1403,11 +1443,14 @@ void MainMenuScene::DrawComparePanel()
                 techniques(info.greedy);
 
                 ImGui::TableNextColumn();
+                ImGui::TextColored(SHARED::kValueColor, "%d", info.renderDistance);
+
+                ImGui::TableNextColumn();
                 ImGui::TextColored(SHARED::kLabelColor, "%s", info.scene.c_str());
             }
             else
             {
-                for (int col = 0; col < 16; col++) ImGui::TableNextColumn();   // empty metric / tech / scene cells
+                for (int col = 0; col < 17; col++) ImGui::TableNextColumn();  
             }
 
             ImGui::TableNextColumn();
