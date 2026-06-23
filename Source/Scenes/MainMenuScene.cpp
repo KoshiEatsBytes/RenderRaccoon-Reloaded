@@ -8,9 +8,11 @@
 
 #include "Scenes/MainMenuScene.h"
 
+#include "BenchmarkScene.h"
 #include "FreeRoamScene.h"
 #include "imgui.h"
 #include "implot.h"
+#include "Benchmark/BenchmarkRunPresets.hpp"
 #include "Testing/DemoScene.h"
 
 
@@ -25,6 +27,7 @@ MainMenuScene::~MainMenuScene()
 
 bool MainMenuScene::Init()
 {
+    SetSceneUIScale(m_uiScale);
     SetCursorEnabled(true);
     SetSceneClearColor({0.0f, 0.0f, 0.0f, 1.0f});
     return true;
@@ -38,7 +41,7 @@ void MainMenuScene::Destroy() {}
 
 void MainMenuScene::OnGui()
 {
-    ImGui::GetStyle().FontScaleMain = m_uiScale;
+    Scene::OnGui();
 
     DrawTopBar();
 
@@ -222,8 +225,13 @@ void MainMenuScene::DrawTopBar()
     ImGui::SameLine(ImGui::GetWindowWidth() - closeWidth - sliderWidth - style.ItemSpacing.x * m_closeBtAlignment);
     ImGui::SetNextItemWidth(sliderWidth);
     ImGui::SliderFloat("##uiscale", &m_uiScalePending, m_uiMinScale, m_uiMaxScale, "UI SCALE: %.1f");
+
     // Apply scale after releasing
-    if (ImGui::IsItemDeactivatedAfterEdit()) m_uiScale = m_uiScalePending;
+    if (ImGui::IsItemDeactivatedAfterEdit())
+    {
+        SetSceneUIScale(m_uiScalePending);
+        m_uiScale = m_uiScalePending;
+    }
 
     // Close Button
     ImGui::SameLine();
@@ -433,20 +441,62 @@ void MainMenuScene::DrawMethodologyPanel()
             switch (m_selectedBenchmark)
             {
                 case 0:
-                    RR::Log("Pressed start bench deterministic");
-                    // When pressed on Start Bench Deterministic
-                    break;
+                {
+                    using namespace DETERMINISTIC;
+                    auto& eng = RR::Engine::GetInstance();
+                    RR::RunInfo info = GetRunPreset(SCENE::BASELINE);
+
+                    //Load preset, then load scene
+                    eng.GetAppManager().RequestSceneLoad<BenchmarkScene>(info);
+                }
+                break;
 
                 case 1:
-                    RR::Log("Pressed start bench custom");
-                    // When pressed on Start bench custom
-                    break;
+                {
+                    using namespace CUSTOM;
+                    auto& eng = RR::Engine::GetInstance();
+
+                    // Gather run data
+                    WORLDGEN::WorldGenConfig genConfig;
+                    RR::RunInfo runInfo = m_runInfo;
+                    const SCENE scene = static_cast<SCENE>(m_selectedScene);
+
+                    // Load custom preset data to runInfo
+                    GetRunPreset(scene, runInfo, genConfig);
+
+                    // pass to scene
+                    eng.GetAppManager().RequestSceneLoad<BenchmarkScene>(runInfo, genConfig);
+                }
+                break;
 
                 case 2:
-                    // When pressed on Enter Free Roam
-                    RR::Log("Entering Free Roam");
-                    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<DemoScene>();
-                    break;
+                {
+                    auto& eng = RR::Engine::GetInstance();
+                    RR::RunInfo runInfo = m_runInfo;
+                    std::string name  = "FreeRoam";
+                    std::string scene = "FR";
+
+                    // Name scene accordingly
+                    NAMING::AppendDetails(runInfo, name);
+                    NAMING::AppendDetails(runInfo, scene);
+                    runInfo.name  = name;
+                    runInfo.scene = scene;
+
+                    // parse seed from text buffer
+                    std::uint32_t seed = 0;
+                    const auto result = std::from_chars(
+                        m_seedBuffer, m_seedBuffer + std::strlen(m_seedBuffer), seed);
+
+                    // check if see is valid, if so inject into scene
+                    if (result.ec != std::errc{})
+                    {
+                        runInfo.seed = seed;
+                    }
+
+                    // Load free roam scene
+                    eng.GetAppManager().RequestSceneLoad<FreeRoamScene>(runInfo);
+                }
+                break;
 
                 default:
                     break;
@@ -550,11 +600,9 @@ void MainMenuScene::DrawSceneSelect()
     ImGui::Separator();
     ImGui::Spacing();
 
-    // Placeholder for scene selection
-    static const char* scenes[] = { "SCENE 1", "SCENE 2", "SCENE 3", "SCENE 4" };
-    for (int i = 0; i < IM_ARRAYSIZE(scenes); ++i)
+    for (int i = 0; i < IM_ARRAYSIZE(CUSTOM::kSceneNames); ++i)
     {
-        if (ImGui::Selectable(scenes[i], m_selectedScene == i))
+        if (ImGui::Selectable(CUSTOM::kSceneNames[i], m_selectedScene == i))
         {
             m_selectedScene = i;
         }

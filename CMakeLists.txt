@@ -43,6 +43,7 @@ set(PROJECT_SOURCE_FILES
         Source/Scenes/FreeRoamScene.h
         Source/Scenes/MainMenuScene.cpp
         Source/Scenes/MainMenuScene.h
+        Source/Benchmark/BenchmarkRunsData.hpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})

@@ -43,6 +43,7 @@ namespace RR
         void SetSceneClearColor(const vec4& _color);
         vec4 GetSceneClearColor() const;
         void SetCursorEnabled(bool _enabled);
+        void SetSceneUIScale(float _scale);
         bool SetParent(GameObject* _obj, GameObject* _parent);
         void SetMainCamera(GameObject* _camera);
         GameObject* GetMainCamera() const;
@@ -88,6 +89,9 @@ namespace RR
 
         // Default scene color
         vec4 m_sceneClearColor = {1.0f, 1.0f, 1.0f, 1.0f};
+
+        // ImGui scene scale
+        float m_uiScale = 1.0f;
 
     public:
         // Templates ---------------------------------------------------------------------------------------------------

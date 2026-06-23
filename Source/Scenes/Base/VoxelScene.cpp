@@ -130,6 +130,8 @@ void VoxelScene::Destroy()
 
 void VoxelScene::OnGui()
 {
+    Scene::OnGui();
+    
     if (!m_paused) return;
 
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();

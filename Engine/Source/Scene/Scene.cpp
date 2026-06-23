@@ -5,6 +5,7 @@
 #include <unordered_set>
 
 #include "Engine.h"
+#include "imgui.h"
 #include "Components/LightComponent.h"
 #include "Helpers/Printer.hpp"
 #include "Physics/PhysicsManager.h"
@@ -144,6 +145,11 @@ namespace RR
     void Scene::SetCursorEnabled(bool _enabled)
     {
         Engine::GetInstance().SetCursorMode(_enabled);
+    }
+
+    void Scene::SetSceneUIScale(float _scale)
+    {
+        m_uiScale = _scale;
     }
 
     /**
@@ -363,6 +369,7 @@ namespace RR
 
     void Scene::OnGui()
     {
+        ImGui::GetStyle().FontScaleMain = m_uiScale;
     }
 
     void Scene::PreUpdateInternal(float _deltaTime)

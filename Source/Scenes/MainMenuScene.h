@@ -39,11 +39,6 @@ private:
 
     // Compare tab
     void DrawComparePanel();
-
-
-    // Determinitic, custom and free roam windows shared
-
-
     void RefreshRunList();
 
     enum class TopView
