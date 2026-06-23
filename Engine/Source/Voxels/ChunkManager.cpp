@@ -96,12 +96,12 @@ namespace RR
         return m_fancyLeaves;
     }
 
-    void ChunkManager::SetRenderDistance(float _distance)
+    void ChunkManager::SetRenderDistance(int _distance)
     {
         m_meshRadius = _distance;
     }
 
-    bool ChunkManager::GetRenderDistance() const
+    int ChunkManager::GetRenderDistance() const
     {
         return m_meshRadius;
     }

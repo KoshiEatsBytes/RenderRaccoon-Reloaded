@@ -101,9 +101,9 @@ private:
 
     // BENCHMARK TAB VIEW ----------------------------------------------------------------------------------------------
     RR::RunInfo m_runInfo;
-    int m_selectedBenchmark = -1;
-    int m_selectedScene     = 0;
-    char m_seedBuffer[16]   = "1234567890";
+    int  m_selectedBenchmark = -1;
+    int  m_selectedScene     = 0;
+    char m_seedBuffer[16]    = "1234567890";
 
     float m_benchmarkBtHeight = 3.7f;
     float m_benchBtSpacing    = 5.0f;

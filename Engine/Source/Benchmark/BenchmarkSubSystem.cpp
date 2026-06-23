@@ -277,21 +277,22 @@ namespace RR
         m_runInfo.config = config;
 
         // Save run details first
-        out << "# config="        << config                  << "\n"
-            << "# frames="        << m_samples.size()        << "\n"
-            << "# completed="     << m_runInfo.completed     << "\n"
-            << "# name="          << m_runInfo.name          << "\n"
-            << "# scene="         << m_runInfo.scene         << "\n"
-            << "# seed="          << m_runInfo.seed          << "\n"
-            << "# lod="           << m_runInfo.lod           << "\n"
-            << "# async="         << m_runInfo.async         << "\n"
-            << "# scheduling="    << m_runInfo.scheduling    << "\n"
-            << "# lodCache="      << m_runInfo.lodCache      << "\n"
-            << "# greedy="        << m_runInfo.greedy        << "\n"
-            << "# deterministic=" << m_runInfo.deterministic << "\n"
-            << "# gpu="           << m_runInfo.gpuName       << "\n"
-            << "# cpu="           << m_runInfo.cpuName       << "\n"
-            << "# cores="         << m_runInfo.coreCount     << "\n";
+        out << "# config="        << config                    << "\n"
+            << "# frames="        << m_samples.size()          << "\n"
+            << "# completed="     << m_runInfo.completed       << "\n"
+            << "# name="          << m_runInfo.name            << "\n"
+            << "# scene="         << m_runInfo.scene           << "\n"
+            << "# seed="          << m_runInfo.seed            << "\n"
+            << "# renderDistance=" << m_runInfo.renderDistance << "\n"
+            << "# lod="           << m_runInfo.lod             << "\n"
+            << "# async="         << m_runInfo.async           << "\n"
+            << "# scheduling="    << m_runInfo.scheduling      << "\n"
+            << "# lodCache="      << m_runInfo.lodCache        << "\n"
+            << "# greedy="        << m_runInfo.greedy          << "\n"
+            << "# deterministic=" << m_runInfo.deterministic   << "\n"
+            << "# gpu="           << m_runInfo.gpuName         << "\n"
+            << "# cpu="           << m_runInfo.cpuName         << "\n"
+            << "# cores="         << m_runInfo.coreCount       << "\n";
 
         // Saves the raw frame data
         out << "frameIdx,frameTimeMs,cpuMs,gpuMs\n";

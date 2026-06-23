@@ -74,6 +74,9 @@ bool VoxelScene::Init()
     m_chunkManager = std::make_unique<RR::ChunkManager>(
         generator, m_voxelBlocksMat, m_voxelVegMat);
 
+    // Apply the run render distance
+    m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
+
     OnInit();
     return true;
 }

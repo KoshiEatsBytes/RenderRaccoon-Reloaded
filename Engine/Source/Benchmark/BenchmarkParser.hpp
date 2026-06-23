@@ -89,6 +89,10 @@ namespace RR
                     {
                         std::from_chars(val.data(), val.data() + val.size(), runData.info.seed);
                     }
+                    else if (key == "renderDistance")
+                    {
+                        std::from_chars(val.data(), val.data() + val.size(), runData.info.renderDistance);
+                    }
                     else if (key == "frames")
                     {
                         unsigned long frameNum = 0;

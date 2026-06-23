@@ -25,8 +25,8 @@ namespace RR
         void SetFancyLeaves(bool _fancyLeaves);
         bool GetFancyLeaves() const;
 
-        void SetRenderDistance(float _distance);
-        bool GetRenderDistance() const;
+        void SetRenderDistance(int _distance);
+        int  GetRenderDistance() const;
 
     private:
         void UnloadFar(CHUNK::Coord _centre);
