@@ -584,11 +584,19 @@ void MainMenuScene::DrawOptimizationToggles()
 
     if (ImGui::BeginTable("##toggles_grid", 2))
     {
-        ImGui::TableNextColumn(); ImGui::Checkbox("Level Of Detail",  &m_runInfo.lod);
-        ImGui::TableNextColumn(); ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
-        ImGui::TableNextColumn(); ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
-        ImGui::TableNextColumn(); ImGui::Checkbox("LOD caching",      &m_runInfo.lodCache);
-        ImGui::TableNextColumn(); ImGui::Checkbox("Greedy Meshing",   &m_runInfo.greedy);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Level Of Detail",  &m_runInfo.lod);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
+        ImGui::TableNextColumn(); 
+        ImGui::Checkbox("LOD caching",      &m_runInfo.lodCache);
+        // lod cache can't exist without lod
+        if (m_runInfo.lodCache) m_runInfo.lod = true;
+
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Greedy Meshing",   &m_runInfo.greedy);
         ImGui::EndTable();
     }
     ImGui::PopFont();
