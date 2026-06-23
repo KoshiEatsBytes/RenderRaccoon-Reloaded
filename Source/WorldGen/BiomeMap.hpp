@@ -279,12 +279,6 @@ namespace WORLDGEN
         return SmoothArea(_config.biomeSmoothPasses, _x, _z, _w, _h, _config);
     }
 
-    // Single-point final biome
-    inline BIOME BiomeAtFinal(int _wx, int _wz, const WorldGenConfig& _config)
-    {
-        return FinalArea(_wx, _wz, 1, 1, _config)[0];
-    }
-
     // 4-neighbour smoother, if both horizontal neighbors match (and/or both vertical),
     // snap to them; otherwise keep the center
     inline std::vector<BIOME> SmoothArea(int _pass, int _x, int _z, int _w, int _h, const WorldGenConfig& _config)

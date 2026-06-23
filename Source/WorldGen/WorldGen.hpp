@@ -324,17 +324,6 @@ namespace WORLDGEN
         return TerrainHeightFromSums(sum, _wx, _wz, width * width, _config);
     }
 
-    // Surface height at ANY world column, rebuilds the blend window, has to be same
-    inline int LandHeight(int _wx, int _wz, const WorldGenConfig& _config)
-    {
-        const int radius = _config.biomeBlendRadius;
-        const int width  = 2 * radius + 1;
-
-        const std::vector<BIOME> area = FinalArea(_wx - radius, _wz - radius, width, width, _config);
-
-        return LandHeightAt(area, _wx - radius, _wz - radius, width , _wx, _wz, _config);
-    }
-
     // Terracotta by elevation
     inline BLOCK MesaStrata(int _y, int _wx, int _wz, const WorldGenConfig& _config)
     {

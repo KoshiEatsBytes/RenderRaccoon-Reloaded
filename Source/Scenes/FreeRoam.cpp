@@ -294,30 +294,24 @@ void FreeRoam::OnGui()
         ImGui::SeparatorText("Per-biome");
         for (int biome = 0; biome < static_cast<int>(WORLDGEN::BIOME::COUNT); ++biome)
         {
-            auto& [
-                tree, grass,
-                tallGrass, flower,
-                bush, cactus,
-                boulder, clumpAmount,
-                treeMinHeight, treeMaxHeight
-                ] = m_draftConfig.biomeVegetation[biome];
+            WORLDGEN::BiomeVeg& veg = m_draftConfig.biomeVegetation[biome];
 
             ImGui::PushID(biome);
             if (ImGui::TreeNode(kBiomeNames[biome]))
             {
                 ImGui::SeparatorText("Trees");
-                ImGui::SliderFloat("Density##tree", &tree,          0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Clump amount",  &clumpAmount,   0.0f, 1.0f);
-                ImGui::SliderInt  ("Min height",    &treeMinHeight, 0, 40);
-                ImGui::SliderInt  ("Max height",    &treeMaxHeight, treeMinHeight, 48);
+                ImGui::SliderFloat("Density##tree", &veg.tree,          0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Clump amount",  &veg.clumpAmount,   0.0f, 1.0f);
+                ImGui::SliderInt  ("Min height",    &veg.treeMinHeight, 0, 40);
+                ImGui::SliderInt  ("Max height",    &veg.treeMaxHeight, veg.treeMinHeight, 48);
 
                 ImGui::SeparatorText("Ground cover");
-                ImGui::SliderFloat("Grass",      &grass,     0.0f, 1.0f);
-                ImGui::SliderFloat("Tall grass", &tallGrass, 0.0f, 1.0f);
-                ImGui::SliderFloat("Flower",     &flower,    0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Bush",       &bush,      0.0f, 0.10f, "%.4f");
-                ImGui::SliderFloat("Cactus",     &cactus,    0.0f, 0.05f, "%.4f");
-                ImGui::SliderFloat("Boulder",    &boulder,   0.0f, 0.05f, "%.4f");
+                ImGui::SliderFloat("Grass",      &veg.grass,     0.0f, 1.0f);
+                ImGui::SliderFloat("Tall grass", &veg.tallGrass, 0.0f, 1.0f);
+                ImGui::SliderFloat("Flower",     &veg.flower,    0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Bush",       &veg.bush,      0.0f, 0.10f, "%.4f");
+                ImGui::SliderFloat("Cactus",     &veg.cactus,    0.0f, 0.05f, "%.4f");
+                ImGui::SliderFloat("Boulder",    &veg.boulder,   0.0f, 0.05f, "%.4f");
                 ImGui::TreePop();
             }
             ImGui::PopID();
