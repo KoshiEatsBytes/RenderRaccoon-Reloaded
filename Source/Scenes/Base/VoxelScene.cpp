@@ -11,6 +11,24 @@
 #include "Voxels/ChunkManager.h"
 #include "WorldGen/WorldGen.hpp"
 
+namespace SHARED
+{
+    // Returns the base font size of the menu
+    float PauseBaseFontSize()
+    {
+        const ImGuiStyle& style = ImGui::GetStyle();
+        const float fontSize = ImGui::GetFontSize();
+        const float scale    = style.FontScaleMain * style.FontScaleDpi;
+
+        if (scale > 0.0f)
+        {
+            return fontSize / scale;
+        }
+
+        return fontSize;
+    }
+}
+
 VoxelScene::VoxelScene(const std::string& _name, const RR::RunInfo& _runInfo,
     const WORLDGEN::WorldGenConfig& _genConfig)
     : Scene(_name), m_runInfo(_runInfo), m_genConfig(_genConfig)
@@ -110,24 +128,53 @@ void VoxelScene::Destroy()
 
 void VoxelScene::OnGui()
 {
-    // Dont render anything if not paused
     if (!m_paused) return;
 
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+
+    // Draw a panel to dim the screen
+    ImGui::GetBackgroundDrawList()->AddRectFilled(
+        viewPort->Pos,
+        ImVec2(viewPort->Pos.x + viewPort->Size.x, viewPort->Pos.y + viewPort->Size.y),
+        IM_COL32(0, 0, 0, m_dimStrenght));
+
+    // Main menu over the centre, text + buttons
     ImGui::SetNextWindowPos(viewPort->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(viewPort->WorkSize.x * 0.5f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.95f);
 
     constexpr ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+        ImGuiWindowFlags_NoDecoration    | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings;
 
-    ImGui::Begin("PAUSED", nullptr, flags);
+    ImGui::Begin("##pause_menu", nullptr, flags);
 
-    //Size of buttons
-    const ImVec2 buttonSize(220.0f, 0.0f);
+    const float  baseFont = SHARED::PauseBaseFontSize();
+    const float  startX   = ImGui::GetCursorPosX();
+    const float  contentW = ImGui::GetContentRegionAvail().x;
+    const ImVec2 buttonSize(contentW * buttonWidthFrac, baseFont * buttonHeight);
+    const float  buttonX  = startX + (contentW - buttonSize.x) * 0.5f;
 
-    // menu entries
+    // Title — centred over the panel
+    ImGui::PushFont(ImGui::GetFont(), baseFont * titleFontScale);
+    {
+        const float titleW = ImGui::CalcTextSize("PAUSED").x;
+
+        ImGui::Dummy(ImVec2(0.0f, baseFont * 0.5f));
+        ImGui::SetCursorPosX(startX + (contentW - titleW) * 0.5f);
+        ImGui::TextUnformatted("PAUSED");
+    }
+    ImGui::PopFont();
+
+    ImGui::Dummy(ImVec2(0.0f, baseFont * buttonsTitleSpacing));
+
+    // Buttons
+    ImGui::PushFont(ImGui::GetFont(), baseFont * buttonsTextSize);
+
+    ImGui::SetCursorPosX(buttonX);
     if (ImGui::Button(m_pausePrimaryLabel.c_str(), buttonSize))
     {
+        // If primary option is chosen
         if (m_allowResume)
         {
             m_paused = false;
@@ -135,17 +182,26 @@ void VoxelScene::OnGui()
             OnPauseExit();
             OnPausePrimary();
 
+            ImGui::PopFont();
             ImGui::End();
             return;
         }
-
         OnPausePrimary();
     }
+
+    ImGui::Dummy(ImVec2(0.0f, baseFont * buttonsInnerSpacing));
+
+    ImGui::SetCursorPosX(buttonX);
     if (ImGui::Button(m_pauseSecondaryLabel.c_str(), buttonSize))
     {
+        //if secondary option is chosen
         OnPauseSecondary();
     }
 
+    ImGui::Dummy(ImVec2(0.0f, baseFont * buttonsTitleSpacing));
+    ImGui::Dummy(ImVec2(0.0f, baseFont * buttonsTitleSpacing));
+
+    ImGui::PopFont();
     ImGui::End();
 }
 

@@ -58,8 +58,17 @@ protected:
     RR::GameObject*          m_cam     = nullptr;
     RR::FreeCameraComponent* m_camComp = nullptr;
 
-    bool m_escWasDown = false;
-    bool m_paused     = false;
+    // Menu data
+    bool m_escWasDown  = false;
+    bool m_paused      = false;
+    int  m_dimStrenght = 160;
+
+    float buttonWidthFrac  = 0.8f;
+    float buttonHeight = 4.5f;
+    float titleFontScale = 4.8f;
+    float buttonsTitleSpacing = 1.8f;
+    float buttonsInnerSpacing = 1.3f;
+    float buttonsTextSize = 2.f;
 
 private:
     // Menu logic
