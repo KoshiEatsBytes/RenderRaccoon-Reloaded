@@ -71,7 +71,7 @@ private:
         std::vector<float> frameTimes;
     };
 
-    // Slot for comapre view, up to 7
+    // Slot for comapre view, up to 8
     struct CompareSlot
     {
         int id       = 0;
@@ -85,10 +85,11 @@ private:
     };
 
     TopView m_view = TopView::NONE;
-    float  m_uiScalePending = 1.8f;
+    float  m_uiScalePending = 1.5f;
     float  m_uiMinScale     = 0.5f;
     float  m_uiMaxScale     = 4.0f;
     float  m_uiScale        = 1.5f;
+    bool   m_useLog10       = true;
 
     // TOP BAR ---------------------------------------------------------------------------------------------------------
     float m_topViewScaleIdle = 1.4f;

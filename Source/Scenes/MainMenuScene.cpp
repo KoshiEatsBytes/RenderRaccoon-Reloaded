@@ -201,7 +201,7 @@ void MainMenuScene::DrawTopBar()
     if (!ImGui::BeginMainMenuBar())
     {
         if (idle) ImGui::PopFont();
-        ImGui::PopStyleVar();   
+        ImGui::PopStyleVar();
         return;
     }
 
@@ -239,7 +239,8 @@ void MainMenuScene::DrawTopBar()
         else
         {
             m_view = TopView::COMPARE;
-            m_runListDirty = true;   // same: refresh on open
+            // refresh on open
+            m_runListDirty = true;
         }
     }
 
@@ -619,7 +620,7 @@ void MainMenuScene::DrawOptimizationToggles()
         ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
         ImGui::TableNextColumn();
         ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
-        ImGui::TableNextColumn(); 
+        ImGui::TableNextColumn();
         ImGui::Checkbox("LOD caching",      &m_runInfo.lodCache);
         // lod cache can't exist without lod
         if (m_runInfo.lodCache) m_runInfo.lod = true;
@@ -788,7 +789,7 @@ namespace AT
 
     void DrawResultContent(const RR::BenchmarkRun& _runData, const std::vector<float>& _frameTimes,
         const ImVec4& _accent, float mtFontSize, float pcInfoFontSize, float metricGapSize,
-        float graphLineWeight, float statsFontSize, float togglesFontSize)
+        float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10)
     {
         const RR::FrameStats& stats = _runData.stats;
         const RR::RunInfo&    info  = _runData.info;
@@ -883,9 +884,9 @@ namespace AT
             else if (ImPlot::BeginPlot("##frametime", ImVec2(-1.0f, -1.0f),
                                        ImPlotFlags_NoTitle | ImPlotFlags_NoLegend))
             {
-                // Hide X axis, make it log scale for better visualization
+                // Hide X axis
                 ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
-                ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+                ImPlot::SetupAxisScale(ImAxis_Y1, (useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
 
                 ImPlotSpec spec;
                 spec.LineColor  = _accent;
@@ -1081,7 +1082,7 @@ void MainMenuScene::DrawResultWindows()
     const float availWidth = viewPort->WorkSize.x - m_analyzerWidth;
     const float tileHeight = (viewPort->WorkSize.y - m_tileGapPix) * m_tileSliceFactor;
     const bool  panelMoved = (m_analyzerWidth != m_lastAnalyzerWidth);
-    
+
     // quick tell if a value is noticeably different
     auto differs = [](float _a, float _b) {
         return _a - _b > 2.0f || _b - _a > 2.0f;
@@ -1128,7 +1129,8 @@ void MainMenuScene::DrawResultWindows()
                 m_metricGapSize,
                 m_graphLineWeightAnalyze,
                 m_statsFontSize,
-                m_togglesFontSize);
+                m_togglesFontSize,
+                m_useLog10);
 
         // Check if user took control of the tile (clicked, collapsed, moved, etc)
         if (!apply && !tile.userMoved && !ImGui::IsWindowCollapsed())
@@ -1288,7 +1290,8 @@ void MainMenuScene::DrawComparePanel()
         {
             ref = &slot.runData.info;
         }
-        else if (slot.runData.info.seed  != ref->seed)
+        else if (slot.runData.info.seed != ref->seed ||
+                 slot.runData.info.deterministic != ref->deterministic)
         {
             mixed = true;
             break;
@@ -1539,7 +1542,7 @@ void MainMenuScene::DrawComparePanel()
             }
             else
             {
-                for (int col = 0; col < 17; col++) ImGui::TableNextColumn();  
+                for (int col = 0; col < 17; col++) ImGui::TableNextColumn();
             }
 
             ImGui::TableNextColumn();
@@ -1579,7 +1582,7 @@ void MainMenuScene::DrawComparePanel()
     if (ImPlot::BeginPlot("##overlay", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
     {
         ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, 0);
-        ImPlot::SetupAxisScale(ImAxis_Y1, ImPlotScale_Log10);
+        ImPlot::SetupAxisScale(ImAxis_Y1, (m_useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
         ImPlot::SetupLegend(ImPlotLocation_NorthWest);
 
         // While nothing is loaded, pin the axes to a sane default
