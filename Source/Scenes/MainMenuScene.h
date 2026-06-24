@@ -63,7 +63,8 @@ private:
         bool open      = true;
         bool placed    = false;
         bool userMoved = false;
-        int id = 0;
+        int id         = 0;
+        int colorIdx   = 0;
 
         std::string label;
         RR::BenchmarkRun runData;
@@ -73,7 +74,8 @@ private:
     // Slot for comapre view, up to 7
     struct CompareSlot
     {
-        int id = 0;
+        int id       = 0;
+        int colorIdx = 0;
         bool loaded  = false;
 
         std::string relPath;
@@ -86,7 +88,7 @@ private:
     float  m_uiScalePending = 1.8f;
     float  m_uiMinScale     = 0.5f;
     float  m_uiMaxScale     = 4.0f;
-    float  m_uiScale        = 1.8f;
+    float  m_uiScale        = 1.5f;
 
     // TOP BAR ---------------------------------------------------------------------------------------------------------
     float m_topViewScaleIdle = 1.4f;

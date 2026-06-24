@@ -74,19 +74,46 @@ namespace SHARED
     const ImVec4 kLabelColor = ImVec4(0.70f, 0.70f, 0.73f, 1.0f);
     const ImVec4 kValueColor = ImVec4(0.97f, 0.82f, 0.40f, 1.0f);
 
-    // Per-run accent Okabe-Ito (donwloaded from internet)
-    ImVec4 RunColor(int _id)
+    // Per-run accent Okabe-Ito - Colorblind safe
+    static const ImVec4 kRunPalette[] = {
+        ImVec4(0.902f, 0.624f, 0.000f, 1.0f),
+        ImVec4(0.337f, 0.706f, 0.914f, 1.0f),
+        ImVec4(0.000f, 0.620f, 0.451f, 1.0f),
+        ImVec4(0.941f, 0.894f, 0.259f, 1.0f),
+        ImVec4(0.000f, 0.447f, 0.698f, 1.0f),
+        ImVec4(0.835f, 0.369f, 0.000f, 1.0f),
+        ImVec4(0.800f, 0.475f, 0.655f, 1.0f),
+        ImVec4(0.706f, 0.553f, 0.902f, 1.0f),
+    };
+    constexpr int kRunPaletteCount = IM_ARRAYSIZE(kRunPalette);
+
+    ImVec4 RunColor(int _idx)
     {
-        static const ImVec4 kPalette[] = {
-            ImVec4(0.902f, 0.624f, 0.000f, 1.0f),
-            ImVec4(0.337f, 0.706f, 0.914f, 1.0f),
-            ImVec4(0.000f, 0.620f, 0.451f, 1.0f),
-            ImVec4(0.941f, 0.894f, 0.259f, 1.0f),
-            ImVec4(0.000f, 0.447f, 0.698f, 1.0f),
-            ImVec4(0.835f, 0.369f, 0.000f, 1.0f),
-            ImVec4(0.800f, 0.475f, 0.655f, 1.0f),
-        };
-        return kPalette[_id % IM_ARRAYSIZE(kPalette)];
+        return kRunPalette[_idx % kRunPaletteCount];
+    }
+
+    // Keeps track of color slots, prevents repetition
+    template <typename Range, typename Proj>
+    int FreeColorIndex(const Range& _items, Proj _proj)
+    {
+        bool taken[kRunPaletteCount] = {};
+
+        for (const auto& item : _items)
+        {
+            const int index = _proj(item);
+
+            if (index >= 0 && index < kRunPaletteCount)
+            {
+                taken[index] = true;
+            }
+        }
+
+        for (int i = 0; i < kRunPaletteCount; ++i)
+        {
+            if (!taken[i]) return i;
+        }
+
+        return 0;
     }
 
     float GetBaseFontSize()
@@ -980,7 +1007,9 @@ void MainMenuScene::DrawAnalyzerPanel()
 
                         // Re-clicking an open run should not stack an identical tile on top
                         const bool alreadyOpen = std::ranges::any_of(m_openResults,
-                            [&](const ResultTile& _tile) { return _tile.label == m_runFiles[index].name; });
+                            [&](const ResultTile& _tile) {
+                                return _tile.label == m_runFiles[index].name;
+                            });
 
                         if (!alreadyOpen)
                         {
@@ -991,6 +1020,11 @@ void MainMenuScene::DrawAnalyzerPanel()
 
                             // Populate a result window
                             ResultTile window;
+                            // Assign correct color
+                            window.colorIdx = SHARED::FreeColorIndex(m_openResults,
+                                [](const ResultTile& tile) {
+                                    return tile.colorIdx;
+                                });
                             window.id    = m_nextResultId++;
                             window.label = m_runFiles[index].name;
 
@@ -1068,7 +1102,7 @@ void MainMenuScene::DrawResultWindows()
         }
 
         // per-run color scheme
-        const ImVec4 accent = SHARED::RunColor(tile.id);
+        const ImVec4 accent = SHARED::RunColor(tile.colorIdx);
         float& act  = m_tileColorFactorActive;
         float& uAct = m_tileColorFactorInactive;
 
@@ -1268,6 +1302,11 @@ void MainMenuScene::DrawComparePanel()
         ImGui::Button("+ Add run"))
     {
         CompareSlot slot;
+        // Assign correct color
+        slot.colorIdx = SHARED::FreeColorIndex(m_compareSlots,
+        [](const CompareSlot& locSlot) {
+            return locSlot.colorIdx;
+        });
         slot.id = m_nextCompareId++;
         m_compareSlots.push_back(slot);
     }
@@ -1352,7 +1391,7 @@ void MainMenuScene::DrawComparePanel()
         for (int i = 0; i < static_cast<int>(m_compareSlots.size()); ++i)
         {
             CompareSlot& slot  = m_compareSlots[i];
-            const ImVec4 color = SHARED::RunColor(slot.id);
+            const ImVec4 color = SHARED::RunColor(slot.colorIdx);
             const bool   isBase = slot.id == m_compareBaselineId;
 
             ImGui::PushID(slot.id);
@@ -1552,7 +1591,7 @@ void MainMenuScene::DrawComparePanel()
             if (!slot.loaded || slot.frameTimes.empty()) continue;
 
             ImPlotSpec spec;
-            spec.LineColor  = SHARED::RunColor(slot.id);
+            spec.LineColor  = SHARED::RunColor(slot.colorIdx);
             spec.LineWeight = m_graphLineWeightCompare;
 
             //const std::string label = SHARED::PrettyName(slot.name, slot.runData.info.name,
