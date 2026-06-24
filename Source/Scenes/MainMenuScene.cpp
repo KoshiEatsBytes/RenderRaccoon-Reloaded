@@ -244,12 +244,31 @@ void MainMenuScene::DrawTopBar()
         }
     }
 
+    const bool showLogCheck = m_view == TopView::ANALYZER || m_view == TopView::COMPARE;
+
     // close button and scale slider size
     const float closeWidth  = ImGui::CalcTextSize("CLOSE APP").x + style.FramePadding.x * m_closeBtWidth;
     const float sliderWidth = ImGui::CalcTextSize("UI SCALE: 0.00").x * m_sliderWidth;
+    float checkLogWidth = 0.0f;
+
+    if (showLogCheck)
+    {
+        checkLogWidth = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
+                        ImGui::CalcTextSize("Logarithmic scale").x + style.ItemSpacing.x;
+    }
+
+    // Log-linear checkbox
+    ImGui::SameLine(ImGui::GetWindowWidth() - closeWidth - sliderWidth -
+        checkLogWidth - style.ItemSpacing.x * m_closeBtAlignment);
+
+    if (showLogCheck)
+    {
+        ImGui::Checkbox("Logarithmic scale", &m_useLog10);
+        ImGui::SetItemTooltip("Toggles the analyze & compare graphs between linear and logarithmic (base-10) Y axis");
+        ImGui::SameLine();
+    }
 
     // Scale slider
-    ImGui::SameLine(ImGui::GetWindowWidth() - closeWidth - sliderWidth - style.ItemSpacing.x * m_closeBtAlignment);
     ImGui::SetNextItemWidth(sliderWidth);
     ImGui::SliderFloat("##uiscale", &m_uiScalePending, m_uiMinScale, m_uiMaxScale, "UI SCALE: %.1f");
 
