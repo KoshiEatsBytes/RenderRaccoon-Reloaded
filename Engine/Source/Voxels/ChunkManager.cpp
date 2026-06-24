@@ -131,6 +131,11 @@ namespace RR
         return m_meshRadius;
     }
 
+    bool ChunkManager::IsStreamingIdle() const
+    {
+        return m_streamingIdle;
+    }
+    
     void ChunkManager::RebuildRingOffset()
     {
         m_genOffsets.clear();
@@ -262,11 +267,6 @@ namespace RR
                GetChunk({_coord.x - 1, _coord.z}) &&
                GetChunk({_coord.x, _coord.z + 1}) &&
                GetChunk({_coord.x, _coord.z - 1});
-    }
-
-    bool ChunkManager::IsStreamingIdle() const
-    {
-        return m_streamingIdle;
     }
 
     // Returns chunk if present

@@ -29,6 +29,8 @@ namespace RR
         void SetRenderDistance(int _distance);
         int  GetRenderDistance() const;
 
+        bool IsStreamingIdle() const;
+
     private:
         void RebuildRingOffset();
         void UnloadFar(CHUNK::Coord _centre);
@@ -39,7 +41,6 @@ namespace RR
         int EnsureMeshed(CHUNK::Coord _centre);
         bool NeighboursGenerated(CHUNK::Coord _coord);
 
-        bool IsStreamingIdle() const;
         Chunk* GetChunk(CHUNK::Coord _coord);
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
@@ -61,7 +62,7 @@ namespace RR
         bool m_fancyLeaves = true;
 
         // Per frame budget
-        static constexpr int kGenBudget  = 4;
-        static constexpr int kMeshBudget = 2;
+        static constexpr int kGenBudget  = 1;
+        static constexpr int kMeshBudget = 1;
     };
 }
