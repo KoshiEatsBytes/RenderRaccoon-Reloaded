@@ -25,7 +25,7 @@ namespace RR
         void DestroyGpuQueries();
 
         // Logging requests
-        void RequestStartLogging(const RunInfo& _runInfo);
+        void RequestStartLogging(const RunInfo& _runInfo, int _iFrames = 10);
         void RequestStopLogging();
         bool IsLogging() const;
 
@@ -49,7 +49,6 @@ namespace RR
         // 60 mb allocated for benchmark samples, that's a 10-minute run at 8000 FPS
         static constexpr sizeT kSampleSize = 5000000;
         static constexpr int   kRing = 4;
-        static constexpr float kWarmUpSeconds = 1.0f;
         static constexpr int   kResultPrecision = 7;
 
         // log toggles
@@ -58,8 +57,10 @@ namespace RR
         bool m_stopRequested  = false;
         bool m_completed      = false;
 
-        bool  m_captureThisFrame  = false;
-        float m_warmUpSecondsLeft = 0.0f;
+        // run start metrics
+        bool m_captureThisFrame    = false;
+        int  m_warmUpFramesPending = 0;
+        int  m_warmUpFramesLeft    = 0;
 
         // Frame-time
         std::chrono::steady_clock::time_point m_cpuStart;

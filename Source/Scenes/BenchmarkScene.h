@@ -2,6 +2,7 @@
 #pragma once
 
 #include "Base/VoxelScene.h"
+#include "Benchmark/BenchmarkSubSystem.h"
 #include "WorldGen/WorldGenConfig.h"
 
 class BenchmarkScene : public VoxelScene
@@ -17,5 +18,16 @@ protected:
 
     void OnPauseEnter() override;
     void OnPausePrimary() override;
+
+private:
+    void LoadNextScene();
+
+    // PLACEHOLDER
+    RR::BenchmarkSubSystem* m_bench = nullptr;
+    int   m_discard = 0;
+    float m_yaw     = 0.f;
+    float m_timer   = 0.0f;
+    bool  m_fired   = false;
 };
+
 

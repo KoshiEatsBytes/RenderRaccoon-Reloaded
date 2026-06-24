@@ -1,5 +1,8 @@
 
 #include "BenchmarkScene.h"
+
+#include "MainMenuScene.h"
+#include "Benchmark/BenchmarkRunPresets.hpp"
 #include "Components/FreeCameraComponent.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
@@ -34,10 +37,44 @@ void BenchmarkScene::OnInit()
 
     SetCursorEnabled(false);
     m_camComp->SetDiscardInput(true);
+
+    // PLACEHOLDER
+    m_bench = RR::Engine::GetInstance().GetAppManager().GetSubSystem<RR::BenchmarkSubSystem>();
 }
 
 void BenchmarkScene::OnUpdate(float _deltaTime)
 {
+    // PLACEHOLDER rotate camera around
+    m_yaw += 0.75f * _deltaTime;
+    const quat qYaw = glm::angleAxis(m_yaw,glm::vec3(0.0f, 1.0f, 0.0f));
+    m_cam->SetWorldRotation(qYaw);
+
+    if (m_paused) return;
+
+    if (m_discard < 10)
+    {
+        m_discard++;
+
+        if (m_discard == 8)
+        {
+            m_bench->RequestStartLogging(m_runInfo, 2);
+        }
+
+        return;
+    }
+
+    // PLACEHOLDER test scene sequence
+    if (!m_fired)
+    {
+        m_timer += _deltaTime;
+
+        if (m_timer >= 4.f)
+        {
+            m_fired = true;
+            m_bench->RequestStopLogging();
+            LoadNextScene();
+        }
+    }
 }
 
 void BenchmarkScene::OnPauseEnter()
@@ -47,7 +84,54 @@ void BenchmarkScene::OnPauseEnter()
 
 void BenchmarkScene::OnPausePrimary()
 {
-    // Restart scene this exact scene
-    RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<BenchmarkScene>(
-        m_runInfo, m_genConfig);
+    auto& appMan = RR::Engine::GetInstance().GetAppManager();
+
+    // if deterministic and restart prompted, reload entire sequence
+    if (m_runInfo.deterministic)
+    {
+        using namespace DETERMINISTIC;
+
+        gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+        appMan.RequestSceneLoad<BenchmarkScene>(GetRunPreset(SCENE::BASELINE));
+        return;
+    }
+
+    // For custom only, restart this exact scene
+    appMan.RequestSceneLoad<BenchmarkScene>(m_runInfo, m_genConfig);
 }
+
+void BenchmarkScene::LoadNextScene()
+{
+    auto& appMan = RR::Engine::GetInstance().GetAppManager();
+
+    if (!m_runInfo.deterministic)
+    {
+        appMan.RequestSceneLoad<MainMenuScene>();
+        return;
+    }
+
+    using namespace DETERMINISTIC;
+
+    // Hit end of sequence, return to main menu
+    if (gCurrentSceneStep + 1 == kSceneCount)
+    {
+        RR::Success("[DETERMINISTIC BENCHMARK] Deterministic benchmark has concluded successfully");
+        appMan.RequestSceneLoad<MainMenuScene>();
+        return;
+    }
+
+    // Load next scene in sequence
+    gCurrentSceneStep++;
+    RR::RunInfo info = GetRunPreset(static_cast<SCENE>(gCurrentSceneStep));
+    appMan.RequestSceneLoad<BenchmarkScene>(info);
+}
+
+
+
+
+
+
+
+
+
+

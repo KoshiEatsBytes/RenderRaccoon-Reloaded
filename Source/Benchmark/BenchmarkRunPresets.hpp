@@ -24,14 +24,15 @@ namespace NAMING
 namespace DETERMINISTIC
 {
     using uInt32 = std::uint32_t;
+    using uInt8  = std::uint8_t;
 
     constexpr uInt32 kDeterministicSeed = 2498846564;
 
     // Benchmark data
-    constexpr int    kBaselineRenderDistance = 24;
-    constexpr int    kLodRenderDistance      = 384;
+    constexpr int    kBaselineRenderDistance = 12;
+    constexpr int    kLodRenderDistance      = 24; // Bump up once LOD sets in
 
-    enum class SCENE : std::uint8_t
+    enum class SCENE : uInt8
     {
         BASELINE,
 
@@ -47,10 +48,16 @@ namespace DETERMINISTIC
         COUNT
     };
 
+    //  Deterministic sequence
+    constexpr uInt8 kSceneCount       = static_cast<uInt8>(SCENE::COUNT);
+    inline    uInt8 gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+
     // Helper to return the deterministic scene pre-set for the requested scene
     inline RR::RunInfo GetRunPreset(SCENE _scene)
     {
         RR::RunInfo runInfo;
+        std::string name  = "DETERMINISTIC";
+        std::string scene = "D";
 
         // true for every deterministic run
         runInfo.deterministic = true;
@@ -60,8 +67,6 @@ namespace DETERMINISTIC
         {
             case SCENE::BASELINE:
             {
-                runInfo.name  = "Deterministic Baseline";
-                runInfo.scene = "BASELINE-R" + std::to_string(kBaselineRenderDistance);
                 // Baseline no techniques
                 runInfo.lod        = false;
                 runInfo.async      = false;
@@ -70,13 +75,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                name.append ("-BASELINE-R" + std::to_string(runInfo.renderDistance));
+                scene.append("-BASE-R" + std::to_string(runInfo.renderDistance));
             }
             break;
 
             case SCENE::LOD_ONLY:
             {
-                runInfo.name  = "Deterministic LOD Only";
-                runInfo.scene = "LOD-R" + std::to_string(kBaselineRenderDistance);
                 // LOD only
                 runInfo.lod        = true;
                 runInfo.async      = false;
@@ -85,13 +92,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                NAMING::AppendDetails(runInfo, name);
+                NAMING::AppendDetails(runInfo, scene);
             }
             break;
 
             case SCENE::MT_ONLY:
             {
-                runInfo.name  = "Deterministic Multi-Threading Only";
-                runInfo.scene = "MT-R" + std::to_string(kBaselineRenderDistance);
                 // MT only
                 runInfo.lod        = false;
                 runInfo.async      = true;
@@ -100,13 +109,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                NAMING::AppendDetails(runInfo, name);
+                NAMING::AppendDetails(runInfo, scene);
             }
             break;
 
             case SCENE::SS_ONLY:
             {
-                runInfo.name  = "Deterministic Smart-Scheduling Only";
-                runInfo.scene = "SM-R" + std::to_string(kBaselineRenderDistance);
                 // SS only
                 runInfo.lod        = false;
                 runInfo.async      = false;
@@ -115,13 +126,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                NAMING::AppendDetails(runInfo, name);
+                NAMING::AppendDetails(runInfo, scene);
             }
             break;
 
             case SCENE::LOD_LC:
             {
-                runInfo.name  = "Deterministic LOD and LOD Cache";
-                runInfo.scene = "LOD-LC-R" + std::to_string(kBaselineRenderDistance);
                 // LOD and LC only
                 runInfo.lod        = true;
                 runInfo.async      = false;
@@ -130,12 +143,14 @@ namespace DETERMINISTIC
                 runInfo.greedy     = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                NAMING::AppendDetails(runInfo, name);
+                NAMING::AppendDetails(runInfo, scene);
             }
                 break;
             case SCENE::GM_ONLY:
             {
-                runInfo.name  = "Deterministic Greedy Meshing Only";
-                runInfo.scene = "GM-R" + std::to_string(kBaselineRenderDistance);
                 // GM only
                 runInfo.lod        = false;
                 runInfo.async      = false;
@@ -144,13 +159,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = true;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                NAMING::AppendDetails(runInfo, name);
+                NAMING::AppendDetails(runInfo, scene);
             }
             break;
 
             case SCENE::ALL_RD32:
             {
-                runInfo.name  = "Deterministic ALL RD " + std::to_string(kBaselineRenderDistance);
-                runInfo.scene = "ALL-R" + std::to_string(kBaselineRenderDistance);
                 // All techniques
                 runInfo.lod        = true;
                 runInfo.async      = true;
@@ -159,13 +176,15 @@ namespace DETERMINISTIC
                 runInfo.greedy     = true;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
+
+                // name and scene
+                name.append ("-ALL-R" + std::to_string(runInfo.renderDistance));
+                scene.append("-ALL-R" + std::to_string(runInfo.renderDistance));
             }
             break;
 
             case SCENE::ALL_RD384:
             {
-                runInfo.name  = "Deterministic ALL RD " + std::to_string(kLodRenderDistance);
-                runInfo.scene = "ALL-R" + std::to_string(kLodRenderDistance);
                 // All techniques + extreme RD
                 runInfo.lod        = true;
                 runInfo.async      = true;
@@ -174,26 +193,34 @@ namespace DETERMINISTIC
                 runInfo.greedy     = true;
                 // Render dist
                 runInfo.renderDistance = kLodRenderDistance;
+
+                // name and scene
+                name.append ("-ALL-R" + std::to_string(runInfo.renderDistance));
+                scene.append("-ALL-R" + std::to_string(runInfo.renderDistance));
             }
             break;
 
             case SCENE::COUNT:
             {
                 runInfo.deterministic = false;
-                runInfo.name  = "INVALID SCENE REQUEST";
-                runInfo.scene = "INVALID SCENE REQUEST";
+                name  = "INVALID SCENE REQUEST";
+                scene = "INVALID SCENE REQUEST";
                 RR::Error("REQUEST INVALID RUN PRESET FOR DETERMINISTIC BENCHMARK");
             }
             break;
         }
 
+        runInfo.name  = name;
+        runInfo.scene = scene;
         return runInfo;
     }
 }
 
 namespace CUSTOM
 {
-    enum class SCENE : std::uint8_t
+    using uInt8 = std::uint8_t;
+
+    enum class SCENE : uInt8
     {
         BENCHMARK_STANDARD,
 

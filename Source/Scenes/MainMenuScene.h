@@ -153,7 +153,7 @@ private:
     bool  m_compareShowDelta       = false;
     int   m_compareBaselineId      = -1;
     int   m_nextCompareId          = 0;
-    int   m_maxCompareSlotOpen     = 7;
+    int   m_maxCompareSlotOpen     = 8;
     float m_tableControlWidth      = 8.0f;
     float m_tableBaseWidth         = 6.0f;
     float m_graphLineWeightCompare = 1.5f;

@@ -13,7 +13,6 @@
 #include "imgui.h"
 #include "implot.h"
 #include "Benchmark/BenchmarkRunPresets.hpp"
-#include "Testing/DemoScene.h"
 
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
@@ -446,6 +445,9 @@ void MainMenuScene::DrawMethodologyPanel()
                     auto& eng = RR::Engine::GetInstance();
                     RR::RunInfo info = GetRunPreset(SCENE::BASELINE);
 
+                    // Reset Scene Step
+                    gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+
                     //Load preset, then load scene
                     eng.GetAppManager().RequestSceneLoad<BenchmarkScene>(info);
                 }
@@ -488,7 +490,7 @@ void MainMenuScene::DrawMethodologyPanel()
                         m_seedBuffer, m_seedBuffer + std::strlen(m_seedBuffer), seed);
 
                     // check if see is valid, if so inject into scene
-                    if (result.ec != std::errc{})
+                    if (result.ec == std::errc{})
                     {
                         runInfo.seed = seed;
                     }
@@ -1242,7 +1244,8 @@ void MainMenuScene::DrawComparePanel()
 
     bool mixed = false;
     const RR::RunInfo* ref = nullptr;
-    // Check if the loaded compare slots have mismatched scenes or seeds
+
+    // Check if the loaded compare slots have mismatched seeds
     for (const CompareSlot& slot : m_compareSlots)
     {
         if (!slot.loaded) continue;
@@ -1251,8 +1254,7 @@ void MainMenuScene::DrawComparePanel()
         {
             ref = &slot.runData.info;
         }
-        else if (slot.runData.info.scene != ref->scene ||
-                 slot.runData.info.seed != ref->seed)
+        else if (slot.runData.info.seed  != ref->seed)
         {
             mixed = true;
             break;
@@ -1553,8 +1555,9 @@ void MainMenuScene::DrawComparePanel()
             spec.LineColor  = SHARED::RunColor(slot.id);
             spec.LineWeight = m_graphLineWeightCompare;
 
-            const std::string label = SHARED::PrettyName(slot.name, slot.runData.info.name,
-                slot.runData.info.scene) + "##" + std::to_string(slot.id);
+            //const std::string label = SHARED::PrettyName(slot.name, slot.runData.info.name,
+            //    slot.runData.info.scene) + "##" + std::to_string(slot.id);
+            const std::string label = slot.runData.info.scene;
 
             const int    frameNum = static_cast<int>(slot.frameTimes.size());
             const double xScale   = frameNum > 1 ? 1.0 / (frameNum - 1) : 1.0;

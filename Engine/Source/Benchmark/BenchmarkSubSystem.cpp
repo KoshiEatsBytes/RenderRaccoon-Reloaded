@@ -60,15 +60,17 @@ namespace RR
         glDeleteQueries(kRing, m_gpuQueries.data());
     }
 
-    void BenchmarkSubSystem::RequestStartLogging(const RunInfo& _runInfo)
+    // Request benchmark start, specify amount of frames to skip before log, default 10
+    void BenchmarkSubSystem::RequestStartLogging(const RunInfo& _runInfo, int _iFrames)
     {
         if (m_logging)
         {
             Warn("[BENCHMARK - LOG] Requested benchmark start when already logging, Discarding.",
-                 "Data will likely be invalidated by this otuput stream");
+                 "Data will likely be invalidated by this output stream");
             return;
         }
 
+        m_warmUpFramesPending = _iFrames;
         m_startRequested = true;
         m_runInfo = _runInfo;
         m_runInfo.completed = false;
@@ -112,8 +114,7 @@ namespace RR
         {
             m_startRequested = false;
 
-            Log("[BENCHMARK - START] Starting benchmarking on current scene ",
-                kWarmUpSeconds, " seconds before logging beings.");
+            Log("[BENCHMARK - START] Starting benchmarking on current scene...");
 
             BeginLogging();
         }
@@ -125,10 +126,10 @@ namespace RR
             return;
         }
 
-        // tick down warm up before logging
-        if (m_warmUpSecondsLeft > 0.0f)
+        // tick down warm up frames before logging
+        if (m_warmUpFramesLeft > 0)
         {
-            m_warmUpSecondsLeft -= _deltaTime;
+            --m_warmUpFramesLeft;
             m_captureThisFrame   = false;
             return;
         }
@@ -225,7 +226,7 @@ namespace RR
 
         // Begin benching after delay
         m_frameCounter      = 0;
-        m_warmUpSecondsLeft = kWarmUpSeconds;
+        m_warmUpFramesLeft  = m_warmUpFramesPending;
         m_logging           = true;
         m_completed         = false;
     }
