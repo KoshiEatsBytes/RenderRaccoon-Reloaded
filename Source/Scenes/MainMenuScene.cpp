@@ -17,7 +17,15 @@
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
-MainMenuScene::MainMenuScene() : Scene("Main Menu") {}
+MainMenuScene::MainMenuScene()
+    : Scene("Main Menu")
+{
+}
+
+MainMenuScene::MainMenuScene(const BENCH_SUCCESS _success)
+    : Scene("Main Menu"), m_lastBenchRunState(_success)
+{
+}
 
 MainMenuScene::~MainMenuScene()
 = default;
@@ -43,6 +51,13 @@ void MainMenuScene::OnGui()
     Scene::OnGui();
 
     DrawTopBar();
+
+    // Draw success window
+    if (m_lastBenchRunState != BENCH_SUCCESS::NONE &&
+        m_view == TopView::NONE)
+    {
+        DrawLastRunInfo();
+    }
 
     if (m_view == TopView::BENCHMARK)
     {
@@ -181,6 +196,16 @@ namespace SHARED
 
         return out;
     }
+}
+
+// MENU ----------------------------------------------------------------------------------------------------------------
+
+void MainMenuScene::DrawLastRunInfo()
+{
+    const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+
+
+
 }
 
 // TOP BAR -------------------------------------------------------------------------------------------------------------

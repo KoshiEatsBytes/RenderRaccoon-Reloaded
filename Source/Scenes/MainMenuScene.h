@@ -4,13 +4,22 @@
 #include <vector>
 #include <string>
 
+enum class BENCH_SUCCESS : std::uint8_t
+{
+    NONE,
+    FAILED,
+    DETERMINISTIC,
+    CUSTOM
+};
+
 // Artefact front end UI
 // Hopefully resolution agnostic
 // Uses ImGui and ImPlot to draw on screen
 class MainMenuScene : public RR::Scene
 {
 public:
-    explicit MainMenuScene();
+    MainMenuScene();
+    explicit MainMenuScene(BENCH_SUCCESS _success);
     ~MainMenuScene() override;
 
 protected:
@@ -23,6 +32,7 @@ protected:
 
 private:
     void DrawTopBar();
+    void DrawLastRunInfo();
 
     // benchmark tab
     void DrawBenchmarkPanel();
@@ -90,6 +100,14 @@ private:
     float  m_uiMaxScale     = 4.0f;
     float  m_uiScale        = 1.5f;
     bool   m_useLog10       = true;
+
+    // If coming back to menu after run
+    BENCH_SUCCESS m_lastBenchRunState = BENCH_SUCCESS::NONE;
+
+    // MENU MESSAGE ----------------------------------------------------------------------------------------------------
+    float m_messageScale       = 0.5f;
+    float m_messageFontSize    = 2.5f;
+    int   m_messageDimStrength = 160;
 
     // TOP BAR ---------------------------------------------------------------------------------------------------------
     float m_topViewScaleIdle = 1.4f;
