@@ -18,6 +18,7 @@ protected:
 
     void OnPauseEnter() override;
     void OnPausePrimary() override;
+    void OnPauseSecondary() override;
 
 private:
     void LoadNextScene();

@@ -99,7 +99,7 @@ private:
     float  m_uiMinScale     = 0.5f;
     float  m_uiMaxScale     = 4.0f;
     float  m_uiScale        = 1.5f;
-    bool   m_useLog10       = true;
+    bool   m_useLog10       = false;
 
     // If coming back to menu after run
     BENCH_SUCCESS m_lastBenchRunState = BENCH_SUCCESS::NONE;

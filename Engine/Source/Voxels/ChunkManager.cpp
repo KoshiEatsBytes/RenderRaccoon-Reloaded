@@ -13,6 +13,14 @@
 
 namespace RR
 {
+    // LOCAL -----------------------------------------------------------------------------------------------------------
+
+    // calculates chebyshev distance (chessboard)
+    static int chessDist(CHUNK::Coord _chunk)
+    {
+        return std::max(std::abs(_chunk.x), std::abs(_chunk.z));
+    }
+
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
     ChunkManager::ChunkManager(ChunkGenerator _generator,
@@ -27,15 +35,32 @@ namespace RR
 
     void ChunkManager::Update(const vec3& _cameraPos)
     {
-        // Updates which chunks are drawing from camera pos
-        const CHUNK::Coord centre = WorldToChunk(_cameraPos);
-        if (m_lastCoords == centre && !m_firstFrame) return;
+        const bool radiusChanged = m_offsetsBuiltForRadius != m_meshRadius;
 
-        EnsureGenerated(centre);
-        EnsureMeshed(centre);
-        UnloadFar(centre);
-        m_lastCoords = centre;
-        m_firstFrame = false;
+        // Regen if reloaded or changed RD
+        if (radiusChanged) RebuildRingOffset();
+
+        // Log if player has moved
+        const CHUNK::Coord centre = WorldToChunk(_cameraPos);
+        const bool moved = (centre != m_lastCoords) || m_firstFrame;
+
+        // fire if camera crossed a boundary
+        if (moved || radiusChanged)
+        {
+            UnloadFar(centre);
+            m_lastCoords    = centre;
+            m_streamingIdle = false;
+            m_firstFrame    = false;
+        }
+
+        // Nothing to do if camera station and the ring is fully generated
+        if (m_streamingIdle) return;
+
+        // check budgets, if 0 CM idle
+        const int generated = EnsureGenerated(centre);
+        const int meshed    = EnsureMeshed(centre);
+
+        if (generated == 0 && meshed == 0) m_streamingIdle = true;
     }
 
     void ChunkManager::SubmitDraws()
@@ -106,6 +131,33 @@ namespace RR
         return m_meshRadius;
     }
 
+    void ChunkManager::RebuildRingOffset()
+    {
+        m_genOffsets.clear();
+
+        // chunks to manage around the player + 1
+        const int range = m_meshRadius + 1;
+        m_genOffsets.reserve((2 * range + 1) * (2 * range + 1));
+
+        // map ring around player
+        for (int distZ = -range; distZ <= range; ++distZ)
+        {
+            for (int distX = -range; distX <= range; ++distX)
+            {
+                m_genOffsets.push_back({distX, distZ});
+            }
+        }
+
+        // Closest first, sort nearby chunks first
+        std::ranges::sort(m_genOffsets,
+            [](CHUNK::Coord _cA, CHUNK::Coord _cB)
+            {
+                return chessDist(_cA) < chessDist(_cB);
+            });
+
+        m_offsetsBuiltForRadius = m_meshRadius;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
@@ -155,40 +207,52 @@ namespace RR
         _chunk.state = CHUNK::STATE::MESHED;
     }
 
-    void ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
+
+
+    int ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
     {
-        const int range = m_meshRadius + 1;
-        for (int z = _centre.z - range; z <= _centre.z + range; ++z)
+        int generated = 0;
+        for (const CHUNK::Coord offset : m_genOffsets)
         {
-            for (int x = _centre.x - range; x <= _centre.x + range; ++x)
+            // discard if budget cap is overrun
+            if (generated >= kGenBudget) break;
+
+            const int cx = _centre.x + offset.x;
+            const int cz = _centre.z + offset.z;
+            const CHUNK::Coord cords {cx, cz};
+
+            if (!GetChunk(cords))
             {
-                // Skip if already generated
-                if (!GetChunk({x, z}))
-                {
-                    GenerateChunk({x, z});
-                }
+                GenerateChunk(cords);
+                ++generated;
             }
         }
+        return generated;
     }
 
-    void ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
+    int ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
     {
-        const int range = m_meshRadius;
-        for (int z = _centre.z - range; z <= _centre.z + range; ++z)
+        int meshed = 0;
+        for (const CHUNK::Coord offset : m_genOffsets)
         {
-            for (int x = _centre.x - range; x <= _centre.x + range; ++x)
-            {
-                Chunk* chunk = GetChunk({x, z});
+            // discard if budget is overrun
+            if (meshed >= kMeshBudget) break;
 
-                // Only mesh if chunk is logged generated but not meshed
-                if (!chunk || chunk->state != CHUNK::STATE::GENERATED) continue;
-                // Skip if neighbors are not generated yet
-                if (!NeighboursGenerated({x, z})) continue;
+            // check if the chunk is in range
+            if (chessDist(offset) > m_meshRadius) break;
 
-                // Mesh
-                BuildChunkMesh(*chunk);
-            }
+            const int cx = _centre.x + offset.x;
+            const int cz = _centre.z + offset.z;
+            const CHUNK::Coord cords {cx, cz};
+            Chunk* chunk = GetChunk(cords);
+
+            if (!chunk || chunk->state != CHUNK::STATE::GENERATED) continue;
+            if (!NeighboursGenerated(cords)) continue;
+
+            BuildChunkMesh(*chunk);
+            ++meshed;
         }
+        return meshed;
     }
 
     // Check neighboring chunks, if all generated return true
@@ -198,6 +262,11 @@ namespace RR
                GetChunk({_coord.x - 1, _coord.z}) &&
                GetChunk({_coord.x, _coord.z + 1}) &&
                GetChunk({_coord.x, _coord.z - 1});
+    }
+
+    bool ChunkManager::IsStreamingIdle() const
+    {
+        return m_streamingIdle;
     }
 
     // Returns chunk if present

@@ -100,13 +100,20 @@ void BenchmarkScene::OnPausePrimary()
     appMan.RequestSceneLoad<BenchmarkScene>(m_runInfo, m_genConfig);
 }
 
+void BenchmarkScene::OnPauseSecondary()
+{
+    // User has quit
+    auto& appMan = RR::Engine::GetInstance().GetAppManager();
+    appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::FAILED);
+}
+
 void BenchmarkScene::LoadNextScene()
 {
     auto& appMan = RR::Engine::GetInstance().GetAppManager();
 
     if (!m_runInfo.deterministic)
     {
-        appMan.RequestSceneLoad<MainMenuScene>();
+        appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::CUSTOM);
         return;
     }
 
@@ -116,7 +123,7 @@ void BenchmarkScene::LoadNextScene()
     if (gCurrentSceneStep + 1 == kSceneCount)
     {
         RR::Success("[DETERMINISTIC BENCHMARK] Deterministic benchmark has concluded successfully");
-        appMan.RequestSceneLoad<MainMenuScene>();
+        appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::DETERMINISTIC);
         return;
     }
 
