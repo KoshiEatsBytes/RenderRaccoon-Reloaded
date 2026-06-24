@@ -44,12 +44,12 @@ void BenchmarkScene::OnInit()
 
 void BenchmarkScene::OnUpdate(float _deltaTime)
 {
+    if (m_paused) return;
+
     // PLACEHOLDER rotate camera around
     m_yaw += 0.75f * _deltaTime;
     const quat qYaw = glm::angleAxis(m_yaw,glm::vec3(0.0f, 1.0f, 0.0f));
     m_cam->SetWorldRotation(qYaw);
-
-    if (m_paused) return;
 
     if (m_discard < 10)
     {

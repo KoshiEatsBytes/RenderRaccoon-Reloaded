@@ -52,9 +52,12 @@ void MainMenuScene::OnGui()
 
     DrawTopBar();
 
-    // Draw success window
-    if (m_lastBenchRunState != BENCH_SUCCESS::NONE &&
-        m_view == TopView::NONE)
+    // Only show before anything has been opened
+    if (m_view != TopView::NONE)
+    {
+        m_lastBenchRunState = BENCH_SUCCESS::NONE;
+    }
+    else if (m_lastBenchRunState != BENCH_SUCCESS::NONE)
     {
         DrawLastRunInfo();
     }
@@ -204,8 +207,96 @@ void MainMenuScene::DrawLastRunInfo()
 {
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
 
+    // Resolve copy from the ctor outcome
+    const bool failed = m_lastBenchRunState == BENCH_SUCCESS::FAILED;
+    const char* title = nullptr;
+    const char* line1 = nullptr;
+    const char* line2 = nullptr;
 
+    switch (m_lastBenchRunState)
+    {
+    case BENCH_SUCCESS::DETERMINISTIC:
+        title = "DETERMINISTIC BENCHMARK COMPLETE";
+        line1 = "The deterministic benchmark sequence has completed successfully.";
+        line2 = "All benchmark data has been saved to disk.";
+        break;
 
+    case BENCH_SUCCESS::CUSTOM:
+        title = "CUSTOM BENCHMARK COMPLETE";
+        line1 = "The custom benchmark has been completed successfully.";
+        line2 = "All benchmark data has been saved to disk.";
+        break;
+
+    case BENCH_SUCCESS::FAILED:
+        title = "BENCHMARK FAILED";
+        line1 = "The benchmark was interrupted and/or invalid.";
+        line2 = "Logged data may be incomplete or corrupted.";
+        break;
+
+    default:
+        return;
+    }
+
+    // Coloured title, green success red fail
+    const ImVec4 titleColor = failed ? ImVec4(0.90f, 0.30f, 0.25f, 1.0f)
+                                     : ImVec4(0.30f, 0.80f, 0.35f, 1.0f);
+
+    const ImVec4 bodyColor  = ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
+
+    // Measure each line at its target pixel size so the box can size to fit it
+    const float base    = SHARED::GetBaseFontSize();
+    const float titlePx = base * m_messageTitleFontSize;
+    const float bodyPx  = base * m_messageFontSize;
+
+    auto measure = [](const char* _text, float _px)
+    {
+        ImGui::PushFont(ImGui::GetFont(), _px);
+        const float width = ImGui::CalcTextSize(_text).x;
+        ImGui::PopFont();
+        return width;
+    };
+
+    float textW = measure(title, titlePx);
+    textW = std::max(textW, measure(line1, bodyPx));
+    textW = std::max(textW, measure(line2, bodyPx));
+
+    // auto-fit content, cap at work area
+    const float margin = base * 1.5f;
+    const float gap    = bodyPx;
+    const float baseW  = viewPort->WorkSize.x * m_messageScale;
+    const float maxW   = viewPort->WorkSize.x - margin * 2.0f;
+    const float width  = std::min(std::max(baseW, textW + margin * 2.0f), maxW);
+
+    // Uniform padding around text
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(margin, margin));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(width, 0.0f), ImVec2(width, FLT_MAX));
+
+    const ImVec2 center = ImVec2(viewPort->WorkPos.x + viewPort->WorkSize.x * 0.5f,
+                                 viewPort->WorkPos.y + viewPort->WorkSize.y * 0.5f);
+    ImGui::SetNextWindowPos(center, ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    // Plain dark window
+    ImGui::SetNextWindowBgAlpha(static_cast<float>(m_messageDimStrength) / 255.0f);
+
+    // NoInputs so the overlay never steals clicks from the top bar
+    if (ImGui::Begin("##bench_result_msg", nullptr,
+                     SHARED::kPanelFlags | ImGuiWindowFlags_NoInputs |
+                     ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, titleColor);
+        SHARED::CenteredText(title, m_messageTitleFontSize);
+        ImGui::PopStyleColor();
+
+        ImGui::Dummy(ImVec2(0.0f, gap));
+
+        ImGui::PushStyleColor(ImGuiCol_Text, bodyColor);
+        SHARED::CenteredText(line1, m_messageFontSize);
+        SHARED::CenteredText(line2, m_messageFontSize);
+        ImGui::PopStyleColor();
+    }
+    ImGui::End();
+
+    ImGui::PopStyleVar();
 }
 
 // TOP BAR -------------------------------------------------------------------------------------------------------------

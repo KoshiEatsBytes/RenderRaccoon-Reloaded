@@ -105,9 +105,10 @@ private:
     BENCH_SUCCESS m_lastBenchRunState = BENCH_SUCCESS::NONE;
 
     // MENU MESSAGE ----------------------------------------------------------------------------------------------------
-    float m_messageScale       = 0.5f;
-    float m_messageFontSize    = 2.5f;
-    int   m_messageDimStrength = 160;
+    float m_messageScale         = 0.3f;
+    float m_messageFontSize      = 1.5f;
+    float m_messageTitleFontSize = 2.5f;
+    int   m_messageDimStrength   = 160;
 
     // TOP BAR ---------------------------------------------------------------------------------------------------------
     float m_topViewScaleIdle = 1.4f;
