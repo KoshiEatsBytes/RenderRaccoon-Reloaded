@@ -1,6 +1,7 @@
 {
   "BackfaceCull": false,
   "DepthTest": false,
+  "Blend": false,
   "Shaders":
   {
     "Vertex":   "Shaders/Sky/Skybox.vert",

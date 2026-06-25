@@ -21,7 +21,9 @@ namespace RR
     {
         // Turn off vertical sync
         glfwSwapInterval(0);
+
         glEnable(GL_DEPTH_TEST);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         // culling start disabled
         glCullFace(GL_BACK);
@@ -273,6 +275,18 @@ namespace RR
         else
         {
             glDisable(GL_DEPTH_TEST);
+        }
+    }
+
+    void GraphicsAPI::SetBlend(bool _enabled)
+    {
+        if (_enabled)
+        {
+            glEnable(GL_BLEND);
+        }
+        else
+        {
+            glDisable(GL_BLEND);
         }
     }
 

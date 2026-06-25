@@ -1,6 +1,7 @@
 {
   "BackfaceCull": true,
   "DepthTest": true,
+  "Blend": false,
   "Shaders": {
     "Vertex": "Shaders/Default/Default.vert",
     "Fragment": "Shaders/Default/Default.frag"

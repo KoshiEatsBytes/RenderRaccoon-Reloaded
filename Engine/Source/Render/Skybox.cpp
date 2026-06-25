@@ -7,6 +7,57 @@
 #include "Render/RenderQueue.h"
 #include "Graphics/VertexLayout.h"
 
+namespace CLOUD
+{
+    using uInt32 = std::uint32_t;
+
+    // World units per cloud cell, thickness and radious
+    constexpr float kCloudCell   = 12.0f;
+    constexpr float kCloudThick  = 4.0f;
+    constexpr int   kCloudRadius = 40;
+
+    uInt32 cHash(int _x, int _z, uInt32 _seed)
+    {
+        // salted cloud hash
+        uInt32 hash = static_cast<uInt32>(_x)*374761393u +
+                      static_cast<uInt32>(_z)*668265263u +
+                      _seed*362437u;
+
+        hash = (hash ^ (hash >> 13)) * 1274126177u;
+
+        return hash ^ (hash >> 16);
+    }
+
+    float cVal(int _x, int _z, uInt32 _seed)
+    {
+        return (cHash(_x, _z, _seed) & 0xFFFFFF) / static_cast<float>(0xFFFFFF);
+    }
+
+    // value noise over cloud cells
+    float cNoise(float _x, float _z, uInt32 _seed)
+    {
+        const int xi = static_cast<int>(std::floor(_x));
+        const int zi = static_cast<int>(std::floor(_z));
+
+        float fx = _x - xi;
+        float fz = _z - zi;
+
+        fx = fx*fx*(3-2*fx);
+        fz = fz*fz*(3-2*fz);
+
+        return glm::mix(
+             glm::mix(cVal(xi, zi, _seed),   cVal(xi + 1, zi, _seed), fx),
+             glm::mix(cVal(xi, zi + 1, _seed), cVal(xi + 1, zi + 1, _seed), fx),
+             fz);
+    }
+
+    bool CloudAt(int _cx, int _cz, uInt32 _seed, float _coverage, float _scale)
+    {
+        return cNoise(_cx / _scale, _cz / _scale, _seed) > _coverage;
+    }
+
+}
+
 namespace RR
 {
     // PUBLIC ----------------------------------------------------------------------------------------------------------

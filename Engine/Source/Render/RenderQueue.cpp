@@ -49,6 +49,7 @@ namespace RR
                 // Per material optimizations
                 _graphicsAPI.SetDepthTest      (command.material->GetDepthTest());
                 _graphicsAPI.SetBackfaceCulling(command.material->GetBackfaceCull());
+                _graphicsAPI.SetBlend          (command.material->GetBlend());
 
                 // Update camera if material changes
                 shaderProgram->SetUniform("uView",      _camData.viewMatrix);
@@ -78,6 +79,7 @@ namespace RR
         _graphicsAPI.UnbindVertexArray();
         _graphicsAPI.SetBackfaceCulling(false);
         _graphicsAPI.SetDepthTest(true);
+        _graphicsAPI.SetBlend(false);
         
         m_commands.clear();
     }

@@ -667,7 +667,7 @@ namespace detail
 	}
 
 	template<typename genTypeT, typename genTypeU>
-	GLM_FUNC_QUALIFIER GLM_CONSTEXPR genTypeT mix(genTypeT x, genTypeT y, genTypeU a)
+	GLM_FUNC_QUALIFIER GLM_CONSTEXPR genTypeT mix(genTypeT x, genTypeT   y, genTypeU a)
 	{
 		return detail::compute_mix<genTypeT, genTypeU>::call(x, y, a);
 	}

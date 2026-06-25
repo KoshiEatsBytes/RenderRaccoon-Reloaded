@@ -131,6 +131,7 @@ namespace RR
         // RENDER STATE /////////////////////////////////////////////////////////////////////
         result->SetBackfaceCull(json.value("BackfaceCull", false));
         result->SetDepthTest   (json.value("DepthTest",    true));
+        result->SetBlend       (json.value("Blend",        false));
 
         // PARAMS ///////////////////////////////////////////////////////////////////////////
         if (json.contains("Params"))
@@ -272,6 +273,16 @@ namespace RR
     bool Material::GetBackfaceCull() const
     {
         return m_backfaceCull;
+    }
+
+    void Material::SetBlend(bool _enabled)
+    {
+        m_blend = _enabled;
+    }
+
+    bool Material::GetBlend() const
+    {
+        return m_blend;
     }
 
     ShaderProgram* Material::GetShaderProgram() const
