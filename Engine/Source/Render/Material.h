@@ -23,6 +23,9 @@ namespace RR
 
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
 
+        void SetBackfaceCull(bool _enabled);
+        bool GetBackfaceCull() const;
+
         ShaderProgram* GetShaderProgram() const;
         std::shared_ptr<TextureArray> GetTextureArray(const std::string& _name) const;
 
@@ -33,6 +36,9 @@ namespace RR
         void SetParam(const std::string& _name, const std::shared_ptr<TextureArray>& _texArray);
 
     private:
+        bool m_backfaceCull = false;
+
+        // Param maps
         std::shared_ptr<ShaderProgram> m_shaderProgram;
         std::unordered_map<std::string, float> m_floatParams;
         std::unordered_map<std::string, std::pair<float, float>> m_float2Params;

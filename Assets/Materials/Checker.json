@@ -1,4 +1,5 @@
 {
+  "BackfaceCull": true,
   "Shaders": {
     "Vertex": "Shaders/Default/Default.vert",
     "Fragment": "Shaders/Default/Default.frag"

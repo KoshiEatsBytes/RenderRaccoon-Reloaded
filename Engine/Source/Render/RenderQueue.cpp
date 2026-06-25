@@ -45,6 +45,7 @@ namespace RR
             if (command.material != lastMaterial)
             {
                 _graphicsAPI.BindMaterial(command.material);
+                _graphicsAPI.SetBackfaceCulling(command.material->GetBackfaceCull());
 
                 // Update camera if material changes
                 shaderProgram->SetUniform("uView",      _camData.viewMatrix);
@@ -72,6 +73,7 @@ namespace RR
 
         // Unbinds last mesh
         _graphicsAPI.UnbindVertexArray();
+        _graphicsAPI.SetBackfaceCulling(false);
         
         m_commands.clear();
     }

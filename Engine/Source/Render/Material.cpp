@@ -128,6 +128,9 @@ namespace RR
             return nullptr;
         }
 
+        // RENDER STATE /////////////////////////////////////////////////////////////////////
+        result->SetBackfaceCull(json.value("BackfaceCull", false));
+
         // PARAMS ///////////////////////////////////////////////////////////////////////////
         if (json.contains("Params"))
         {
@@ -248,6 +251,16 @@ namespace RR
         }
 
         m_shaderProgram = _shaderProgram;
+    }
+
+    void Material::SetBackfaceCull(bool _enabled)
+    {
+        m_backfaceCull = _enabled;
+    }
+
+    bool Material::GetBackfaceCull() const
+    {
+        return m_backfaceCull;
     }
 
     ShaderProgram* Material::GetShaderProgram() const

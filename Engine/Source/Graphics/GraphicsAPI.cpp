@@ -19,8 +19,13 @@ namespace RR
 
     bool GraphicsAPI::Init()
     {
-        glfwSwapInterval(0); // Turn off vertical sync
+        // Turn off vertical sync
+        glfwSwapInterval(0);
         glEnable(GL_DEPTH_TEST);
+
+        // culling start disabled
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
         return true;
     }
 
@@ -245,6 +250,18 @@ namespace RR
     void GraphicsAPI::ClearBuffers()
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    }
+
+    void GraphicsAPI::SetBackfaceCulling(bool _enabled)
+    {
+        if (_enabled)
+        {
+            glEnable(GL_CULL_FACE);
+        }
+        else
+        {
+            glDisable(GL_CULL_FACE);
+        }
     }
 
     void GraphicsAPI::SetClearColor(const vec4& _color)

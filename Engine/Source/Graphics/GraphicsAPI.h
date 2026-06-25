@@ -51,6 +51,7 @@ namespace RR
         void DrawMesh(Mesh* _mesh);
         void ClearBuffers();
 
+        void SetBackfaceCulling(bool _enabled);
         static void SetClearColor(const vec4& _color = {1.0f, 1.0f, 1.0, 1.0f});
 
     private:

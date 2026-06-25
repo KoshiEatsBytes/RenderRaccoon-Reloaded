@@ -1,4 +1,5 @@
 {
+  "BackfaceCull": false,
   "Shaders":
   {
     "Vertex": "Shaders/Voxel/Voxel.vert",
