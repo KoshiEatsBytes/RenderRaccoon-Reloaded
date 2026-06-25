@@ -63,13 +63,25 @@ namespace RR
         if (generated == 0 && meshed == 0) m_streamingIdle = true;
     }
 
-    void ChunkManager::SubmitDraws()
+    void ChunkManager::SubmitDraws(const Frustum& _frustum)
     {
         auto& queue = Engine::GetInstance().GetRenderQueue();
+
+        const auto IntersectsFrustum = [_frustum](const CHUNK::Coord& _coord) -> bool
+        {
+            // compute chunk "hitbox"
+            const vec3 min (_coord.x * CHUNK::kSizeX, 0.0f, _coord.z * CHUNK::kSizeZ);
+            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
+            // Check if inside camera frustum with aabb
+            return _frustum.IntersectsAABB(min, max);
+        };
 
         for (auto& [coord, chunk] : m_chunks)
         {
             if (!chunk->mesh) continue;
+
+            // if chunk aabbs outside frustum discard render
+            if (!IntersectsFrustum(coord)) continue;
 
             auto chunkMatrix = glm::translate(mat4(1.0f),
                 vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
@@ -88,6 +100,9 @@ namespace RR
         for (auto& [coord, chunk] : m_chunks)
         {
             if (!chunk->vegMesh) continue;
+
+            // if chunk aabbs outside frustum discard render
+            if (!IntersectsFrustum(coord)) continue;
 
             auto model = glm::translate(mat4(1.0f),
                 vec3(coord.x*CHUNK::kSizeX, 0.0f, coord.z*CHUNK::kSizeZ));

@@ -313,12 +313,6 @@ namespace RR
 
             m_graphicsAPI.ClearBuffers();
 
-            // Dynamically adjusts the aspect ratio
-            int width = 0;
-            int height = 0;
-            glfwGetWindowSize(m_window, &width, &height);
-            float aspect = static_cast<float>(width) / static_cast<float>(height);
-
             if (scene)
             {
                 if (const auto camObj = scene->GetMainCamera())
@@ -328,8 +322,10 @@ namespace RR
                     {
                         if (camComponent->IsEnabled())
                         {
+                            const float AP = GetAspectRatio();
+
                             camData.viewMatrix = camComponent->GetViewMatrix();
-                            camData.projMatrix = camComponent->GetProjectionMatrix(aspect);
+                            camData.projMatrix = camComponent->GetProjectionMatrix(AP);
                             camData.position   = camObj->GetWorldPosition();
                         }
                         else
@@ -402,6 +398,22 @@ namespace RR
     {
         auto enable = _enable ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED;
         glfwSetInputMode(m_window, GLFW_CURSOR, enable);
+    }
+
+    float Engine::GetAspectRatio() const
+    {
+        // Uses window ptr to asset AP
+        int width = 0;
+        int height = 0;
+        glfwGetWindowSize(m_window, &width, &height);
+
+        if (height > 0)
+        {
+            return static_cast<float>(width) /
+                   static_cast<float>(height);
+        }
+
+        return 1.0f;
     }
 
     Scene* Engine::GetScene() const

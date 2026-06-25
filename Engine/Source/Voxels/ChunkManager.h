@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "Helpers/Types.h"
+#include "Render/Frustum.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkData.h"
 #include "Render/Voxels/ChunkMesher.h"
@@ -20,7 +21,7 @@ namespace RR
         ~ChunkManager();
 
         void Update(const vec3& _cameraPos);
-        void SubmitDraws();
+        void SubmitDraws(const Frustum& _frustum);
         void Clear();
 
         void SetFancyLeaves(bool _fancyLeaves);

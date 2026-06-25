@@ -110,11 +110,18 @@ void VoxelScene::PreUpdate(float _deltaTime)
 
 void VoxelScene::Update(float _deltaTime)
 {
-    if (m_chunkManager && m_cam)
+    if (m_chunkManager && m_cam && m_camComp)
     {
         const vec3 camPos = m_cam->GetWorldPosition();
         m_chunkManager->Update(camPos);
-        m_chunkManager->SubmitDraws();
+
+        // calculate camera frustum
+        const float aspect   = RR::Engine::GetInstance().GetAspectRatio();
+        const mat4  viewProj = m_camComp->GetProjectionMatrix(aspect) *
+                               m_camComp->GetViewMatrix();
+        const RR::Frustum ft = RR::Frustum::FromViewProj(viewProj);
+
+        m_chunkManager->SubmitDraws(ft);
     }
 
     OnUpdate(_deltaTime);

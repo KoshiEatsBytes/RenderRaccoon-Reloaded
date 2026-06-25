@@ -60,6 +60,8 @@ namespace RR
 
         void SetCursorMode(bool _enable);
 
+        float GetAspectRatio() const;
+
         Scene* GetScene() const;
         //PhysicsManager* GetPhysicsManager() const;
         ApplicationManager& GetAppManager();
