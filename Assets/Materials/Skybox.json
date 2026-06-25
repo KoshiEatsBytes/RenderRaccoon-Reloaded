@@ -1,0 +1,9 @@
+{
+  "BackfaceCull": false,
+  "DepthTest": false,
+  "Shaders":
+  {
+    "Vertex":   "Shaders/Voxel/Sky/Skybox.vert",
+    "Fragment": "Shaders/Voxel/Sky/Skybox.frag"
+  }
+}
