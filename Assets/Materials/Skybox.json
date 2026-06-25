@@ -3,7 +3,15 @@
   "DepthTest": false,
   "Shaders":
   {
-    "Vertex":   "Shaders/Voxel/Sky/Skybox.vert",
-    "Fragment": "Shaders/Voxel/Sky/Skybox.frag"
+    "Vertex":   "Shaders/Sky/Skybox.vert",
+    "Fragment": "Shaders/Sky/Skybox.frag"
+  },
+  "Params":
+  {
+    "Textures": [
+      {
+        "Name": "uSunTex", "Path": "Textures/Blocks/SunMoon/sun.png"
+      }
+    ]
   }
 }

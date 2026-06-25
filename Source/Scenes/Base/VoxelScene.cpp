@@ -112,6 +112,8 @@ bool VoxelScene::Init()
     // Sky color same as fog
     m_skyMat->SetParam("uSkyHorizon", skyFogColor);
     m_skyMat->SetParam("uSkyZenith", vec3(0.30f, 0.52f, 0.88f));
+    m_skyMat->SetParam("uSunDir", glm::normalize(vec3(0.35f, 0.65f, 0.54f)));
+    m_skyMat->SetParam("uSunSize", 0.22f);
 
     OnInit();
     return true;
