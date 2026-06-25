@@ -78,8 +78,8 @@ bool VoxelScene::Init()
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
 
     // Set sky box color
-    constexpr vec3 skyFogColor(0.58f, 0.73f, 0.93f);
-    SetSceneClearColor(vec4(skyFogColor, 1.0f));
+    constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);
+    SetSceneClearColor(vec4(skyBoxColor, 1.0f));
 
     // Set fog end and start parameters
     const float fogEnd   = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.95f;
@@ -87,33 +87,17 @@ bool VoxelScene::Init()
 
     for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
     {
-        mat->SetParam("uFogColor", skyFogColor);
+        mat->SetParam("uFogColor", skyBoxColor);
         mat->SetParam("uFogStart", fogStart);
         mat->SetParam("uFogEnd",   fogEnd);
     }
 
-    // Skybox -----------------------------------------
-
-    // Assemble skybox mesh as a giant triangle
-    RR::VertexLayout skyLayout;
-
-    skyLayout.elements.push_back(
-        {0, 2, GL_FLOAT, 0}
-        );
-    skyLayout.stride = 2 * sizeof(float);
-
-    const std::vector<float> verts = {
-        -1.f, -1.f, 3.f, -1.f, -1.f, 3.f
-    };
-
-    // Assemble mesh and material
-    m_skyMesh = std::make_shared<RR::Mesh>(skyLayout, verts);
-    m_skyMat  = RR::Material::Load("Materials/Skybox.json");
-    // Sky color same as fog
-    m_skyMat->SetParam("uSkyHorizon", skyFogColor);
-    m_skyMat->SetParam("uSkyZenith", vec3(0.30f, 0.52f, 0.88f));
-    m_skyMat->SetParam("uSunDir", glm::normalize(vec3(0.35f, 0.65f, 0.54f)));
-    m_skyMat->SetParam("uSunSize", 0.22f);
+    // Skybox
+    m_skybox = std::make_unique<RR::Skybox>();
+    m_skybox->Load("Materials/Skybox.json");
+    m_skybox->SetHorizonColor(skyBoxColor);
+    m_skybox->SetZenithColor (vec3(0.30f, 0.52f, 0.88f));
+    m_skybox->SetSun(vec3(0.35f, 0.65f, 0.45f), 0.22f);
 
     OnInit();
     return true;
@@ -153,13 +137,8 @@ void VoxelScene::Update(float _deltaTime)
         const vec3 camPos = m_cam->GetWorldPosition();
         m_chunkManager->Update(camPos);
 
-        // Submit sky for rendering
-        RR::RenderCommand skyCmd;
-        skyCmd.mesh        = m_skyMesh.get();
-        skyCmd.material    = m_skyMat.get();
-        skyCmd.modelMatrix = mat4(1.0f);
-        skyCmd.color       = vec3(1.0f);
-        RR::Engine::GetInstance().GetRenderQueue().Submit(skyCmd);
+        // RenderSky
+        m_skybox->SubmitForDraw();
 
         // calculate camera frustum
         const float aspect   = RR::Engine::GetInstance().GetAspectRatio();

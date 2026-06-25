@@ -15,6 +15,7 @@ flat out float vShade;
 uniform mat4 uModel;
 uniform mat4 uView;
 uniform mat4 uProj;
+uniform vec3 uCameraPos;
 
 float faceShade(vec3 face)
 {
@@ -34,8 +35,8 @@ void main()
     vLayer = aLayer;
     vShade = faceShade(aNormal);
 
-    vec4 viewPos = uView * uModel * vec4(aPos, 1.0);
-    vViewDist = length(viewPos.xyz);
+    vec4 worldPos = uModel * vec4(aPos, 1.0);
+    vViewDist = length(worldPos.xz - uCameraPos.xz);
 
-    gl_Position = uProj * viewPos;
+    gl_Position = uProj * uView * worldPos;
 }

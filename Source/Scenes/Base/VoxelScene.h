@@ -6,8 +6,8 @@
 namespace RR
 {
     struct Chunk;
-    class ChunkManager;
-    class FreeCameraComponent;
+    class  ChunkManager;
+    class  FreeCameraComponent;
 }
 
 class VoxelScene : public RR::Scene
@@ -52,10 +52,7 @@ protected:
     std::shared_ptr<RR::Material>     m_voxelBlocksMat;
     std::shared_ptr<RR::Material>     m_voxelVegMat;
     std::unique_ptr<RR::ChunkManager> m_chunkManager;
-
-    // Skybox
-    std::shared_ptr<RR::Mesh>     m_skyMesh;
-    std::shared_ptr<RR::Material> m_skyMat;
+    std::unique_ptr<RR::Skybox>       m_skybox;
 
     // Camera
     RR::GameObject*          m_cam     = nullptr;

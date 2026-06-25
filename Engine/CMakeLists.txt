@@ -120,6 +120,8 @@ set(PROJECT_SOURCE_FILES
         Source/Graphics/TextureArray.cpp
         Source/Graphics/TextureArray.h
         Source/Render/Frustum.h
+        Source/Render/Skybox.cpp
+        Source/Render/Skybox.h
 )
 
 # Compose application structure

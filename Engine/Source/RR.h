@@ -31,6 +31,7 @@
 #include "Render/Material.h"
 #include "Render/Mesh.h"
 #include "Render/RenderQueue.h"
+#include "Render/Skybox.h"
 
 // Scene
 #include "Scene/GameObject.h"
