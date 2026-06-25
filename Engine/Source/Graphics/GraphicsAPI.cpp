@@ -264,6 +264,18 @@ namespace RR
         }
     }
 
+    void GraphicsAPI::SetDepthTest(bool _enabled)
+    {
+        if (_enabled)
+        {
+            glEnable(GL_DEPTH_TEST);
+        }
+        else
+        {
+            glDisable(GL_DEPTH_TEST);
+        }
+    }
+
     void GraphicsAPI::SetClearColor(const vec4& _color)
     {
         glClearColor(_color.x, _color.y, _color.z, _color.w);

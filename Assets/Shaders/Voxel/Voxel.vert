@@ -6,7 +6,9 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aUV;
 layout (location = 3) in float aLayer;
 
-out      vec2 vUV;
+out vec2  vUV;
+out float vViewDist;
+
 flat out float vLayer; // flat stops interpolation
 flat out float vShade;
 
@@ -26,12 +28,14 @@ float faceShade(vec3 face)
     return 0.6;
 }
 
-
 void main()
 {
     vUV = aUV;
     vLayer = aLayer;
     vShade = faceShade(aNormal);
 
-    gl_Position = uProj * uView * uModel * vec4(aPos, 1.0);
+    vec4 viewPos = uView * uModel * vec4(aPos, 1.0);
+    vViewDist = length(viewPos.xyz);
+
+    gl_Position = uProj * viewPos;
 }

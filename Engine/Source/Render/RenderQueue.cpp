@@ -45,6 +45,9 @@ namespace RR
             if (command.material != lastMaterial)
             {
                 _graphicsAPI.BindMaterial(command.material);
+
+                // Per material optimizations
+                _graphicsAPI.SetDepthTest      (command.material->GetDepthTest());
                 _graphicsAPI.SetBackfaceCulling(command.material->GetBackfaceCull());
 
                 // Update camera if material changes
@@ -74,6 +77,7 @@ namespace RR
         // Unbinds last mesh
         _graphicsAPI.UnbindVertexArray();
         _graphicsAPI.SetBackfaceCulling(false);
+        _graphicsAPI.SetDepthTest(true);
         
         m_commands.clear();
     }

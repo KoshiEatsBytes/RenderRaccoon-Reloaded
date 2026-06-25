@@ -1,5 +1,6 @@
 {
   "BackfaceCull": false,
+  "DepthTest": true,
   "Shaders":
   {
     "Vertex": "Shaders/Voxel/Voxel.vert",

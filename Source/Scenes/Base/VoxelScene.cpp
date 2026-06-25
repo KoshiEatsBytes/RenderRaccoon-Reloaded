@@ -77,6 +77,21 @@ bool VoxelScene::Init()
     // Apply the run render distance
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
 
+    // Set sky box color
+    const vec3 sky(0.58f, 0.73f, 0.93f);
+    SetSceneClearColor(vec4(sky, 1.0f));
+
+    // Set fog end and start parameters
+    const float fogEnd   = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.91f;
+    const float fogStart = fogEnd * 0.70f;
+
+    for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
+    {
+        mat->SetParam("uFogColor", sky);
+        mat->SetParam("uFogStart", fogStart);
+        mat->SetParam("uFogEnd",   fogEnd);
+    }
+
     OnInit();
     return true;
 }

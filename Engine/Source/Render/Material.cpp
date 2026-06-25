@@ -130,6 +130,7 @@ namespace RR
 
         // RENDER STATE /////////////////////////////////////////////////////////////////////
         result->SetBackfaceCull(json.value("BackfaceCull", false));
+        result->SetDepthTest   (json.value("DepthTest",    true));
 
         // PARAMS ///////////////////////////////////////////////////////////////////////////
         if (json.contains("Params"))
@@ -253,7 +254,17 @@ namespace RR
         m_shaderProgram = _shaderProgram;
     }
 
-    void Material::SetBackfaceCull(bool _enabled)
+    void Material::SetDepthTest(const bool _enabled)
+    {
+        m_depthTest = _enabled;
+    }
+
+    bool Material::GetDepthTest() const
+    {
+        return m_depthTest;
+    }
+
+    void Material::SetBackfaceCull(const bool _enabled)
     {
         m_backfaceCull = _enabled;
     }

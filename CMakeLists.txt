@@ -47,6 +47,13 @@ set(PROJECT_SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
 
+# make sure wip files are always copied over
+add_custom_target(copy_assets ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/Assets ${CMAKE_BINARY_DIR}/Assets
+        COMMENT "Syncing Assets to build dir")
+add_dependencies(${PROJECT_NAME} copy_assets)
+
 target_include_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/Source"
 )

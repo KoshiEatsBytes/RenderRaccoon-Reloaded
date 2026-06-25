@@ -23,6 +23,8 @@ namespace RR
 
         void SetShaderProgram(const std::shared_ptr<ShaderProgram>& _shaderProgram);
 
+        void SetDepthTest(bool _enabled);
+        bool GetDepthTest() const;
         void SetBackfaceCull(bool _enabled);
         bool GetBackfaceCull() const;
 
@@ -37,6 +39,7 @@ namespace RR
 
     private:
         bool m_backfaceCull = false;
+        bool m_depthTest    = true;
 
         // Param maps
         std::shared_ptr<ShaderProgram> m_shaderProgram;
