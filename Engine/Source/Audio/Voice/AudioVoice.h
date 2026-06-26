@@ -61,7 +61,7 @@ namespace RR
 
     private:
         bool InitFromClip(maEngine* _engine);
-        uint64 DurationToFrames(float _seconds) const;
+        uInt64 DurationToFrames(float _seconds) const;
     };
 }
 

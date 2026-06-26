@@ -10,7 +10,7 @@ namespace RR
     class AudioClip
     {
     public:
-        AudioClip(std::vector<float> _pcm, uint64 _frames, uint32 _channels, uint32 _rate)
+        AudioClip(std::vector<float> _pcm, uInt64 _frames, uInt32 _channels, uInt32 _rate)
             : m_pcm(std::move(_pcm)), m_frameCount(_frames), m_channels(_channels), m_sampleRate(_rate) {
         }
 
@@ -20,15 +20,15 @@ namespace RR
             return m_pcm;
         }
 
-        uint64 GetFrameCount() const {
+        uInt64 GetFrameCount() const {
             return m_frameCount;
         }
 
-        uint32 GetChannels() const {
+        uInt32 GetChannels() const {
             return m_channels;
         }
 
-        uint32 GetSampleRate() const {
+        uInt32 GetSampleRate() const {
             return m_sampleRate;
         }
 
@@ -39,9 +39,9 @@ namespace RR
 
     private:
         std::vector<float> m_pcm; // Pulse code modulation, basically fully uncompressed file
-        uint64 m_frameCount  = 0;
-        uint32 m_channels    = 0;
-        uint32 m_sampleRate  = 0;
+        uInt64 m_frameCount  = 0;
+        uInt32 m_channels    = 0;
+        uInt32 m_sampleRate  = 0;
     };
 }
 

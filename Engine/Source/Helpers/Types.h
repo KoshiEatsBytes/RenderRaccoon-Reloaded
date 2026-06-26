@@ -30,8 +30,8 @@ using uChar  = unsigned char;
 using uInt   = unsigned int;
 using wChar  = wchar_t;
 using sizeT  = size_t;
-using uint32 = uint32_t;
-using uint64 = uint64_t;
+using uInt32 = uint32_t;
+using uInt64 = uint64_t;
 
 // Audio
 struct ma_engine;

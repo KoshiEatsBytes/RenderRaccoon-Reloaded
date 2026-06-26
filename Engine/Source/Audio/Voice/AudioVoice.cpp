@@ -299,9 +299,9 @@ namespace RR
         return true;
     }
 
-    uint64 AudioVoice::DurationToFrames(float _seconds) const
+    uInt64 AudioVoice::DurationToFrames(float _seconds) const
     {
-        return static_cast<uint64>(_seconds * static_cast<float>(ma_engine_get_sample_rate(m_engineRef)));
+        return static_cast<uInt64>(_seconds * static_cast<float>(ma_engine_get_sample_rate(m_engineRef)));
     }
 }
 

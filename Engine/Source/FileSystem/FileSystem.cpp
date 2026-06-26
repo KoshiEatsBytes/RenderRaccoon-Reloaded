@@ -107,7 +107,7 @@ namespace RR
         GetModuleFileNameW(NULL, buffer, MAX_PATH);
         return fSysPath(buffer).remove_filename();
 #elif defined (__APPLE__)
-        uint32 size = 0;
+        uInt32 size = 0;
         _NSGetExecutablePath(nullptr, &size);
         std::string tmp(size, '\0');
         _NSGetExecutablePath(tmp.data(), &size);

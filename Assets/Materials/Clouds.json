@@ -1,0 +1,10 @@
+{
+  "Blend": false,
+  "BackfaceCull": true,
+  "DepthWrite": true,
+  "Shaders":
+  {
+    "Vertex": "Shaders/Sky/Clouds.vert",
+    "Fragment": "Shaders/Sky/Clouds.frag"
+  }
+}

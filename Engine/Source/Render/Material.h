@@ -29,6 +29,8 @@ namespace RR
         bool GetBackfaceCull() const;
         void SetBlend(bool _enabled);
         bool GetBlend() const;
+        void SetDepthWrite(bool _enabled);
+        bool GetDepthWrite() const;
 
         ShaderProgram* GetShaderProgram() const;
         std::shared_ptr<TextureArray> GetTextureArray(const std::string& _name) const;
@@ -43,6 +45,7 @@ namespace RR
         bool m_backfaceCull = false;
         bool m_depthTest    = true;
         bool m_blend        = false;
+        bool m_depthWrite   = true;
 
         // Param maps
         std::shared_ptr<ShaderProgram> m_shaderProgram;

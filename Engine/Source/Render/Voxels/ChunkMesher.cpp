@@ -239,7 +239,6 @@ namespace RR
                             break;
 
                         case RENDERKIND::LEAF:
-                            // fancy leaves off prevents z fighting
                             EmitCube(out.veg, _chunk, _borders, x, y, z, info, vegetationBase, false);
                             break;
                     }

@@ -24,6 +24,7 @@ namespace RR
 
         glEnable(GL_DEPTH_TEST);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_TRUE);
 
         // culling start disabled
         glCullFace(GL_BACK);
@@ -288,6 +289,11 @@ namespace RR
         {
             glDisable(GL_BLEND);
         }
+    }
+
+    void GraphicsAPI::SetDepthWrite(bool _enabled)
+    {
+        glDepthMask(_enabled ? GL_TRUE : GL_FALSE);
     }
 
     void GraphicsAPI::SetClearColor(const vec4& _color)

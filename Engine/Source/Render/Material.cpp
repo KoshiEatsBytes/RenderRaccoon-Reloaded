@@ -132,6 +132,7 @@ namespace RR
         result->SetBackfaceCull(json.value("BackfaceCull", false));
         result->SetDepthTest   (json.value("DepthTest",    true));
         result->SetBlend       (json.value("Blend",        false));
+        result->SetDepthWrite  (json.value("DepthWrite",   true));
 
         // PARAMS ///////////////////////////////////////////////////////////////////////////
         if (json.contains("Params"))
@@ -283,6 +284,16 @@ namespace RR
     bool Material::GetBlend() const
     {
         return m_blend;
+    }
+
+    void Material::SetDepthWrite(bool _enabled)
+    {
+        m_depthWrite = _enabled;
+    }
+
+    bool Material::GetDepthWrite() const
+    {
+        return m_depthWrite;
     }
 
     ShaderProgram* Material::GetShaderProgram() const

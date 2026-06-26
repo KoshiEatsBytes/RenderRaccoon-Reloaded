@@ -52,7 +52,7 @@ protected:
     std::shared_ptr<RR::Material>     m_voxelBlocksMat;
     std::shared_ptr<RR::Material>     m_voxelVegMat;
     std::unique_ptr<RR::ChunkManager> m_chunkManager;
-    std::unique_ptr<RR::Skybox>       m_skybox;
+    std::unique_ptr<RR::VoxelSkybox>  m_skybox;
 
     // Camera
     RR::GameObject*          m_cam     = nullptr;

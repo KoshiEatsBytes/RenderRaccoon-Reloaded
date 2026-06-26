@@ -33,11 +33,11 @@ namespace RR
             return cgltf_accessor_read_float(_acc, _i, _out, _n) == 1;
         }
 
-        static uint32 ReadIndex(const cgAccessor* _acc, cgSize _i)
+        static uInt32 ReadIndex(const cgAccessor* _acc, cgSize _i)
         {
             cgUint out = 0;
             const cgBool ok = cgltf_accessor_read_uint(_acc, _i, &out, 1);
-            return ok ? static_cast<uint32>(out) : 0;
+            return ok ? static_cast<uInt32>(out) : 0;
         }
 
         static float ReadScalar(cgAccessor* _acc, cgSize _index)
@@ -469,7 +469,7 @@ namespace RR
                     if (primitive.indices)
                     {
                         const auto indexCount = primitive.indices->count;
-                        std::vector<uint32> indices(indexCount);
+                        std::vector<uInt32> indices(indexCount);
 
                         for (cgSize i = 0; i < indexCount; i++)
                         {

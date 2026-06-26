@@ -12,7 +12,7 @@ namespace RR
         GLuint index;    // Attribute location
         GLuint size;     // Number of components
         GLuint type;     // Data type (e.g. GL_UINT)
-        uint32 offset;   // Bytes offset from start of vertex
+        uInt32 offset;   // Bytes offset from start of vertex
 
         // NOTE: these describe the DEFAULT/Box vertex format (pos/color/uv/normal).
         // They are NOT a global slot map — the voxel format reuses slots 1 & 3 for normal & layer.
@@ -25,6 +25,6 @@ namespace RR
     struct VertexLayout
     {
         std::vector<VertexElement> elements;
-        uint32 stride = 0; // Total size of a single vertex
+        uInt32 stride = 0; // Total size of a single vertex
     };
 }

@@ -314,8 +314,8 @@ namespace RR
             return nullptr;
         }
 
-        const uint32 channels   = decoder.outputChannels;
-        const uint32 sampleRate = decoder.outputSampleRate;
+        const uInt32 channels   = decoder.outputChannels;
+        const uInt32 sampleRate = decoder.outputSampleRate;
 
         ma_uint64 frameCount = 0;
         ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount);

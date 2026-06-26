@@ -93,11 +93,18 @@ bool VoxelScene::Init()
     }
 
     // Skybox
-    m_skybox = std::make_unique<RR::Skybox>();
-    m_skybox->Load("Materials/Skybox.json");
+    m_skybox = std::make_unique<RR::VoxelSkybox>();
+    m_skybox->Load("Materials/Skybox.json", "Materials/Clouds.json");
+
     m_skybox->SetHorizonColor(skyBoxColor);
     m_skybox->SetZenithColor (vec3(0.30f, 0.52f, 0.88f));
     m_skybox->SetSun(vec3(0.35f, 0.65f, 0.45f), 0.22f);
+
+    m_skybox->SetCloudSeed(m_genConfig.seed);
+    m_skybox->SetCloudHeight(170);
+    m_skybox->SetCloudFade(0.9f, 0.6f);
+    m_skybox->BuildClouds(0,0);
+    m_skybox->SetCloudColor(vec3(1.0f), 0.8f);
 
     OnInit();
     return true;
@@ -138,7 +145,7 @@ void VoxelScene::Update(float _deltaTime)
         m_chunkManager->Update(camPos);
 
         // RenderSky
-        m_skybox->SubmitForDraw();
+        m_skybox->SubmitSkyForDraw();
 
         // calculate camera frustum
         const float aspect   = RR::Engine::GetInstance().GetAspectRatio();
@@ -148,6 +155,9 @@ void VoxelScene::Update(float _deltaTime)
 
         // submit chunks for rendering
         m_chunkManager->SubmitDraws(ft);
+
+        // Render clodus
+        m_skybox->SubmitCloudsForDraw();
     }
 
     OnUpdate(_deltaTime);
