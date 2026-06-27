@@ -53,6 +53,10 @@ private:
     void DrawComparePanel();
     void RefreshRunList();
 
+    struct CompareSlot;
+    struct RunEntry;
+    static void LoadRunIntoSlot(CompareSlot& _slot, const RunEntry& _entry);
+
     enum class TopView
     {
         NONE,

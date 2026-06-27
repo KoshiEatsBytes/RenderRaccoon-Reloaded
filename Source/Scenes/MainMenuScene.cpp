@@ -1641,20 +1641,69 @@ void MainMenuScene::DrawComparePanel()
         slot.id = m_nextCompareId++;
         m_compareSlots.push_back(slot);
     }
+
+    // Quick fill the newest valid runs
+    ImGui::SameLine();
+    if (ImGui::Button("Load last 8"))
+    {
+        // gather valid runs newest-first
+        std::vector<int> recent;
+        recent.reserve(m_runFiles.size());
+        for (int i = 0; i < static_cast<int>(m_runFiles.size()); ++i)
+        {
+            const RR::RunInfo& info = m_runFiles[i].info;
+            // only push back valid runs
+            if (!(info.completed && info.config != "Debug")) continue;
+            recent.push_back(i);
+        }
+
+        std::ranges::sort(recent, [this](int _a, int _b)
+        {
+            const std::string keyA = SHARED::RunTimestampKey(m_runFiles[_a].name);
+            const std::string keyB = SHARED::RunTimestampKey(m_runFiles[_b].name);
+
+            // newest first
+            if (keyA != keyB) return keyA > keyB;
+            return m_runFiles[_a].name > m_runFiles[_b].name;
+        });
+
+        if (static_cast<int>(recent.size()) > m_maxCompareSlotOpen)
+            recent.resize(m_maxCompareSlotOpen);
+
+        // rebuild the slot set with the newest runs
+        m_compareSlots.clear();
+        m_compareBaselineId = -1;
+
+        for (int index : recent)
+        {
+            CompareSlot slot;
+
+            slot.colorIdx = SHARED::FreeColorIndex(m_compareSlots,
+                [](const CompareSlot& locSlot) {
+                    return locSlot.colorIdx;
+                });
+            slot.id = m_nextCompareId++;
+
+            LoadRunIntoSlot(slot, m_runFiles[index]);
+            m_compareSlots.push_back(std::move(slot));
+        }
+        m_compareFitPending = true;
+
+        // rebuild invalidates
+        base     = nullptr;
+        baseInfo = nullptr;
+        mixed    = false;
+    }
+
     // Warn if runs should not be compared
     ImGui::SameLine();
     ImGui::Checkbox("Show % vs baseline", &m_compareShowDelta);
+
     if (mixed)
     {
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(0.95f, 0.55f, 0.35f, 1.0f),
                            "   (!) Mixed scene/seed - curves are not directly comparable");
-    }
-    else if (m_compareSlots.empty())
-    {
-        // gentle empty-state hint so the view explains itself
-        ImGui::SameLine();
-        ImGui::TextDisabled("   add up to %d runs to compare", m_maxCompareSlotOpen);
     }
     ImGui::PopFont();
 
@@ -1814,27 +1863,7 @@ void MainMenuScene::DrawComparePanel()
                         m_runFiles[index].info.name, m_runFiles[index].info.scene).c_str()))
                     {
                         // Load in selected
-                        auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
-
-                        slot.relPath = m_runFiles[index].relPath;
-                        slot.name    = m_runFiles[index].name;
-                        slot.runData = RR::BenchmarkParser::ParseBenchmarkCsv(fileSys.LoadOutputFileText(slot.relPath));
-
-                        slot.frameTimes.clear();
-                        slot.simTimes.clear();
-                        slot.coverages.clear();
-                        slot.frameTimes.reserve(slot.runData.samples.size());
-                        slot.simTimes.reserve(slot.runData.samples.size());
-                        slot.coverages.reserve(slot.runData.samples.size());
-
-                        for (const RR::FrameSample& sample : slot.runData.samples)
-                        {
-                            slot.frameTimes.push_back(sample.frameTimeMs);
-                            slot.simTimes.push_back(sample.simTime);
-                            slot.coverages.push_back(sample.coverage);
-                        }
-
-                        slot.loaded = true;
+                        LoadRunIntoSlot(slot, m_runFiles[index]);
                         m_compareFitPending = true;
                     }
                 }
@@ -1982,6 +2011,30 @@ void MainMenuScene::RefreshRunList()
         m_runFiles.push_back({ relPath, path.filename().string(), runInfo.info });
     }
     m_runListDirty = false;
+}
+
+void MainMenuScene::LoadRunIntoSlot(CompareSlot& _slot, const RunEntry& _entry)
+{
+    auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+
+    _slot.relPath = _entry.relPath;
+    _slot.name    = _entry.name;
+    _slot.runData = RR::BenchmarkParser::ParseBenchmarkCsv(fileSys.LoadOutputFileText(_slot.relPath));
+
+    _slot.frameTimes.clear();
+    _slot.simTimes.clear();
+    _slot.coverages.clear();
+    _slot.frameTimes.reserve(_slot.runData.samples.size());
+    _slot.simTimes.reserve(_slot.runData.samples.size());
+    _slot.coverages.reserve(_slot.runData.samples.size());
+
+    for (const RR::FrameSample& sample : _slot.runData.samples)
+    {
+        _slot.frameTimes.push_back(sample.frameTimeMs);
+        _slot.simTimes.push_back(sample.simTime);
+        _slot.coverages.push_back(sample.coverage);
+    }
+    _slot.loaded = true;
 }
 
 
