@@ -365,20 +365,30 @@ void MainMenuScene::DrawTopBar()
     // close button and scale slider size
     const float closeWidth  = ImGui::CalcTextSize("CLOSE APP").x + style.FramePadding.x * m_closeBtWidth;
     const float sliderWidth = ImGui::CalcTextSize("UI SCALE: 0.00").x * m_sliderWidth;
-    float checkLogWidth = 0.0f;
+    float checkLogWidth  = 0.0f;
+    float checkPathWidth = 0.0f;
 
     if (showLogCheck)
     {
-        checkLogWidth = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
-                        ImGui::CalcTextSize("Logarithmic scale").x + style.ItemSpacing.x;
+        checkLogWidth  = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
+                         ImGui::CalcTextSize("Logarithmic scale").x + style.ItemSpacing.x;
+        checkPathWidth = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
+                         ImGui::CalcTextSize("Align by path").x + style.ItemSpacing.x;
     }
 
-    // Log-linear checkbox
+    // Path and log checkboxes
     ImGui::SameLine(ImGui::GetWindowWidth() - closeWidth - sliderWidth -
-        checkLogWidth - style.ItemSpacing.x * m_closeBtAlignment);
+        checkLogWidth - checkPathWidth - style.ItemSpacing.x * m_closeBtAlignment);
 
     if (showLogCheck)
     {
+        if (ImGui::Checkbox("Align by path", &m_graphByPathTime))
+        {
+            m_compareFitPending = true;
+        }
+        ImGui::SetItemTooltip("Align graphs by path progress (precise) Uncheck for frame-progress alignment");
+        ImGui::SameLine();
+
         ImGui::Checkbox("Logarithmic scale", &m_useLog10);
         ImGui::SetItemTooltip("Toggles the analyze & compare graphs between linear and logarithmic (base-10) Y axis");
         ImGui::SameLine();
@@ -790,7 +800,7 @@ void MainMenuScene::DrawCustomSeed()
 
     ImGui::TextUnformatted("Insert seed:");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    // param order is (label, hint, buffer) - the hint only shows while the buffer is empty
+    // param order is label, hint, buffer - the hint only shows while the buffer is empty
     ImGui::InputTextWithHint("##seed", "e.g. 3053828723 ", m_seedBuffer,
         sizeof(m_seedBuffer), ImGuiInputTextFlags_CharsDecimal);
 
@@ -925,7 +935,7 @@ namespace AT
     void DrawResultContent(const RR::BenchmarkRun& _runData, const std::vector<float>& _frameTimes,
         const std::vector<float>& _simTimes, const std::vector<float>& _coverages,
         const ImVec4& _accent, float mtFontSize, float pcInfoFontSize, float metricGapSize,
-        float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10)
+        float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10, bool byPathTime)
     {
         const RR::FrameStats& stats = _runData.stats;
         const RR::RunInfo&    info  = _runData.info;
@@ -1045,14 +1055,30 @@ namespace AT
                 ImPlotSpec ftSpec;
                 ftSpec.LineColor  = _accent;
                 ftSpec.LineWeight = graphLineWeight;
-                ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);
+                
+                if (byPathTime)
+                {
+                    ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);
+                }
+                else
+                {
+                    ImPlot::PlotLine("FrameTime", _frameTimes.data(), sampleCount, 1.0, 0.0, ftSpec);
+                }
 
                 // Coverage on the right axis (0-1)
                 ImPlot::SetAxes(ImAxis_X1, ImAxis_Y2);
                 ImPlotSpec covSpec;
                 covSpec.LineColor  = ImVec4(0.55f, 0.65f, 0.75f, 0.6f);
                 covSpec.LineWeight = graphLineWeight;
-                ImPlot::PlotLine("Coverage", _simTimes.data(), _coverages.data(), sampleCount, covSpec);
+
+                if (byPathTime)
+                {
+                    ImPlot::PlotLine("Coverage", _simTimes.data(), _coverages.data(), sampleCount, covSpec);
+                }
+                else
+                {
+                    ImPlot::PlotLine("Coverage", _coverages.data(), sampleCount, 1.0, 0.0, covSpec);
+                }
 
                 ImPlot::EndPlot();
             }
@@ -1297,7 +1323,8 @@ void MainMenuScene::DrawResultWindows()
                 m_graphLineWeightAnalyze,
                 m_statsFontSize,
                 m_togglesFontSize,
-                m_useLog10);
+                m_useLog10,
+                m_graphByPathTime);
 
         // Check if user took control of the tile (clicked, collapsed, moved, etc)
         if (!apply && !tile.userMoved && !ImGui::IsWindowCollapsed())
@@ -1781,10 +1808,17 @@ void MainMenuScene::DrawComparePanel()
 
             const int frameNum = static_cast<int>(slot.frameTimes.size());
 
-            ImPlot::PlotLine(label.c_str(),
-                slot.simTimes.data(),
-                slot.frameTimes.data(),
-                frameNum, spec);
+            if (m_graphByPathTime)
+            {
+                ImPlot::PlotLine(label.c_str(),
+                    slot.simTimes.data(), slot.frameTimes.data(), frameNum, spec);
+            }
+            else
+            {
+                const double xScale = frameNum > 1 ? 1.0 / (frameNum - 1) : 1.0;
+                ImPlot::PlotLine(label.c_str(),
+                    slot.frameTimes.data(), frameNum, xScale, 0.0, spec);
+            }
         }
         ImPlot::EndPlot();
     }

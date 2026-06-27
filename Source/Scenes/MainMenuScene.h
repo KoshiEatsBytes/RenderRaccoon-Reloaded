@@ -99,11 +99,12 @@ private:
     };
 
     TopView m_view = TopView::NONE;
-    float  m_uiScalePending = 1.5f;
-    float  m_uiMinScale     = 0.5f;
-    float  m_uiMaxScale     = 4.0f;
-    float  m_uiScale        = 1.5f;
-    bool   m_useLog10       = false;
+    float  m_uiScalePending  = 1.5f;
+    float  m_uiMinScale      = 0.5f;
+    float  m_uiMaxScale      = 4.0f;
+    float  m_uiScale         = 1.5f;
+    bool   m_useLog10        = false;
+    bool   m_graphByPathTime = true;
 
     // If coming back to menu after run
     BENCH_SUCCESS m_lastBenchRunState = BENCH_SUCCESS::NONE;
