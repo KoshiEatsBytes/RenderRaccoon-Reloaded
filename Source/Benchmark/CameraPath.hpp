@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include <cmath>
+#include <algorithm>
 
 #include "Helpers/Types.h"
 
@@ -33,11 +34,14 @@ namespace BENCH
         float yawSweepDeg = 0.0f;
         float fixedYaw    = 0.0f;
         float fixedPitch  = 0.0f;
+
+        // turn in blend duration
+        float turnInSeconds = 1.0f;
     };
 
     struct CameraSample
     {
-        vec3  position {1.0f };
+        vec3  position {0.0f };
         float yaw      = 0.0f;
         float pitch    = 0.0f;
     };
@@ -170,11 +174,18 @@ namespace BENCH
         };
 
         // yaw to face travel direction
-        static float FaceTravelYaw(const vec3& _from, const vec3& _to)
+        static float FaceTravelYaw(const vec3& _from, const vec3& _to, float _fallback)
         {
-            const vec3  distance = _to - _from;
-            const float degrees  = glm::degrees(std::atan2(-distance.x, -distance.z));
-            return degrees;
+            const vec3 distance = _to - _from;
+            if (glm::dot(distance, distance) < 1e-8f) return _fallback;
+            return glm::degrees(std::atan2(-distance.x, -distance.z));
+        }
+
+        // interpolation between two degree angles
+        static float LerpAngleDeg(float _a, float _b, float _t)
+        {
+            const float diff = std::fmod(_b - _a + 540.0f, 360.0f) - 180.0f;
+            return _a + diff * std::clamp(_t, 0.0f, 1.0f);
         }
 
         static float ResolveEndYaw(const Baked& _baked)
@@ -182,7 +193,7 @@ namespace BENCH
             switch (_baked.segment.look)
             {
                 case PathSegment::LOOK::FACE_TRAVEL:
-                    return FaceTravelYaw(_baked.from, _baked.to);
+                    return FaceTravelYaw(_baked.from, _baked.to, _baked.yawIn);
 
                 case PathSegment::LOOK::ROTATE_YAW:
                     return _baked.yawIn + _baked.segment.yawSweepDeg;
@@ -197,7 +208,14 @@ namespace BENCH
         {
             switch (_baked.segment.look) {
                 case PathSegment::LOOK::FACE_TRAVEL:
-                    return FaceTravelYaw(_baked.from, _baked.to);
+                {
+                    const float travel = FaceTravelYaw(_baked.from, _baked.to, _baked.yawIn);
+                    const float turn   = std::min(_baked.segment.turnInSeconds, _baked.duration);
+                    const float secs   = _local * _baked.duration;
+                    const float t      = turn > 0.0f ? secs / turn : 1.0f;
+                    
+                    return LerpAngleDeg(_baked.yawIn, travel, t);
+                }
 
                 case PathSegment::LOOK::ROTATE_YAW:
                     return _baked.yawIn + _baked.segment.yawSweepDeg * _local;
