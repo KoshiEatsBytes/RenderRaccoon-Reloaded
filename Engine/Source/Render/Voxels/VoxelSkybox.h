@@ -54,9 +54,9 @@ namespace RR
         int m_cloudBuildX = 0;
         int m_cloudBuildZ = 0;
 
-        int    m_cloudHeight   = 230;
+        int    m_cloudHeight   = 220;
         float  m_cloudScale    = 1.5f;
-        float  m_cloudCoverage = 0.625f;
+        float  m_cloudCoverage = 0.7f;
         uInt32 m_cloudSeed     = 42;
 
         // Wing

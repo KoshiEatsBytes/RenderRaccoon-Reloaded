@@ -182,7 +182,7 @@ namespace RR
                 _out.vertices.push_back(0.0f);
                 _out.vertices.push_back(1.0f);
                 _out.vertices.push_back(0.0f);
-                //Uvs
+                // Uvs
                 _out.vertices.push_back(kCrossUV[corner][0]);
                 _out.vertices.push_back(kCrossUV[corner][1]);
 

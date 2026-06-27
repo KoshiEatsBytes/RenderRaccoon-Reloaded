@@ -27,7 +27,7 @@ namespace WORLDGEN
         using uInt32 = std::uint32_t;
 
         // GENERAL -----------------------------------------------------------------------------------------------------
-        uInt32 seed = 2498846564;
+        uInt32 seed = 3053828723;
 
         // BASE NOISE --------------------------------------------------------------------------------------------------
         bool  useGradientNoise = true;  // gradient (Perlin) vs value noise

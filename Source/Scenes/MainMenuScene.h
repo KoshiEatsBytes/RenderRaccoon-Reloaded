@@ -121,7 +121,7 @@ private:
     RR::RunInfo m_runInfo;
     int  m_selectedBenchmark = -1;
     int  m_selectedScene     = 0;
-    char m_seedBuffer[16]    = "1234567890";
+    char m_seedBuffer[16]    = "3053828723";
 
     float m_benchmarkBtHeight = 3.7f;
     float m_benchBtSpacing    = 5.0f;

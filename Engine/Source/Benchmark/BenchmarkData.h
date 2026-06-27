@@ -35,7 +35,7 @@ namespace RR
         bool greedy     = false;
 
         // Render config
-        int renderDistance = 8;  
+        int renderDistance = 16;
 
         // Test platform
         std::string  gpuName   = "unknown";

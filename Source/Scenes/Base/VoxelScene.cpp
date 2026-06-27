@@ -83,7 +83,7 @@ bool VoxelScene::Init()
 
     // Set fog end and start parameters
     const float fogEnd   = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.95f;
-    const float fogStart = fogEnd * 0.80f;
+    const float fogStart = fogEnd * 0.90f;
 
     for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
     {

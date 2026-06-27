@@ -791,7 +791,7 @@ void MainMenuScene::DrawCustomSeed()
     ImGui::TextUnformatted("Insert seed:");
     ImGui::SetNextItemWidth(-FLT_MIN);
     // param order is (label, hint, buffer) - the hint only shows while the buffer is empty
-    ImGui::InputTextWithHint("##seed", "e.g. 1234567890", m_seedBuffer,
+    ImGui::InputTextWithHint("##seed", "e.g. 3053828723 ", m_seedBuffer,
         sizeof(m_seedBuffer), ImGuiInputTextFlags_CharsDecimal);
 
     ImGui::Spacing();

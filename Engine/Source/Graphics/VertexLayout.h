@@ -11,10 +11,10 @@ namespace RR
     {
         GLuint index;    // Attribute location
         GLuint size;     // Number of components
-        GLuint type;     // Data type (e.g. GL_UINT)
+        GLuint type;     // Data type
         uInt32 offset;   // Bytes offset from start of vertex
 
-        // NOTE: these describe the DEFAULT/Box vertex format (pos/color/uv/normal).
+        // NOTE: these describe the DEFAULT/Box vertex format (pos/color/uv/normal)
         // They are NOT a global slot map — the voxel format reuses slots 1 & 3 for normal & layer.
         static constexpr int PositionIndex = 0;
         static constexpr int ColorIndex    = 1;

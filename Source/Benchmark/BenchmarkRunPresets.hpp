@@ -26,10 +26,10 @@ namespace DETERMINISTIC
     using uInt32 = std::uint32_t;
     using uInt8  = std::uint8_t;
 
-    constexpr uInt32 kDeterministicSeed = 2498846564;
+    constexpr uInt32 kDeterministicSeed = 3053828723;
 
     // Benchmark data
-    constexpr int    kBaselineRenderDistance = 12;
+    constexpr int    kBaselineRenderDistance = 16;
     constexpr int    kLodRenderDistance      = 24; // Bump up once LOD sets in
 
     enum class SCENE : uInt8
@@ -252,13 +252,6 @@ namespace CUSTOM
         std::string name  = "Custom";
         std::string scene = "C";
 
-        // Populate strings
-        NAMING::AppendDetails(_rInfo, name);
-        NAMING::AppendDetails(_rInfo, scene);
-
-        _rInfo.scene = scene;
-        _rInfo.name  = name;
-
         // Custom is NOT deterministic, but use same seed
         _rInfo.deterministic = false;
         _rInfo.seed = DETERMINISTIC::kDeterministicSeed;
@@ -279,6 +272,9 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 1.0f;
                 _genCfg.desertHumidThresh = 0.5f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Plains");
+                scene.append("-PL");
                 break;
 
             case SCENE::FOREST:
@@ -290,6 +286,9 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 0.0f;
                 _genCfg.desertHumidThresh = 0.5f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Forest");
+                scene.append("-FR");
                 break;
 
             case SCENE::DESERT:
@@ -301,6 +300,9 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 0.5f;
                 _genCfg.desertHumidThresh = 1.0f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Desert");
+                scene.append("-DS");
                 break;
 
             case SCENE::SAVANNA:
@@ -312,6 +314,9 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 0.5f;
                 _genCfg.desertHumidThresh = 0.0f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Savanna");
+                scene.append("-SV");
                 break;
 
             case SCENE::TAIGA:
@@ -323,6 +328,9 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 0.5f;
                 _genCfg.desertHumidThresh = 0.5f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Taiga");
+                scene.append("-TG");
                 break;
 
             case SCENE::TUNDRA:
@@ -334,8 +342,18 @@ namespace CUSTOM
                 _genCfg.plainsHumidThresh = 0.5f;
                 _genCfg.desertHumidThresh = 0.5f;
                 _genCfg.mesaRarity        = 1.0f;
+
+                name.append("-Tundra");
+                scene.append("-TD");
                 break;
 
         }
+
+        // Populate strings
+        NAMING::AppendDetails(_rInfo, name);
+        NAMING::AppendDetails(_rInfo, scene);
+
+        _rInfo.scene = scene;
+        _rInfo.name  = name;
     }
 }
