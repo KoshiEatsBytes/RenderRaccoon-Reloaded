@@ -31,6 +31,7 @@ namespace RR
         int  GetRenderDistance() const;
 
         bool IsStreamingIdle() const;
+        float GetCoverage();
 
     private:
         void RebuildRingOffset();

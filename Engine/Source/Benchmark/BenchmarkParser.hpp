@@ -93,6 +93,10 @@ namespace RR
                     {
                         std::from_chars(val.data(), val.data() + val.size(), runData.info.renderDistance);
                     }
+                    else if (key == "warmUpSeconds")
+                    {
+                        CharsToFloat(val, runData.info.warmUpSeconds);
+                    }
                     else if (key == "frames")
                     {
                         unsigned long frameNum = 0;
@@ -108,19 +112,30 @@ namespace RR
                 // skip column header
                 if (line.rfind("frameIdx", 0) == 0) continue;
 
-                // Data row: frameIndex frameTimeMs cpuMs gpuMs
-                const std::size_t c0 = line.find(',');
-                const std::size_t c1 = (c0 == std::string_view::npos) ? c0 : line.find(',', c0 + 1);
-                const std::size_t c2 = (c1 == std::string_view::npos) ? c1 : line.find(',', c1 + 1);
+                // Data row: frameIdx,frameTimeMs,cpuMs,gpuMs,simTime,posX,posY,posZ,coverage
+                std::size_t comma[8];
 
-                // malformed line, skip
-                if (c2 == std::string_view::npos) continue;
+                int found = 0;
+                for (std::size_t i = 0; i < line.size() && found < 8; ++i)
+                {
+                    if (line[i] == ',') comma[found++] = i;
+                }
+
+                // Discard if not expected comma vals e.g. malformed line
+                if (found < 8) continue;
 
                 FrameSample sample;
-                const bool ok = CharsToFloat(line.substr(c0 + 1, c1 - c0 - 1), sample.frameTimeMs)
-                             && CharsToFloat(line.substr(c1 + 1, c2 - c1 - 1), sample.cpuMs)
-                             && CharsToFloat(line.substr(c2 + 1),                sample.gpuMs);
-                // if sample is valid, save
+                const bool ok =
+                       CharsToFloat(line.substr(comma[0]+1, comma[1]-comma[0]-1), sample.frameTimeMs)
+                    && CharsToFloat(line.substr(comma[1]+1, comma[2]-comma[1]-1), sample.cpuMs)
+                    && CharsToFloat(line.substr(comma[2]+1, comma[3]-comma[2]-1), sample.gpuMs)
+                    && CharsToFloat(line.substr(comma[3]+1, comma[4]-comma[3]-1), sample.simTime)
+                    && CharsToFloat(line.substr(comma[4]+1, comma[5]-comma[4]-1), sample.posX)
+                    && CharsToFloat(line.substr(comma[5]+1, comma[6]-comma[5]-1), sample.posY)
+                    && CharsToFloat(line.substr(comma[6]+1, comma[7]-comma[6]-1), sample.posZ)
+                    && CharsToFloat(line.substr(comma[7]+1),                        sample.coverage);
+
+                // if valid save to vec
                 if (ok) runData.samples.push_back(sample);
             }
 

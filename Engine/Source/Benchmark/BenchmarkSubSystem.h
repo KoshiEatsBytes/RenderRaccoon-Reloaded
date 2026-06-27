@@ -9,6 +9,7 @@
 #include "ISubSystem.h"
 #include "Helpers/TypeInfo.h"
 #include "Benchmark/BenchmarkData.h"
+#include "Helpers/Types.h"
 
 namespace RR
 {
@@ -30,6 +31,9 @@ namespace RR
         void RequestDiscard();
         bool IsLogging() const;
 
+        // outside logging
+        void RecordSceneMetrics(float _simTime, const vec3& _pos, float _coverage);
+
         // Per frame engine loop calls
         void BeginFrame(float _deltaTime);
         void BeginGpuTimer();
@@ -48,8 +52,8 @@ namespace RR
         void DiscardLogging();
         void WriteCSV();
 
-        // 60 mb allocated for benchmark samples, that's a 10-minute run at 8000 FPS
-        static constexpr sizeT kSampleSize = 5000000;
+        // 96 mb allocated for benchmark samples, that's a 6-minute run at 8000 FPS
+        static constexpr sizeT kSampleSize = 3000000;
         static constexpr int   kRing = 4;
         static constexpr int   kResultPrecision = 7;
 
@@ -64,6 +68,11 @@ namespace RR
         bool m_captureThisFrame    = false;
         int  m_warmUpFramesPending = 0;
         int  m_warmUpFramesLeft    = 0;
+
+        // scene statistics
+        float m_currSimTime  = 0.0f;
+        float m_currCoverage = 0.0f;
+        vec3  m_currPos      {0.0f};
 
         // Frame-time
         std::chrono::steady_clock::time_point m_cpuStart;

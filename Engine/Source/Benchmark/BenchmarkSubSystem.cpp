@@ -105,6 +105,13 @@ namespace RR
         return m_logging;
     }
 
+    void BenchmarkSubSystem::RecordSceneMetrics(float _simTime, const vec3 &_pos, float _coverage)
+    {
+        m_currSimTime  = _simTime;
+        m_currPos      = _pos;
+        m_currCoverage = _coverage;
+    }
+
     // Must be run at the very beginning of a frame
     void BenchmarkSubSystem::BeginFrame(float _deltaTime)
     {
@@ -197,7 +204,17 @@ namespace RR
         const float cpuMs  = std::chrono::duration<float, std::milli>(cpuEnd - m_cpuStart).count();
 
         // store this frame, gpu will be updated in kRing frames
-        m_samples.push_back(FrameSample{m_frameTimeMs, cpuMs, 0.0f});
+        FrameSample sample;
+        sample.frameTimeMs = m_frameTimeMs;
+        sample.cpuMs       = cpuMs;
+        sample.gpuMs       = 0.0f;
+        sample.simTime     = m_currSimTime;
+        sample.posX        = m_currPos.x;
+        sample.posY        = m_currPos.y;
+        sample.posZ        = m_currPos.z;
+        sample.coverage    = m_currCoverage;
+
+        m_samples.push_back(sample);
 
         // prepare slot for GPU
         const int slot = static_cast<int>(m_frameCounter % kRing);
@@ -307,32 +324,38 @@ namespace RR
         m_runInfo.config = config;
 
         // Save run details first
-        out << "# config="        << config                    << "\n"
-            << "# frames="        << m_samples.size()          << "\n"
-            << "# completed="     << m_runInfo.completed       << "\n"
-            << "# name="          << m_runInfo.name            << "\n"
-            << "# scene="         << m_runInfo.scene           << "\n"
-            << "# seed="          << m_runInfo.seed            << "\n"
+        out << "# config="         << config                   << "\n"
+            << "# frames="         << m_samples.size()         << "\n"
+            << "# completed="      << m_runInfo.completed      << "\n"
+            << "# name="           << m_runInfo.name           << "\n"
+            << "# scene="          << m_runInfo.scene          << "\n"
+            << "# seed="           << m_runInfo.seed           << "\n"
             << "# renderDistance=" << m_runInfo.renderDistance << "\n"
-            << "# lod="           << m_runInfo.lod             << "\n"
-            << "# async="         << m_runInfo.async           << "\n"
-            << "# scheduling="    << m_runInfo.scheduling      << "\n"
-            << "# lodCache="      << m_runInfo.lodCache        << "\n"
-            << "# greedy="        << m_runInfo.greedy          << "\n"
-            << "# deterministic=" << m_runInfo.deterministic   << "\n"
-            << "# gpu="           << m_runInfo.gpuName         << "\n"
-            << "# cpu="           << m_runInfo.cpuName         << "\n"
-            << "# cores="         << m_runInfo.coreCount       << "\n";
+            << "# warmUpSeconds="  << m_runInfo.warmUpSeconds  << "\n"
+            << "# lod="            << m_runInfo.lod            << "\n"
+            << "# async="          << m_runInfo.async          << "\n"
+            << "# scheduling="     << m_runInfo.scheduling     << "\n"
+            << "# lodCache="       << m_runInfo.lodCache       << "\n"
+            << "# greedy="         << m_runInfo.greedy         << "\n"
+            << "# deterministic="  << m_runInfo.deterministic  << "\n"
+            << "# gpu="            << m_runInfo.gpuName        << "\n"
+            << "# cpu="            << m_runInfo.cpuName        << "\n"
+            << "# cores="          << m_runInfo.coreCount      << "\n";
 
         // Saves the raw frame data
-        out << "frameIdx,frameTimeMs,cpuMs,gpuMs\n";
+        out << "frameIdx,frameTimeMs,cpuMs,gpuMs,simTime,posX,posY,posZ,coverage\n";
         for (sizeT i = 0; i < m_samples.size(); i++)
         {
             const FrameSample& sample = m_samples[i];
             out << i                  << ','
                 << sample.frameTimeMs << ','
                 << sample.cpuMs       << ','
-                << sample.gpuMs       << '\n';
+                << sample.gpuMs       << ','
+                << sample.simTime     << ','
+                << sample.posX        << ','
+                << sample.posY        << ','
+                << sample.posZ        << ','
+                << sample.coverage    << '\n';
         }
 
         // Save to file

@@ -150,7 +150,37 @@ namespace RR
     {
         return m_streamingIdle;
     }
-    
+
+    // returns how much map has generated, not efficient for now
+    float ChunkManager::GetCoverage()
+    {
+        using namespace CHUNK;
+
+        int total  = 0;
+        int meshed = 0;
+
+        for (const Coord off : m_genOffsets)
+        {
+            // if outside radious discard
+            if (chessDist(off) > m_meshRadius) continue;
+            ++total;
+
+            const Chunk* chunk = GetChunk(
+                {m_lastCoords.x + off.x,
+                         m_lastCoords.z + off.z
+                });
+
+            if (chunk && chunk->state == STATE::MESHED) ++meshed;
+        }
+
+        if (total > 0)
+        {
+            return static_cast<float>(meshed) / static_cast<float>(total);
+        }
+
+        return 1.0f;
+    }
+
     void ChunkManager::RebuildRingOffset()
     {
         m_genOffsets.clear();

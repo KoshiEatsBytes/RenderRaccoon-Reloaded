@@ -12,9 +12,17 @@ namespace RR
     // One frame raw timings
     struct FrameSample
     {
+        // frame ms
         float frameTimeMs = 0.0f;
         float cpuMs       = 0.0f;
         float gpuMs       = 0.0f;
+
+        // scene data
+        float simTime  = 0.0f;
+        float posX     = 0.0f;
+        float posY     = 0.0f;
+        float posZ     = 0.0f;
+        float coverage = 0.0f;
     };
 
     // Saved as part of the CSV header, is-per-run
@@ -35,7 +43,8 @@ namespace RR
         bool greedy     = false;
 
         // Render config
-        int renderDistance = 16;
+        int   renderDistance = 16;
+        float warmUpSeconds  = 0.0f;
 
         // Test platform
         std::string  gpuName   = "unknown";

@@ -71,6 +71,8 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
         m_warmedUp = true;
         m_warmUpSeconds = std::chrono::duration<float>(
             std::chrono::steady_clock::now() - m_warmUpStart).count();
+        // save into runinfo
+        m_runInfo.warmUpSeconds = m_warmUpSeconds;
 
         if (!m_bench)
         {
@@ -83,6 +85,16 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
 
     m_simTime += std::min(_deltaTime, kMaxDeltaTime);
     ApplyCameraSample(m_path.Sample(m_simTime));
+
+    if (m_bench)
+    {
+        // ship scene data directly to benchmark
+        m_bench->RecordSceneMetrics(
+            m_simTime,
+            m_cam->GetWorldPosition(),
+            m_chunkManager->GetCoverage()
+        );
+    }
 
     // Path complete, proceed
     if (!m_pathComplete && m_simTime >= m_path.Duration())
