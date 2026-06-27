@@ -1321,7 +1321,8 @@ namespace CT
         COL_FT_MIN,
         COL_FT_MAX,
         COL_FT_STD,
-        COL_STUT
+        COL_STUT,
+        COL_COV
     };
 
     float CompareMetric(const RR::FrameStats& _st, int _column)
@@ -1342,6 +1343,7 @@ namespace CT
             case COL_FT_MAX: return _st.maxFrameTimeMs;
             case COL_FT_STD: return _st.stdDeviationMs;
             case COL_STUT:   return static_cast<float>(_st.stutterCount);
+            case COL_COV:    return _st.coverageAvg;
             default:         return 0.0f;
         }
     }
@@ -1399,14 +1401,16 @@ void MainMenuScene::DrawComparePanel()
     };
 
     // Resolve baseline, if it was removed fall back to first loaded
-    const RR::FrameStats* base = nullptr;
+    const RR::FrameStats* base     = nullptr;
+    const RR::RunInfo*    baseInfo = nullptr;
 
     for (const CompareSlot& slot : m_compareSlots)
     {
         // break if found
         if (slot.loaded && slot.id == m_compareBaselineId)
         {
-            base = &slot.runData.stats;
+            base     = &slot.runData.stats;
+            baseInfo = &slot.runData.info;
             break;
         }
     }
@@ -1420,7 +1424,8 @@ void MainMenuScene::DrawComparePanel()
             if (slot.loaded)
             {
                 m_compareBaselineId = slot.id;
-                base = &slot.runData.stats;
+                base     = &slot.runData.stats;
+                baseInfo = &slot.runData.info;
                 break;
             }
         }
@@ -1485,7 +1490,7 @@ void MainMenuScene::DrawComparePanel()
 
     int removeIdx = -1;
     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareTableFontSize);
-    if (ImGui::BeginTable("##compare_tbl", 21, tFlags))
+    if (ImGui::BeginTable("##compare_tbl", 22, tFlags))
     {
         // narrow cols non resizable
         const float controlWidth = ImGui::GetFrameHeight() + m_tableControlWidth;
@@ -1503,13 +1508,14 @@ void MainMenuScene::DrawComparePanel()
         ImGui::TableSetupColumn("Max",  0, 1.0f, CT::COL_FT_MAX);
         ImGui::TableSetupColumn("Std",  0, 1.0f, CT::COL_FT_STD);
         ImGui::TableSetupColumn("Stut", 0, 1.0f, CT::COL_STUT);
+        ImGui::TableSetupColumn("Cov",  0, 1.0f, CT::COL_COV);
         ImGui::TableSetupColumn("LOD", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("MT",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("SS",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("LC",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("RD",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("Scene", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthStretch, 2.0f);
+        ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("##rm", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
         ImGui::TableHeadersRow();
 
@@ -1579,9 +1585,7 @@ void MainMenuScene::DrawComparePanel()
             }
             else
             {
-                preview = SHARED::PrettyName(slot.name,
-                    slot.runData.info.name,
-                    slot.runData.info.scene);
+                preview = slot.runData.info.scene;
             }
 
             // Combo drop down with file
@@ -1670,6 +1674,8 @@ void MainMenuScene::DrawComparePanel()
                 CT::CompareCell(st.stdDeviationMs,  base ? base->stdDeviationMs  : 0.0f, false, isBase, showDelta, "%.2f");
                 CT::CompareCell(static_cast<float>(st.stutterCount), base ? static_cast<float>(base->stutterCount) : 0.0f,    false, isBase, showDelta, "%.0f");
 
+                CT::CompareCell(st.coverageAvg * 100.0f, base ? base->coverageAvg * 100.0f : 0.0f, true, isBase, showDelta, "%.0f");
+
                 const RR::RunInfo& info = slot.runData.info;
                 auto techniques = [](bool _on) {
                     ImGui::TableNextColumn();
@@ -1685,12 +1691,11 @@ void MainMenuScene::DrawComparePanel()
                 ImGui::TableNextColumn();
                 ImGui::TextColored(SHARED::kValueColor, "%d", info.renderDistance);
 
-                ImGui::TableNextColumn();
-                ImGui::TextColored(SHARED::kLabelColor, "%s", info.scene.c_str());
+                CT::CompareCell(info.warmUpSeconds, baseInfo ? baseInfo->warmUpSeconds : 0.0f, false, isBase, showDelta, "%.1f");
             }
             else
             {
-                for (int col = 0; col < 17; col++) ImGui::TableNextColumn();
+                for (int col = 0; col < 18; col++) ImGui::TableNextColumn();
             }
 
             ImGui::TableNextColumn();
