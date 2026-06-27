@@ -213,7 +213,7 @@ namespace BENCH
                     const float turn   = std::min(_baked.segment.turnInSeconds, _baked.duration);
                     const float secs   = _local * _baked.duration;
                     const float t      = turn > 0.0f ? secs / turn : 1.0f;
-                    
+
                     return LerpAngleDeg(_baked.yawIn, travel, t);
                 }
 

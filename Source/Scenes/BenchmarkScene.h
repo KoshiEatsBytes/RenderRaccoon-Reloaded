@@ -3,6 +3,7 @@
 
 #include "Base/VoxelScene.h"
 #include "Benchmark/BenchmarkSubSystem.h"
+#include "Benchmark/CameraPath.hpp"
 #include "WorldGen/WorldGenConfig.h"
 
 class BenchmarkScene : public VoxelScene
@@ -22,13 +23,12 @@ protected:
 
 private:
     void LoadNextScene();
+    void ApplyCameraSample(const BENCH::CameraSample& _sample);
 
-    // PLACEHOLDER
+    // Camera and benchmark
     RR::BenchmarkSubSystem* m_bench = nullptr;
-    int   m_discard = 0;
-    float m_yaw     = 0.f;
-    float m_timer   = 0.0f;
-    bool  m_fired   = false;
+    BENCH::CameraPath m_path;
+    float m_simTime;
 };
 
 

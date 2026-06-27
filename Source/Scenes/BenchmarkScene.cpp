@@ -40,41 +40,46 @@ void BenchmarkScene::OnInit()
 
     // PLACEHOLDER
     m_bench = RR::Engine::GetInstance().GetAppManager().GetSubSystem<RR::BenchmarkSubSystem>();
+
+    // TEST PATH TO DEELTE!!!!!
+    using BENCH::PathSegment;
+    const vec3 spawn(0.f, 140.f, 0.f);
+    m_path.Begin(spawn, 0.f, -15.f);
+
+    PathSegment out;
+    out.move = PathSegment::MOVE::GOTO;
+    out.target = vec3(400.f, 140.f, -400.f);
+    out.speed = 40.f;
+    out.look = PathSegment::LOOK::FACE_TRAVEL;
+    m_path.Add(out);
+
+    PathSegment spin;
+    spin.move = PathSegment::MOVE::HOLD;
+    spin.holdSeconds = 6.f;
+    spin.look = PathSegment::LOOK::ROTATE_YAW;
+    spin.yawSweepDeg = 360.f;
+    m_path.Add(spin);
+
+    PathSegment back;                         
+    back.move = PathSegment::MOVE::GOTO;
+    back.target = spawn;
+    back.speed = 40.f;
+    back.look = PathSegment::LOOK::FACE_TRAVEL;
+    m_path.Add(back);
+
+    ApplyCameraSample(m_path.Sample(0.0f));
 }
 
 void BenchmarkScene::OnUpdate(float _deltaTime)
 {
     if (m_paused) return;
 
-    // PLACEHOLDER rotate camera around
-    m_yaw += 0.75f * _deltaTime;
-    const quat qYaw = glm::angleAxis(m_yaw,glm::vec3(0.0f, 1.0f, 0.0f));
-    m_cam->SetWorldRotation(qYaw);
+    m_simTime += _deltaTime;
+    ApplyCameraSample(m_path.Sample(m_simTime));
 
-    if (m_discard < 10)
-    {
-        m_discard++;
-
-        if (m_discard == 8)
-        {
-            m_bench->RequestStartLogging(m_runInfo, 2);
-        }
-
-        return;
-    }
-
-    // PLACEHOLDER test scene sequence
-    if (!m_fired)
-    {
-        m_timer += _deltaTime;
-
-        if (m_timer >= 4.f)
-        {
-            m_fired = true;
-            m_bench->RequestStopLogging();
-            LoadNextScene();
-        }
-    }
+    // Path complete, proceed
+    if (m_simTime >= m_path.Duration())
+        LoadNextScene();
 }
 
 void BenchmarkScene::OnPauseEnter()
@@ -131,6 +136,15 @@ void BenchmarkScene::LoadNextScene()
     gCurrentSceneStep++;
     RR::RunInfo info = GetRunPreset(static_cast<SCENE>(gCurrentSceneStep));
     appMan.RequestSceneLoad<BenchmarkScene>(info);
+}
+
+void BenchmarkScene::ApplyCameraSample(const BENCH::CameraSample& _sample)
+{
+    const quat qYaw   = glm::angleAxis(glm::radians(_sample.yaw), vec3(0.f, 1.f, 0.f));
+    const quat qPitch = glm::angleAxis(glm::radians(_sample.pitch), vec3(1.f, 0.f, 0.f));
+
+    m_cam->SetWorldRotation(glm::normalize(qYaw * qPitch));
+    m_cam->SetWorldPosition(_sample.position);
 }
 
 
