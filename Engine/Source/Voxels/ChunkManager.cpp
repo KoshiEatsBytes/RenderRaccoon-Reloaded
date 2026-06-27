@@ -60,7 +60,15 @@ namespace RR
         const int generated = EnsureGenerated(centre);
         const int meshed    = EnsureMeshed(centre);
 
-        if (generated == 0 && meshed == 0) m_streamingIdle = true;
+        if (generated == 0 && meshed == 0)
+        {
+            m_streamingIdle = true;
+            m_coverage      = 1.0f;
+        }
+        else
+        {
+            m_coverage = ComputeCoverage(centre);
+        }
     }
 
     void ChunkManager::SubmitDraws(const Frustum& _frustum)
@@ -157,34 +165,32 @@ namespace RR
         return m_streamingIdle;
     }
 
-    // returns how much map has generated, not efficient for now
-    float ChunkManager::GetCoverage()
+    //returns the coverage cached by Update
+    float ChunkManager::GetCoverage() const
     {
-        using namespace CHUNK;
+        return m_coverage;
+    }
 
-        int total  = 0;
+    // scan the loaded chunks and count those meshed within the mesh radius.
+    float ChunkManager::ComputeCoverage(CHUNK::Coord _centre) const
+    {
+        const int span  = 2 * m_meshRadius + 1;
+        // Mesh in range size
+        const int total = span * span;
+        if (total <= 0) return 1.0f;
+
         int meshed = 0;
-
-        for (const Coord off : m_genOffsets)
+        for (const auto& [coord, chunk] : m_chunks)
         {
-            // if outside radious discard
-            if (chessDist(off) > m_meshRadius) continue;
-            ++total;
+            if (chunk->state != CHUNK::STATE::MESHED) continue;
 
-            const Chunk* chunk = GetChunk(
-                {m_lastCoords.x + off.x,
-                         m_lastCoords.z + off.z
-                });
+            const int dist = std::max(std::abs(coord.x - _centre.x),
+                                      std::abs(coord.z - _centre.z));
 
-            if (chunk && chunk->state == STATE::MESHED) ++meshed;
+            if (dist <= m_meshRadius) ++meshed;
         }
 
-        if (total > 0)
-        {
-            return static_cast<float>(meshed) / static_cast<float>(total);
-        }
-
-        return 1.0f;
+        return static_cast<float>(meshed) / static_cast<float>(total);
     }
 
     void ChunkManager::RebuildRingOffset()

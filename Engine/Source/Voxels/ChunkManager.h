@@ -32,7 +32,7 @@ namespace RR
 
         bool IsChunkMeshedAt(const vec3& _pos);
         bool IsStreamingIdle() const;
-        float GetCoverage();
+        float GetCoverage() const;
 
     private:
         void RebuildRingOffset();
@@ -43,6 +43,7 @@ namespace RR
         int EnsureGenerated(CHUNK::Coord _centre);
         int EnsureMeshed(CHUNK::Coord _centre);
         bool NeighboursGenerated(CHUNK::Coord _coord);
+        float ComputeCoverage(CHUNK::Coord _centre) const;
 
         Chunk* GetChunk(CHUNK::Coord _coord);
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
@@ -57,9 +58,10 @@ namespace RR
         int m_offsetsBuiltForRadius = -1;
 
         CHUNK::Coord m_lastCoords;
-        bool m_streamingIdle = false;
-        bool m_firstFrame    = true;
-        int  m_meshRadius    = 8;
+        bool  m_streamingIdle = false;
+        bool  m_firstFrame    = true;
+        int   m_meshRadius    = 8;
+        float m_coverage      = 1.0f;
 
         // Quality settings
         bool m_fancyLeaves = true;
