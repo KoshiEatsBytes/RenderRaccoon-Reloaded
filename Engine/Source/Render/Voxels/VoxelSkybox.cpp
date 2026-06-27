@@ -12,7 +12,7 @@ namespace CLOUD
     // World units per cloud cell, thickness and radius
     constexpr float kCloudCell   = 12.0f;
     constexpr float kCloudThick  = 4.0f;
-    constexpr int   kCloudRadius = 52;
+    constexpr int   kCloudRadius = 64;
     constexpr int   kRebuildStep = 8;
 
     uInt32 cHash(int _x, int _z, uInt32 _seed)
@@ -122,9 +122,8 @@ namespace RR
 
     void VoxelSkybox::SetZenithColor(const vec3& _color)
     {
-        if (!m_skyMat) return;
-
-        m_skyMat->SetParam("uSkyZenith", _color);
+        if (m_skyMat)   m_skyMat->SetParam("uSkyZenith", _color);
+        if (m_cloudMat) m_cloudMat->SetParam("uZenithColor", _color);
     }
 
     void VoxelSkybox::SetSun(const vec3& _direction, float _size)
@@ -234,6 +233,11 @@ namespace RR
         using namespace CLOUD;
 
         std::vector<float> verts;
+
+        // Reserve vec to prevent mid-runtime allocations
+        constexpr int cellCount = (2 * kCloudRadius + 1) * (2 * kCloudRadius + 1);
+        verts.reserve(static_cast<size_t>(cellCount) * 6 * 6 * 4);
+
         const float  scale    = m_cloudScale;
         const float  coverage = m_cloudCoverage;
         const uInt32 seed     = m_cloudSeed;
