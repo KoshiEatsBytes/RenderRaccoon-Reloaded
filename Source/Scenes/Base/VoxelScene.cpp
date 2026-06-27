@@ -100,11 +100,12 @@ bool VoxelScene::Init()
     m_skybox->SetZenithColor (vec3(0.30f, 0.52f, 0.88f));
     m_skybox->SetSun(vec3(0.35f, 0.65f, 0.45f), 0.22f);
 
+    // clouds
     m_skybox->SetCloudSeed(m_genConfig.seed);
-    m_skybox->SetCloudHeight(170);
-    m_skybox->SetCloudFade(0.9f, 0.6f);
-    m_skybox->BuildClouds(0,0);
-    m_skybox->SetCloudColor(vec3(1.0f), 0.8f);
+    m_skybox->SetCloudHeight(230);
+    m_skybox->SetCloudFade(0.85f, 0.4f);
+    m_skybox->SetCloudColor(vec3(1.0f));
+    m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
 
     OnInit();
     return true;
@@ -145,6 +146,7 @@ void VoxelScene::Update(float _deltaTime)
         m_chunkManager->Update(camPos);
 
         // RenderSky
+        m_skybox->UpdateClouds(camPos, _deltaTime);
         m_skybox->SubmitSkyForDraw();
 
         // calculate camera frustum

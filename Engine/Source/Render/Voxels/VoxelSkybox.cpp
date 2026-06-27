@@ -9,10 +9,11 @@
 
 namespace CLOUD
 {
-    // World units per cloud cell, thickness and radious
+    // World units per cloud cell, thickness and radius
     constexpr float kCloudCell   = 12.0f;
     constexpr float kCloudThick  = 4.0f;
-    constexpr int   kCloudRadius = 40;
+    constexpr int   kCloudRadius = 52;
+    constexpr int   kRebuildStep = 8;
 
     uInt32 cHash(int _x, int _z, uInt32 _seed)
     {
@@ -88,6 +89,144 @@ namespace RR
         m_cloudMat = Material::Load(_cloudMatPath);
 
         return m_skyMat != nullptr;
+    }
+
+    void VoxelSkybox::UpdateClouds(const vec3& _cameraPos, float _dt)
+    {
+        using namespace CLOUD;
+        m_time   += _dt;
+        m_windOff = m_windDir * (m_windSpeed * m_time);
+
+        // build the centre around windoffset
+        const int camX = static_cast<int>(std::floor((_cameraPos.x - m_windOff.x) / kCloudCell));
+        const int camZ = static_cast<int>(std::floor((_cameraPos.z - m_windOff.y) / kCloudCell));
+
+        const bool firstBuild = !m_cloudMesh;
+        const int  moved  = std::max(std::abs(camX - m_cloudBuildX),
+                                     std::abs(camZ - m_cloudBuildZ));
+
+        if (firstBuild || moved >= kRebuildStep)
+        {
+            // Re centre on cam
+            BuildClouds(camX, camZ);
+            m_cloudBuildX = camX;
+            m_cloudBuildZ = camZ;
+        }
+    }
+
+    void VoxelSkybox::SetHorizonColor(const vec3& _color)
+    {
+        if (m_skyMat)   m_skyMat->SetParam("uSkyHorizon", _color);
+        if (m_cloudMat) m_cloudMat->SetParam("uHorizonColor", _color);
+    }
+
+    void VoxelSkybox::SetZenithColor(const vec3& _color)
+    {
+        if (!m_skyMat) return;
+
+        m_skyMat->SetParam("uSkyZenith", _color);
+    }
+
+    void VoxelSkybox::SetSun(const vec3& _direction, float _size)
+    {
+        if (!m_skyMat) return;
+
+        m_skyMat->SetParam("uSunDir", glm::normalize(_direction));
+        m_skyMat->SetParam("uSunSize", _size);
+    }
+
+    void VoxelSkybox::SetClouds(uInt32 _seed, int _height, float _scale, float _cov)
+    {
+        m_cloudSeed     = _seed;
+        m_cloudHeight   = _height;
+        m_cloudScale    = _scale;
+        m_cloudCoverage = _cov;
+    }
+
+    void VoxelSkybox::SetCloudSeed(uInt32 _seed)
+    {
+        m_cloudSeed = _seed;
+    }
+
+    void VoxelSkybox::SetCloudHeight(int _height)
+    {
+        m_cloudHeight = _height;
+    }
+
+    void VoxelSkybox::SetCloudScale(float _scale)
+    {
+        m_cloudScale = _scale;
+    }
+
+    void VoxelSkybox::SetCloudCoverage(float _cov)
+    {
+        m_cloudCoverage = _cov;
+    }
+
+    void VoxelSkybox::SetCloudColor(const vec3& _color)
+    {
+        if (!m_cloudMat) return;
+
+        m_cloudMat->SetParam("uCloudColor", _color);
+    }
+
+    void VoxelSkybox::SetCloudFade(float _fadeStart, float _fadeEnd)
+    {
+        using namespace CLOUD;
+
+        // Preset cloud fading point
+        const float cloudFadeEnd   = kCloudRadius * kCloudCell * _fadeStart;
+        const float cloudFadeStart = cloudFadeEnd * _fadeEnd;
+        m_cloudMat->SetParam("uFogStart", cloudFadeStart);
+        m_cloudMat->SetParam("uFogEnd",   cloudFadeEnd);
+    }
+
+    void VoxelSkybox::SetWind(const vec2& _dir, float _speed)
+    {
+        m_windDir   = _dir;
+        m_windSpeed = _speed;
+    }
+
+    void VoxelSkybox::SetWindDir(const vec2& _dir)
+    {
+        m_windDir = _dir;
+    }
+
+    void VoxelSkybox::SetWindSpeed(float _speed)
+    {
+        m_windSpeed = _speed;
+    }
+
+    void VoxelSkybox::SubmitSkyForDraw()
+    {
+        if (!m_skyMesh || !m_skyMat) return;
+
+        // Submit sky for rendering
+        RenderCommand skyCmd;
+        skyCmd.mesh        = m_skyMesh.get();
+        skyCmd.material    = m_skyMat.get();
+        skyCmd.modelMatrix = mat4(1.0f);
+        skyCmd.color       = vec3(1.0f);
+        Engine::GetInstance().GetRenderQueue().Submit(skyCmd);
+    }
+
+    void VoxelSkybox::SubmitCloudsForDraw()
+    {
+        if (!m_cloudMesh || !m_cloudMat) return;
+
+        RenderCommand cldCmd;
+        cldCmd.mesh     = m_cloudMesh.get();
+        cldCmd.material = m_cloudMat.get();
+        cldCmd.color    = vec3(1.0f);
+
+        // Applies wind drift to clouds translation
+        cldCmd.modelMatrix = glm::translate(
+                          mat4(1.0f),
+                           vec3(m_windOff.x,
+                           0.0f,
+                           m_windOff.y));
+
+        Engine::GetInstance().GetRenderQueue().Submit(cldCmd);
     }
 
     void VoxelSkybox::BuildClouds(int _centreX, int _centreZ)
@@ -178,97 +317,5 @@ namespace RR
 
         //discard if no clouds
         m_cloudMesh = nullptr;
-    }
-
-    void VoxelSkybox::SetHorizonColor(const vec3& _color)
-    {
-        if (m_skyMat)   m_skyMat->SetParam("uSkyHorizon", _color);
-        if (m_cloudMat) m_cloudMat->SetParam("uHorizonColor", _color);
-    }
-
-    void VoxelSkybox::SetZenithColor(const vec3& _color)
-    {
-        if (!m_skyMat) return;
-
-        m_skyMat->SetParam("uSkyZenith", _color);
-    }
-
-    void VoxelSkybox::SetSun(const vec3& _direction, float _size)
-    {
-        if (!m_skyMat) return;
-
-        m_skyMat->SetParam("uSunDir", glm::normalize(_direction));
-        m_skyMat->SetParam("uSunSize", _size);
-    }
-
-    void VoxelSkybox::SetClouds(uInt32 _seed, int _height, float _scale, float _cov)
-    {
-        m_cloudSeed     = _seed;
-        m_cloudHeight   = _height;
-        m_cloudScale    = _scale;
-        m_cloudCoverage = _cov;
-    }
-
-    void VoxelSkybox::SetCloudSeed(uInt32 _seed)
-    {
-        m_cloudSeed = _seed;
-    }
-
-    void VoxelSkybox::SetCloudHeight(int _height)
-    {
-        m_cloudHeight = _height;
-    }
-
-    void VoxelSkybox::SetCloudScale(float _scale)
-    {
-        m_cloudScale = _scale;
-    }
-
-    void VoxelSkybox::SetCloudCoverage(float _cov)
-    {
-        m_cloudCoverage = _cov;
-    }
-
-    void VoxelSkybox::SetCloudColor(const vec3& _color)
-    {
-        if (!m_cloudMat) return;
-
-        m_cloudMat->SetParam("uCloudColor", _color);
-    }
-
-    void VoxelSkybox::SetCloudFade(float _fadeStart, float _fadeEnd)
-    {
-        using namespace CLOUD;
-
-        // Preset cloud fading point
-        const float cloudFadeEnd   = kCloudRadius * kCloudCell * _fadeStart;
-        const float cloudFadeStart = cloudFadeEnd * _fadeEnd;
-        m_cloudMat->SetParam("uFogStart", cloudFadeStart);
-        m_cloudMat->SetParam("uFogEnd",   cloudFadeEnd);
-    }
-
-    void VoxelSkybox::SubmitSkyForDraw()
-    {
-        if (!m_skyMesh || !m_skyMat) return;
-
-        // Submit sky for rendering
-        RenderCommand skyCmd;
-        skyCmd.mesh        = m_skyMesh.get();
-        skyCmd.material    = m_skyMat.get();
-        skyCmd.modelMatrix = mat4(1.0f);
-        skyCmd.color       = vec3(1.0f);
-        Engine::GetInstance().GetRenderQueue().Submit(skyCmd);
-    }
-
-    void VoxelSkybox::SubmitCloudsForDraw()
-    {
-        if (!m_cloudMesh || !m_cloudMat) return;
-
-        RenderCommand cldCmd;
-        cldCmd.mesh        = m_cloudMesh.get();
-        cldCmd.material    = m_cloudMat.get();
-        cldCmd.modelMatrix = mat4(1.0f);
-        cldCmd.color       = vec3(1.0f);
-        Engine::GetInstance().GetRenderQueue().Submit(cldCmd);
     }
 }
