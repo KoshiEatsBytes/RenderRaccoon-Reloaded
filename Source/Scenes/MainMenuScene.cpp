@@ -923,6 +923,7 @@ namespace AT
     }
 
     void DrawResultContent(const RR::BenchmarkRun& _runData, const std::vector<float>& _frameTimes,
+        const std::vector<float>& _simTimes, const std::vector<float>& _coverages,
         const ImVec4& _accent, float mtFontSize, float pcInfoFontSize, float metricGapSize,
         float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10)
     {
@@ -1029,18 +1030,30 @@ namespace AT
             {
                 ImGui::TextDisabled("(no samples)");
             }
-            else if (ImPlot::BeginPlot("##frametime", ImVec2(-1.0f, -1.0f),
-                                       ImPlotFlags_NoTitle | ImPlotFlags_NoLegend))
+            else if (ImPlot::BeginPlot("##frametime", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
             {
-                // Hide X axis
-                ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
+                ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
                 ImPlot::SetupAxisScale(ImAxis_Y1, (useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
+                ImPlot::SetupAxis(ImAxis_Y2, nullptr, ImPlotAxisFlags_NoDecorations);
+                ImPlot::SetupAxisLimits(ImAxis_Y2, 0.0, 1.0, ImPlotCond_Always);
+                ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
-                ImPlotSpec spec;
-                spec.LineColor  = _accent;
-                spec.LineWeight = graphLineWeight;
-                ImPlot::PlotLine("FrameTime", _frameTimes.data(), static_cast<int>(_frameTimes.size()),
-                                 1.0, 0.0, spec);
+                const int sampleCount = static_cast<int>(_frameTimes.size());
+
+                // Frame time on the left axis
+                ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1);
+                ImPlotSpec ftSpec;
+                ftSpec.LineColor  = _accent;
+                ftSpec.LineWeight = graphLineWeight;
+                ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);
+
+                // Coverage on the right axis (0-1)
+                ImPlot::SetAxes(ImAxis_X1, ImAxis_Y2);
+                ImPlotSpec covSpec;
+                covSpec.LineColor  = ImVec4(0.55f, 0.65f, 0.75f, 0.6f);
+                covSpec.LineWeight = graphLineWeight;
+                ImPlot::PlotLine("Coverage", _simTimes.data(), _coverages.data(), sampleCount, covSpec);
+
                 ImPlot::EndPlot();
             }
         }
@@ -1178,10 +1191,14 @@ void MainMenuScene::DrawAnalyzerPanel()
                             window.label = m_runFiles[index].name;
 
                             window.frameTimes.reserve(runData.samples.size());
+                            window.simTimes.reserve(runData.samples.size());
+                            window.coverages.reserve(runData.samples.size());
 
                             for (const RR::FrameSample& sample : runData.samples)
                             {
                                 window.frameTimes.push_back(sample.frameTimeMs);
+                                window.simTimes.push_back(sample.simTime);
+                                window.coverages.push_back(sample.coverage);
                             }
                             window.runData = std::move(runData);
                             m_openResults.push_back(std::move(window));
@@ -1271,6 +1288,8 @@ void MainMenuScene::DrawResultWindows()
             AT::DrawResultContent(
                 tile.runData,
                 tile.frameTimes,
+                tile.simTimes,
+                tile.coverages,
                 accent,
                 m_metadataFontSize,
                 m_pcInfoFontSize,
@@ -1642,11 +1661,17 @@ void MainMenuScene::DrawComparePanel()
                         slot.runData = RR::BenchmarkParser::ParseBenchmarkCsv(fileSys.LoadOutputFileText(slot.relPath));
 
                         slot.frameTimes.clear();
+                        slot.simTimes.clear();
+                        slot.coverages.clear();
                         slot.frameTimes.reserve(slot.runData.samples.size());
+                        slot.simTimes.reserve(slot.runData.samples.size());
+                        slot.coverages.reserve(slot.runData.samples.size());
 
                         for (const RR::FrameSample& sample : slot.runData.samples)
                         {
                             slot.frameTimes.push_back(sample.frameTimeMs);
+                            slot.simTimes.push_back(sample.simTime);
+                            slot.coverages.push_back(sample.coverage);
                         }
 
                         slot.loaded = true;
@@ -1754,12 +1779,12 @@ void MainMenuScene::DrawComparePanel()
             //    slot.runData.info.scene) + "##" + std::to_string(slot.id);
             const std::string label = slot.runData.info.scene;
 
-            const int    frameNum = static_cast<int>(slot.frameTimes.size());
-            const double xScale   = frameNum > 1 ? 1.0 / (frameNum - 1) : 1.0;
+            const int frameNum = static_cast<int>(slot.frameTimes.size());
 
             ImPlot::PlotLine(label.c_str(),
+                slot.simTimes.data(),
                 slot.frameTimes.data(),
-                frameNum, xScale, 0.0, spec);
+                frameNum, spec);
         }
         ImPlot::EndPlot();
     }

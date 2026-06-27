@@ -79,6 +79,8 @@ private:
         std::string label;
         RR::BenchmarkRun runData;
         std::vector<float> frameTimes;
+        std::vector<float> simTimes;
+        std::vector<float> coverages;
     };
 
     // Slot for comapre view, up to 8
@@ -92,6 +94,8 @@ private:
         std::string name;
         RR::BenchmarkRun runData;
         std::vector<float> frameTimes;
+        std::vector<float> simTimes;
+        std::vector<float> coverages;
     };
 
     TopView m_view = TopView::NONE;
