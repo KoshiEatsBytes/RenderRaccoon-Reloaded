@@ -1,9 +1,11 @@
 
-#include "BenchmarkScene.h"
+#include <algorithm>
 
+#include "BenchmarkScene.h"
 #include "MainMenuScene.h"
 #include "Benchmark/BenchmarkRunPresets.hpp"
 #include "Components/FreeCameraComponent.h"
+#include "Voxels/ChunkManager.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -29,6 +31,9 @@ void BenchmarkScene::OnInit()
     SetPrimaryButtonText("RESTART BENCHMARK");
     SetSecondaryButtonText("EXIT TO MAIN MENU");
 
+    // get hold of benchmark
+    m_bench = RR::Engine::GetInstance().GetAppManager().GetSubSystem<RR::BenchmarkSubSystem>();
+
     // Create free cam
     m_cam     = CreateObject("BenchmarkCam");
     m_camComp = m_cam->AddComponent<RR::FreeCameraComponent>();
@@ -38,35 +43,7 @@ void BenchmarkScene::OnInit()
     SetCursorEnabled(false);
     m_camComp->SetDiscardInput(true);
 
-    // PLACEHOLDER
-    m_bench = RR::Engine::GetInstance().GetAppManager().GetSubSystem<RR::BenchmarkSubSystem>();
-
-    // TEST PATH TO DEELTE!!!!!
-    using BENCH::PathSegment;
-    const vec3 spawn(0.f, 140.f, 0.f);
-    m_path.Begin(spawn, 0.f, -15.f);
-
-    PathSegment out;
-    out.move = PathSegment::MOVE::GOTO;
-    out.target = vec3(400.f, 140.f, -400.f);
-    out.speed = 40.f;
-    out.look = PathSegment::LOOK::FACE_TRAVEL;
-    m_path.Add(out);
-
-    PathSegment spin;
-    spin.move = PathSegment::MOVE::HOLD;
-    spin.holdSeconds = 6.f;
-    spin.look = PathSegment::LOOK::ROTATE_YAW;
-    spin.yawSweepDeg = 360.f;
-    m_path.Add(spin);
-
-    PathSegment back;                         
-    back.move = PathSegment::MOVE::GOTO;
-    back.target = spawn;
-    back.speed = 40.f;
-    back.look = PathSegment::LOOK::FACE_TRAVEL;
-    m_path.Add(back);
-
+    m_path = BENCH::GetCameraPath(BENCH::CAMERA_PATH_ID::DETERMINISTIC);
     ApplyCameraSample(m_path.Sample(0.0f));
 }
 
@@ -74,17 +51,55 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
 {
     if (m_paused) return;
 
-    m_simTime += _deltaTime;
+    if (!m_warmedUp)
+    {
+        // start load timer of first update
+        if (!m_warmUpTimerStarted)
+        {
+            m_warmUpStart = std::chrono::steady_clock::now();
+            m_warmUpTimerStarted = true;
+        }
+
+        // hold at spawn until generated
+        if (!m_chunkManager->IsStreamingIdle())
+        {
+            ApplyCameraSample(m_path.Sample(0.0f));
+            return;
+        }
+
+        // warm up complete, record load time, begin run
+        m_warmedUp = true;
+        m_warmUpSeconds = std::chrono::duration<float>(
+            std::chrono::steady_clock::now() - m_warmUpStart).count();
+
+        if (!m_bench)
+        {
+            RR::Error("[BENCHMARK] Benchmark subsystem not present!");
+            return;
+        }
+
+        m_bench->RequestStartLogging(m_runInfo, kDiscardFrames);
+    }
+
+    m_simTime += std::min(_deltaTime, kMaxDeltaTime);
     ApplyCameraSample(m_path.Sample(m_simTime));
 
     // Path complete, proceed
-    if (m_simTime >= m_path.Duration())
+    if (!m_pathComplete && m_simTime >= m_path.Duration())
+    {
+        // log to disk
+        if (m_bench) m_bench->RequestStopLogging();
+
+        m_pathComplete = true;
         LoadNextScene();
+    }
 }
 
 void BenchmarkScene::OnPauseEnter()
 {
     VoxelScene::OnPauseEnter();
+    // Discard benchmark on pause
+    if (m_bench) m_bench->RequestDiscard();
 }
 
 void BenchmarkScene::OnPausePrimary()

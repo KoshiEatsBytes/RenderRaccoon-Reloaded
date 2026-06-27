@@ -27,6 +27,7 @@ namespace RR
         // Logging requests
         void RequestStartLogging(const RunInfo& _runInfo, int _iFrames = 10);
         void RequestStopLogging();
+        void RequestDiscard();
         bool IsLogging() const;
 
         // Per frame engine loop calls
@@ -44,6 +45,7 @@ namespace RR
     private:
         void BeginLogging();
         void FinishLogging();
+        void DiscardLogging();
         void WriteCSV();
 
         // 60 mb allocated for benchmark samples, that's a 10-minute run at 8000 FPS
@@ -52,10 +54,11 @@ namespace RR
         static constexpr int   kResultPrecision = 7;
 
         // log toggles
-        bool m_logging        = false;
-        bool m_startRequested = false;
-        bool m_stopRequested  = false;
-        bool m_completed      = false;
+        bool m_logging          = false;
+        bool m_startRequested   = false;
+        bool m_stopRequested    = false;
+        bool m_discardRequested = false;
+        bool m_completed        = false;
 
         // run start metrics
         bool m_captureThisFrame    = false;

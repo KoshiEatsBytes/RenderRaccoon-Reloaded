@@ -8,6 +8,8 @@
 
 namespace BENCH
 {
+    using uInt8 = std::uint8_t;
+
     struct PathSegment
     {
         enum class MOVE
@@ -36,7 +38,7 @@ namespace BENCH
         float fixedPitch  = 0.0f;
 
         // turn in blend duration
-        float turnInSeconds = 1.0f;
+        float turnInSeconds = 2.0f;
     };
 
     struct CameraSample
@@ -234,6 +236,55 @@ namespace BENCH
         float m_startPitch = 0.0f;
         float m_total      = 0.0f;
     };
+
+    enum class CAMERA_PATH_ID : uInt8
+    {
+        DETERMINISTIC,
+        COUNT
+    };
+
+    // Helper to retrieve the camera path for a scenario
+    inline CameraPath GetCameraPath(CAMERA_PATH_ID _id = CAMERA_PATH_ID::DETERMINISTIC)
+    {
+        CameraPath path;
+
+        switch (_id)
+        {
+            case CAMERA_PATH_ID::DETERMINISTIC:
+            {
+                const vec3 spawn(0.f, 170.f, 0.f);
+                path.Begin(spawn, 0.f, -20.f);
+
+                PathSegment l1;
+                l1.move = PathSegment::MOVE::GOTO;
+                l1.target = vec3(600.f, 160.f, -600.f);
+                l1.speed = 45.f;
+                l1.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(l1);
+
+                PathSegment look1;
+                look1.move = PathSegment::MOVE::HOLD;
+                look1.holdSeconds = 6.f;
+                look1.look = PathSegment::LOOK::ROTATE_YAW;
+                look1.yawSweepDeg = 360.f;
+                path.Add(look1);
+
+                PathSegment back;
+                back.move = PathSegment::MOVE::GOTO;
+                back.target = spawn;
+                back.speed = 45.f;
+                back.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(back);
+            }
+            break;
+
+            default:
+                RR::Error("[CAMERA PATH] Warning, invalid camera path requested!");
+            break;
+        }
+
+        return path;
+    }
 }
 
 

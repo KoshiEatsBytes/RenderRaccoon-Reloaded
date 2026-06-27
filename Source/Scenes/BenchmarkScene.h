@@ -1,5 +1,6 @@
 
 #pragma once
+#include <chrono>
 
 #include "Base/VoxelScene.h"
 #include "Benchmark/BenchmarkSubSystem.h"
@@ -28,7 +29,17 @@ private:
     // Camera and benchmark
     RR::BenchmarkSubSystem* m_bench = nullptr;
     BENCH::CameraPath m_path;
-    float m_simTime;
+
+    static constexpr int   kDiscardFrames = 2;
+    static constexpr float kMaxDeltaTime  = 1.0f / 20.0f;
+    bool  m_pathComplete = false;
+    float m_simTime      = 0.0f;
+
+    // Warm up
+    std::chrono::steady_clock::time_point m_warmUpStart;
+    bool  m_warmUpTimerStarted = false;
+    bool  m_warmedUp           = false;
+    float m_warmUpSeconds      = 0.0f;
 };
 
 

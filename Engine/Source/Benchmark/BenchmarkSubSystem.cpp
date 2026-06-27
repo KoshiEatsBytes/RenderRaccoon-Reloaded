@@ -92,6 +92,14 @@ namespace RR
         m_stopRequested = true;
     }
 
+    void BenchmarkSubSystem::RequestDiscard()
+    {
+        m_startRequested = false;
+        m_stopRequested  = false;
+
+        if (m_logging) m_discardRequested = true;
+    }
+
     bool BenchmarkSubSystem::IsLogging() const
     {
         return m_logging;
@@ -109,6 +117,14 @@ namespace RR
 
             Log("[BENCHMARK - STOP] Stopping benchmarking on current scene");
         }
+        // process discard
+        else if (m_discardRequested)
+        {
+            m_discardRequested = false;
+            DiscardLogging();
+            Warn("[BENCHMARK - DISCARD] Run invalidated (pause/quit/fail) — no file written");
+        }
+
         // process starts
         if (m_startRequested)
         {
@@ -201,6 +217,8 @@ namespace RR
     bool BenchmarkSubSystem::Init()
     {
         InitGpuQueries();
+        // Reserve once at start
+        m_samples.reserve(kSampleSize);
         return true;
     }
 
@@ -208,8 +226,8 @@ namespace RR
     {
         if (m_logging)
         {
-            FinishLogging();
-            Log("[BENCHMARK] Application closed before before requesting benchmark stop, saving before closing...");
+            DiscardLogging();
+            Log("[BENCHMARK] Application closed before before requesting benchmark stop, discarding data!");
         }
 
         DestroyGpuQueries();
@@ -219,9 +237,8 @@ namespace RR
 
     void BenchmarkSubSystem::BeginLogging()
     {
-        // Reserve sample size, don't allow mid run reallocations
+        // Clear per run
         m_samples.clear();
-        m_samples.reserve(kSampleSize);
         m_slotPending.fill(false);
 
         // Begin benching after delay
@@ -252,6 +269,18 @@ namespace RR
         // Saves run data
         m_frameStats = ComputeStats(m_samples);
         WriteCSV();
+    }
+
+    void BenchmarkSubSystem::DiscardLogging()
+    {
+        if (!m_logging) return;
+
+        m_logging = false;
+        m_completed = false;
+
+        // abandon already present frame results
+        m_samples.clear();
+        m_slotPending.fill(false);
     }
 
     void BenchmarkSubSystem::WriteCSV()
