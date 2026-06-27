@@ -449,6 +449,7 @@ void MainMenuScene::DrawTopBar()
         if (ImGui::Checkbox("Align by path", &m_graphByPathTime))
         {
             m_compareFitPending = true;
+            m_analyzeFitPending = true;
         }
         ImGui::SetItemTooltip("Align graphs by path progress (precise) Uncheck for frame-progress alignment");
         ImGui::SameLine();
@@ -1000,7 +1001,7 @@ namespace AT
     void DrawResultContent(const RR::BenchmarkRun& _runData, const std::vector<float>& _frameTimes,
         const std::vector<float>& _simTimes, const std::vector<float>& _coverages,
         const ImVec4& _accent, float mtFontSize, float pcInfoFontSize, float metricGapSize,
-        float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10, bool byPathTime)
+        float graphLineWeight, float statsFontSize, float togglesFontSize, bool useLog10, bool byPathTime, bool fitPending)
     {
         const RR::FrameStats& stats = _runData.stats;
         const RR::RunInfo&    info  = _runData.info;
@@ -1105,47 +1106,52 @@ namespace AT
             {
                 ImGui::TextDisabled("(no samples)");
             }
-            else if (ImPlot::BeginPlot("##frametime", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
+            else
             {
-                ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations | ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
-                ImPlot::SetupAxisScale(ImAxis_Y1, (useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
-                ImPlot::SetupAxis(ImAxis_Y2, nullptr, ImPlotAxisFlags_NoDecorations);
-                ImPlot::SetupAxisLimits(ImAxis_Y2, 0.0, 1.0, ImPlotCond_Always);
-                ImPlot::SetupLegend(ImPlotLocation_NorthEast);
+                if (fitPending) ImPlot::SetNextAxesToFit();
 
-                const int sampleCount = static_cast<int>(_frameTimes.size());
-
-                // Frame time on the left axis
-                ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1);
-                ImPlotSpec ftSpec;
-                ftSpec.LineColor  = _accent;
-                ftSpec.LineWeight = graphLineWeight;
-
-                if (byPathTime)
+                if (ImPlot::BeginPlot("##frametime", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
                 {
-                    ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);
-                }
-                else
-                {
-                    ImPlot::PlotLine("FrameTime", _frameTimes.data(), sampleCount, 1.0, 0.0, ftSpec);
-                }
+                    ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
+                    ImPlot::SetupAxisScale(ImAxis_Y1, (useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
+                    ImPlot::SetupAxis(ImAxis_Y2, nullptr, ImPlotAxisFlags_NoDecorations);
+                    ImPlot::SetupAxisLimits(ImAxis_Y2, 0.0, 1.0, ImPlotCond_Always);
+                    ImPlot::SetupLegend(ImPlotLocation_NorthEast);
 
-                // Coverage on the right axis (0-1)
-                ImPlot::SetAxes(ImAxis_X1, ImAxis_Y2);
-                ImPlotSpec covSpec;
-                covSpec.LineColor  = ImVec4(0.55f, 0.65f, 0.75f, 0.6f);
-                covSpec.LineWeight = graphLineWeight;
+                    const int sampleCount = static_cast<int>(_frameTimes.size());
 
-                if (byPathTime)
-                {
-                    ImPlot::PlotLine("Coverage", _simTimes.data(), _coverages.data(), sampleCount, covSpec);
-                }
-                else
-                {
-                    ImPlot::PlotLine("Coverage", _coverages.data(), sampleCount, 1.0, 0.0, covSpec);
-                }
+                    // Frame time on the left axis
+                    ImPlot::SetAxes(ImAxis_X1, ImAxis_Y1);
+                    ImPlotSpec ftSpec;
+                    ftSpec.LineColor  = _accent;
+                    ftSpec.LineWeight = graphLineWeight;
 
-                ImPlot::EndPlot();
+                    if (byPathTime)
+                    {
+                        ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);
+                    }
+                    else
+                    {
+                        ImPlot::PlotLine("FrameTime", _frameTimes.data(), sampleCount, 1.0, 0.0, ftSpec);
+                    }
+
+                    // Coverage on the right axis (0-1)
+                    ImPlot::SetAxes(ImAxis_X1, ImAxis_Y2);
+                    ImPlotSpec covSpec;
+                    covSpec.LineColor  = ImVec4(0.55f, 0.65f, 0.75f, 0.6f);
+                    covSpec.LineWeight = graphLineWeight;
+
+                    if (byPathTime)
+                    {
+                        ImPlot::PlotLine("Coverage", _simTimes.data(), _coverages.data(), sampleCount, covSpec);
+                    }
+                    else
+                    {
+                        ImPlot::PlotLine("Coverage", _coverages.data(), sampleCount, 1.0, 0.0, covSpec);
+                    }
+
+                    ImPlot::EndPlot();
+                }
             }
         }
         ImGui::EndChild();
@@ -1452,7 +1458,8 @@ void MainMenuScene::DrawResultWindows()
                 m_statsFontSize,
                 m_togglesFontSize,
                 m_useLog10,
-                m_graphByPathTime);
+                m_graphByPathTime,
+                m_analyzeFitPending);
         }
 
         // Check if user took control of the tile (clicked, collapsed, moved, etc)
@@ -1475,6 +1482,9 @@ void MainMenuScene::DrawResultWindows()
     }
 
     m_lastAnalyzerWidth = m_analyzerWidth;
+    // one shot fit for this frame
+    m_analyzeFitPending = false;
+
     // Erase closed tiles
     std::erase_if(m_openResults, [](const ResultTile& tile) {
         return !tile.open;
@@ -1948,7 +1958,7 @@ void MainMenuScene::DrawComparePanel()
     }
     if (ImPlot::BeginPlot("##overlay", ImVec2(-1.0f, -1.0f), ImPlotFlags_NoTitle))
     {
-        ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, 0);
+        ImPlot::SetupAxes(nullptr, "ms", ImPlotAxisFlags_NoDecorations, ImPlotAxisFlags_AutoFit);
         ImPlot::SetupAxisScale(ImAxis_Y1, (m_useLog10 ? ImPlotScale_Log10 : ImPlotScale_Linear));
         ImPlot::SetupLegend(ImPlotLocation_NorthWest);
 

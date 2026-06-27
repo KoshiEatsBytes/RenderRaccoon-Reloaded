@@ -169,6 +169,7 @@ private:
     // Floating result windows
     std::vector<ResultTile> m_openResults;
     int m_nextResultId              = 0;
+    bool m_analyzeFitPending        = false;
     float m_tileGapPix              = 4.0f;
     float m_tileSliceFactor         = 0.5f; // half the screen
     float m_tileColorFactorInactive = 0.30f;
