@@ -30,6 +30,7 @@ namespace RR
         void SetRenderDistance(int _distance);
         int  GetRenderDistance() const;
 
+        bool IsChunkMeshedAt(const vec3& _pos);
         bool IsStreamingIdle() const;
         float GetCoverage();
 

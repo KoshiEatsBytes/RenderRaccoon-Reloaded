@@ -146,6 +146,12 @@ namespace RR
         return m_meshRadius;
     }
 
+    bool ChunkManager::IsChunkMeshedAt(const vec3& _pos)
+    {
+        const Chunk* chunk = GetChunk(WorldToChunk(_pos));
+        return chunk && chunk->state == CHUNK::STATE::MESHED;
+    }
+
     bool ChunkManager::IsStreamingIdle() const
     {
         return m_streamingIdle;

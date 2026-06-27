@@ -1055,7 +1055,7 @@ namespace AT
                 ImPlotSpec ftSpec;
                 ftSpec.LineColor  = _accent;
                 ftSpec.LineWeight = graphLineWeight;
-                
+
                 if (byPathTime)
                 {
                     ImPlot::PlotLine("FrameTime", _simTimes.data(), _frameTimes.data(), sampleCount, ftSpec);

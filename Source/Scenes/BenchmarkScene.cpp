@@ -56,8 +56,35 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
         // start load timer of first update
         if (!m_warmUpTimerStarted)
         {
-            m_warmUpStart = std::chrono::steady_clock::now();
+            m_warmUpStart        = std::chrono::steady_clock::now();
+            m_lastProgressTime   = m_warmUpStart;
             m_warmUpTimerStarted = true;
+        }
+
+        // load timeout - abort if loading takes too long
+        const float warmElapsed = std::chrono::duration<float>(
+            std::chrono::steady_clock::now() - m_warmUpStart).count();
+
+        if (warmElapsed > kMaxWarmUpSeconds)
+        {
+            RR::Warn("[BENCHMARK] Loading terrain exceeded timeout, this machine can't load this config, aborting");
+            AbortRun();
+            return;
+        }
+
+        // stuck watchdog - abort if terrain stops generating
+        const float coverage = m_chunkManager->GetCoverage();
+        if (coverage > m_lastCoverage)
+        {
+            m_lastCoverage     = coverage;
+            m_lastProgressTime = std::chrono::steady_clock::now();
+        }
+        else if (std::chrono::duration<float>(
+            std::chrono::steady_clock::now() - m_lastProgressTime).count() > kStuckSeconds)
+        {
+            RR::Warn("[BENCHMARK] Loading stalled — no streaming progress, aborting");
+            AbortRun();
+            return;
         }
 
         // hold at spawn until generated
@@ -85,6 +112,26 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
 
     m_simTime += std::min(_deltaTime, kMaxDeltaTime);
     ApplyCameraSample(m_path.Sample(m_simTime));
+
+    // stack up "slow" frames if the application is lagging too much
+    if (_deltaTime > kAbortFrameSeconds)
+    {
+        ++m_slowFrames;
+    }
+    else
+    {
+        m_slowFrames = 0;
+    }
+
+    // check if the camera is not standing on an ungenerate chunk
+    const bool nullTerrain = !m_chunkManager->IsChunkMeshedAt(m_cam->GetWorldPosition());
+
+    if (m_slowFrames >= kAbortSlowFrames || nullTerrain)
+    {
+        RR::Warn("[BENCHMARK] Aborting run, sustained consistent lag or went over null terrain");
+        AbortRun();
+        return;
+    }
 
     if (m_bench)
     {
@@ -137,6 +184,26 @@ void BenchmarkScene::OnPauseSecondary()
     // User has quit
     auto& appMan = RR::Engine::GetInstance().GetAppManager();
     appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::FAILED);
+}
+
+void BenchmarkScene::AbortRun()
+{
+    if (m_pathComplete) return;
+
+    m_pathComplete = true;
+
+    // discard fail
+    if (m_bench) m_bench->RequestDiscard();
+
+    // if deterministic load next
+    if (m_runInfo.deterministic)
+    {
+        LoadNextScene();
+    }
+    else
+    {
+        RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::FAILED);
+    }
 }
 
 void BenchmarkScene::LoadNextScene()
