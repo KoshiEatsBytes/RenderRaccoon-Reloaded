@@ -36,15 +36,21 @@ namespace RR
         stats.frameCount = _samples.size();
 
         std::vector<float> frameTimes;
+        std::vector<float> coverages;
         frameTimes.reserve(_samples.size());
+        coverages.reserve (_samples.size());
         double cpuSum  = 0.0;
         double gpuSum  = 0.0;
+        double covSum  = 0.0;
         sizeT gpuValid = 0;
 
         for (const auto& sample : _samples)
         {
             frameTimes.push_back(sample.frameTimeMs);
             cpuSum += sample.cpuMs;
+
+            coverages.push_back(sample.coverage);
+            covSum += sample.coverage;
 
             // document
             if (sample.gpuMs > 0.0f)
@@ -67,6 +73,12 @@ namespace RR
         const auto [min, max] = std::minmax_element(frameTimes.begin(), frameTimes.end());
         stats.minFrameTimeMs = *min;
         stats.maxFrameTimeMs = *max;
+
+        // Coverage
+        stats.coverageAvg = static_cast<float>(covSum / framesNo);
+        std::ranges::sort(coverages);
+        stats.coverageMin    = coverages.front();
+        stats.coverageLow1Pc = MeanOfWorst(coverages, 1.0f);
 
         // Populate standard deviation
         double var = 0.0;

@@ -75,6 +75,11 @@ namespace RR
         float low1Pc  = 0.0f;
         float low01Pc = 0.0f;
 
+        // Coverage
+        float coverageAvg    = 0.0f;
+        float coverageLow1Pc = 0.0f;
+        float coverageMin    = 0.0f;
+
         // Stutter
         unsigned int stutterCount = 0;
     };

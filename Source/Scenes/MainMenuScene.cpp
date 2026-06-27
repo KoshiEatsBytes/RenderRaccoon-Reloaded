@@ -936,12 +936,22 @@ namespace AT
         ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * mtFontSize);
         // Metadata, scene, seed and config
         ImGui::Text("%s", info.scene.c_str());
-        ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
-        ImGui::Text("Seed %u", info.seed);
-        ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
+        ImGui::SameLine();
+        ImGui::TextDisabled("·");
+        ImGui::SameLine();
+        ImGui::Text("Seed: %u", info.seed);
+        ImGui::SameLine();
+        ImGui::TextDisabled("·");
+        ImGui::SameLine();
         ImGui::Text("%s", info.config.c_str());
-        ImGui::SameLine(); ImGui::TextDisabled("·"); ImGui::SameLine();
-        ImGui::Text("Render Distance %d", info.renderDistance);
+        ImGui::SameLine();
+        ImGui::TextDisabled("·");
+        ImGui::SameLine();
+        ImGui::Text("Render Distance: %d", info.renderDistance);
+        ImGui::SameLine();
+        ImGui::TextDisabled("·");
+        ImGui::SameLine();
+        ImGui::Text("Load Time: %.1fs", info.warmUpSeconds);
 
         // Validity badge
         const bool   valid = info.completed && info.config != "Debug";
@@ -963,7 +973,7 @@ namespace AT
         ImGui::Separator();
 
         ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * statsFontSize);
-        if (ImGui::BeginTable("##stats", 17, ImGuiTableFlags_SizingFixedFit))
+        if (ImGui::BeginTable("##stats", 25, ImGuiTableFlags_SizingFixedFit))
         {
             auto Label = [](const char* _s) {
                 ImGui::TableNextColumn(); ImGui::TextColored(SHARED::kLabelColor, "%s", _s);
@@ -977,7 +987,7 @@ namespace AT
                 ImGui::TableNextColumn(); ImGui::Dummy(ImVec2(metricGapSize, 0.0f));
             };
 
-            // Frame rate and stutter
+            // Frame rate and coverage
             ImGui::TableNextRow();
             Label("FRAMERATE (fps)");
             Metric("Avg",  FormatFloat("%.0f", stats.avgFps));
@@ -985,21 +995,24 @@ namespace AT
             Metric("5%",   FormatFloat("%.0f", lowFps(stats.low5Pc)));
             Metric("1%",   FormatFloat("%.0f", lowFps(stats.low1Pc)));
             Metric("0.1%", FormatFloat("%.0f", lowFps(stats.low01Pc)));
+            Gap(); Label("COVERAGE (%)");
+            Metric("Avg", FormatFloat("%.0f", stats.coverageAvg    * 100.0f));
+            Metric("1%",  FormatFloat("%.0f", stats.coverageLow1Pc * 100.0f));
+            Metric("Min", FormatFloat("%.0f", stats.coverageMin    * 100.0f));
             Gap(); Label("STUTTER");
             Metric("Spikes", FormatFloat("%.0f", static_cast<float>(stats.stutterCount)));
-            Metric("Frames", FormatFloat("%.0f", static_cast<float>(stats.frameCount)));
 
-            // Frame time and latency
+            // Frame time, latency and stutter
             ImGui::TableNextRow();
             Label("FRAMETIME (ms)");
             Metric("Avg", FormatFloat("%.2f", stats.avgFrameTimeMs));
             Metric("Min", FormatFloat("%.2f", stats.minFrameTimeMs));
             Metric("Max", FormatFloat("%.2f", stats.maxFrameTimeMs));
             Metric("Std", FormatFloat("%.2f", stats.stdDeviationMs));
-            ImGui::TableNextColumn(); ImGui::TableNextColumn();   // empty column
-            Gap(); Label("LATENCY");
+            Gap(); Gap(); Gap();  Label("LATENCY (ms)");
             Metric("CPU", FormatFloat("%.2f", stats.avgCpuMs));
             Metric("GPU", FormatFloat("%.2f", stats.avgGpuMs));
+
 
             ImGui::EndTable();
         }
