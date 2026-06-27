@@ -171,6 +171,8 @@ void BenchmarkScene::OnPausePrimary()
         using namespace DETERMINISTIC;
 
         gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+        gDeterministicFailures = 0;
+
         appMan.RequestSceneLoad<BenchmarkScene>(GetRunPreset(SCENE::BASELINE));
         return;
     }
@@ -183,7 +185,7 @@ void BenchmarkScene::OnPauseSecondary()
 {
     // User has quit
     auto& appMan = RR::Engine::GetInstance().GetAppManager();
-    appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::FAILED);
+    appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::CANCELLED);
 }
 
 void BenchmarkScene::AbortRun()
@@ -195,14 +197,15 @@ void BenchmarkScene::AbortRun()
     // discard fail
     if (m_bench) m_bench->RequestDiscard();
 
-    // if deterministic load next
+    // deterministic, remeber if any fails
     if (m_runInfo.deterministic)
     {
+        ++DETERMINISTIC::gDeterministicFailures;
         LoadNextScene();
     }
     else
     {
-        RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::FAILED);
+        RR::Engine::GetInstance().GetAppManager().RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::ABORTED);
     }
 }
 
@@ -221,8 +224,11 @@ void BenchmarkScene::LoadNextScene()
     // Hit end of sequence, return to main menu
     if (gCurrentSceneStep + 1 == kSceneCount)
     {
-        RR::Success("[DETERMINISTIC BENCHMARK] Deterministic benchmark has concluded successfully");
-        appMan.RequestSceneLoad<MainMenuScene>(BENCH_SUCCESS::DETERMINISTIC);
+        const BENCH_SUCCESS outcome = (gDeterministicFailures == 0)
+            ? BENCH_SUCCESS::DETERMINISTIC
+            : BENCH_SUCCESS::DETERMINISTIC_PARTIAL;
+        RR::Success("[DETERMINISTIC BENCHMARK] Deterministic benchmark has concluded");
+        appMan.RequestSceneLoad<MainMenuScene>(outcome);
         return;
     }
 

@@ -7,9 +7,11 @@
 enum class BENCH_SUCCESS : std::uint8_t
 {
     NONE,
-    FAILED,
     DETERMINISTIC,
-    CUSTOM
+    DETERMINISTIC_PARTIAL,
+    CUSTOM,
+    ABORTED,
+    CANCELLED
 };
 
 // Artefact front end UI

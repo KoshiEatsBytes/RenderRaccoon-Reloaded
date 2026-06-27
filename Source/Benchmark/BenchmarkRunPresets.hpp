@@ -49,8 +49,9 @@ namespace DETERMINISTIC
     };
 
     //  Deterministic sequence
-    constexpr uInt8 kSceneCount       = static_cast<uInt8>(SCENE::COUNT);
-    inline    uInt8 gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+    constexpr uInt8 kSceneCount            = static_cast<uInt8>(SCENE::COUNT);
+    inline    uInt8 gCurrentSceneStep      = static_cast<uInt8>(SCENE::BASELINE);
+    inline    uInt8 gDeterministicFailures = 0;
 
     // Helper to return the deterministic scene pre-set for the requested scene
     inline RR::RunInfo GetRunPreset(SCENE _scene)

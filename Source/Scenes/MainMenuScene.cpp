@@ -208,38 +208,68 @@ void MainMenuScene::DrawLastRunInfo()
     const ImGuiViewport* viewPort = ImGui::GetMainViewport();
 
     // Resolve copy from the ctor outcome
-    const bool failed = m_lastBenchRunState == BENCH_SUCCESS::FAILED;
     const char* title = nullptr;
     const char* line1 = nullptr;
     const char* line2 = nullptr;
+    int tone = 0;
 
     switch (m_lastBenchRunState)
     {
     case BENCH_SUCCESS::DETERMINISTIC:
         title = "DETERMINISTIC BENCHMARK COMPLETE";
-        line1 = "The deterministic benchmark sequence has completed successfully.";
-        line2 = "All benchmark data has been saved to disk.";
+        line1 = "All scenes ran and were saved to disk.";
+        line2 = "Open Analyze or Compare to view the results.";
+        tone  = 0;
+        break;
+
+    case BENCH_SUCCESS::DETERMINISTIC_PARTIAL:
+        title = "DETERMINISTIC BENCHMARK - PARTIAL";
+        line1 = "The sequence finished, but some scenes were aborted (too slow or timed out).";
+        line2 = "Saved scenes are in Analyze; the aborted ones have no data.";
+        tone  = 1;
         break;
 
     case BENCH_SUCCESS::CUSTOM:
         title = "CUSTOM BENCHMARK COMPLETE";
-        line1 = "The custom benchmark has been completed successfully.";
-        line2 = "All benchmark data has been saved to disk.";
+        line1 = "The run finished and was saved to disk.";
+        line2 = "Open Analyze or Compare to view the result.";
+        tone  = 0;
         break;
 
-    case BENCH_SUCCESS::FAILED:
-        title = "BENCHMARK FAILED";
-        line1 = "The benchmark was interrupted and/or invalid.";
-        line2 = "Logged data may be incomplete or corrupted.";
+    case BENCH_SUCCESS::ABORTED:
+        title = "BENCHMARK ABORTED";
+        line1 = "This hardware couldn't sustain this run - low FPS, a load timeout, or a streaming stall.";
+        line2 = "No data was saved for this run.";
+        tone  = 2;
+        break;
+
+    case BENCH_SUCCESS::CANCELLED:
+        title = "BENCHMARK CANCELLED";
+        line1 = "Exited before the run finished.";
+        line2 = "No data was saved for this run.";
+        tone  = 1;
         break;
 
     default:
         return;
     }
 
-    // Coloured title, green success red fail
-    const ImVec4 titleColor = failed ? ImVec4(0.90f, 0.30f, 0.25f, 1.0f)
-                                     : ImVec4(0.30f, 0.80f, 0.35f, 1.0f);
+    // Title tone
+    ImVec4 titleColor;
+    switch (tone)
+    {
+    case 2:
+            titleColor = ImVec4(0.90f, 0.30f, 0.25f, 1.0f);
+            break;
+
+    case 1:
+            titleColor = ImVec4(0.92f, 0.70f, 0.25f, 1.0f);
+            break;
+
+    default:
+            titleColor = ImVec4(0.30f, 0.80f, 0.35f, 1.0f);
+            break;
+    }
 
     const ImVec4 bodyColor  = ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled);
 
@@ -618,8 +648,9 @@ void MainMenuScene::DrawMethodologyPanel()
                     auto& eng = RR::Engine::GetInstance();
                     RR::RunInfo info = GetRunPreset(SCENE::BASELINE);
 
-                    // Reset Scene Step
-                    gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+                    // Reset sequence progress
+                    gCurrentSceneStep      = static_cast<uInt8>(SCENE::BASELINE);
+                    gDeterministicFailures = 0;
 
                     //Load preset, then load scene
                     eng.GetAppManager().RequestSceneLoad<BenchmarkScene>(info);
