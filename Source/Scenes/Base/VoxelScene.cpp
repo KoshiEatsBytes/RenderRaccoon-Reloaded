@@ -107,6 +107,7 @@ bool VoxelScene::Init()
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
 
+
     OnInit();
     return true;
 }
