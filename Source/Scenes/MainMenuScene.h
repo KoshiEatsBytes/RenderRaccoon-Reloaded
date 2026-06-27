@@ -158,7 +158,7 @@ private:
     float m_minAnalyzerWidth      = 0.12f;
     float m_maxAnalyzerWidth      = 0.50f;
     float m_resultTitleFontSize   = 1.2f;
-    float m_sortHeightPlaceHolder = 5.7f;
+    float m_sortHeightPlaceHolder = 6.7f;
     float m_sortItemFontSize      = 1.2f;
     float m_selectableFontSize    = 1.0f;
 

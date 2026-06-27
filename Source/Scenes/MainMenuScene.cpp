@@ -199,6 +199,40 @@ namespace SHARED
 
         return out;
     }
+
+    // Chronological sort key from the filename
+    std::string RunTimestampKey(const std::string& _file)
+    {
+        auto isDig = [](char ch) {
+            return ch >= '0' && ch <= '9';
+        };
+        std::vector<std::string> nums;
+
+        for (std::size_t i = 0; i < _file.size(); )
+        {
+            if (isDig(_file[i]))
+            {
+                std::size_t j = i;
+                while (j < _file.size() && isDig(_file[j]))
+                {
+                    ++j;
+                }
+                nums.push_back(_file.substr(i, j - i));
+                i = j;
+            }
+            else ++i;
+        }
+
+        if (nums.size() < 6) return {};
+
+        std::string key;
+        for (std::size_t k = nums.size() - 6; k < nums.size(); ++k)
+        {
+            key += nums[k];
+        }
+
+        return key;
+    }
 }
 
 // MENU ----------------------------------------------------------------------------------------------------------------
@@ -1203,13 +1237,15 @@ void MainMenuScene::DrawAnalyzerPanel()
                 }
 
                 // sort asc or desc
-                std::ranges::sort(shown, [this](int a, int b) -> bool
+                std::ranges::sort(shown, [this](int _a, int _b) -> bool
                 {
-                    if (m_sortAscending)
-                    {
-                        return m_runFiles[a].name < m_runFiles[b].name;
-                    }
-                    return m_runFiles[a].name > m_runFiles[b].name;
+                    const std::string keyA = SHARED::RunTimestampKey(m_runFiles[_a].name);
+                    const std::string keyB = SHARED::RunTimestampKey(m_runFiles[_b].name);
+
+                    if (keyA != keyB) return m_sortAscending ? keyA < keyB : keyA > keyB;
+
+                    // tie break identical stambs
+                    return m_runFiles[_a].name < m_runFiles[_b].name;
                 });
 
                 for (int index : shown)
@@ -1244,8 +1280,8 @@ void MainMenuScene::DrawAnalyzerPanel()
                                 [](const ResultTile& tile) {
                                     return tile.colorIdx;
                                 });
-                            window.id    = m_nextResultId++;
-                            window.label = m_runFiles[index].name;
+                            window.id      = m_nextResultId++;
+                            window.label   = m_runFiles[index].name;
 
                             window.frameTimes.reserve(runData.samples.size());
                             window.simTimes.reserve(runData.samples.size());
@@ -1290,7 +1326,66 @@ void MainMenuScene::DrawAnalyzerPanel()
             m_sortAscending = true;
         if (SHARED::TabButton("DESCENDING", !m_sortAscending, ImVec2(-FLT_MIN, 0.0f)))
             m_sortAscending = false;
+
+        // Delete the selected run
+        const bool hasSelection = m_selectedRunIndex >= 0 &&
+                                  m_selectedRunIndex < static_cast<int>(m_runFiles.size());
+
+        ImGui::BeginDisabled(!hasSelection);
+        ImGui::PushStyleColor(ImGuiCol_Button,        ImVec4(0.55f, 0.12f, 0.12f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.75f, 0.16f, 0.16f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  ImVec4(0.85f, 0.20f, 0.20f, 1.0f));
+        if (ImGui::Button("DELETE", ImVec2(-FLT_MIN, 0.0f)))
+        {
+            ImGui::OpenPopup("Delete this run?##analyzeDelete");
+        }
+        ImGui::PopStyleColor(3);
+        ImGui::EndDisabled();
+
         ImGui::PopFont();
+
+        // Confirmation window
+        if (ImGui::BeginPopupModal("Delete this run?##analyzeDelete", nullptr,
+                                   ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            const bool valid = m_selectedRunIndex >= 0 &&
+                               m_selectedRunIndex < static_cast<int>(m_runFiles.size());
+
+            if (valid)
+            {
+                const RunEntry& entry = m_runFiles[m_selectedRunIndex];
+                ImGui::Text("Permanently delete:\n%s", SHARED::PrettyName(
+                    entry.name, entry.info.name, entry.info.scene).c_str());
+            }
+            ImGui::Separator();
+
+            if (ImGui::Button("Delete") && valid)
+            {
+                const RunEntry& entry = m_runFiles[m_selectedRunIndex];
+                auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+
+                if (fileSys.DeleteOutputFile(entry.relPath))
+                {
+                    // close any open result tile showing this run
+                    for (ResultTile& tile : m_openResults)
+                    {
+                        if (tile.label == entry.name) tile.open = false;
+                    }
+
+                    // refresh list
+                    m_runListDirty = true;
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
     }
     ImGui::End();
 }
@@ -1342,6 +1437,8 @@ void MainMenuScene::DrawResultWindows()
 
         // make tile movable resizable and collapsable
         if (ImGui::Begin(title.c_str(), &tile.open, ImGuiWindowFlags_NoSavedSettings))
+        {
+            // humongous draw call coz its statiiicc
             AT::DrawResultContent(
                 tile.runData,
                 tile.frameTimes,
@@ -1356,6 +1453,7 @@ void MainMenuScene::DrawResultWindows()
                 m_togglesFontSize,
                 m_useLog10,
                 m_graphByPathTime);
+        }
 
         // Check if user took control of the tile (clicked, collapsed, moved, etc)
         if (!apply && !tile.userMoved && !ImGui::IsWindowCollapsed())
@@ -1697,12 +1795,16 @@ void MainMenuScene::DrawComparePanel()
                     shown.push_back(run);
                 }
 
-                std::ranges::sort(shown, [this](int a, int b) {
-                    if (m_sortAscending)
-                    {
-                        return m_runFiles[a].name < m_runFiles[b].name;
-                    }
-                    return m_runFiles[a].name > m_runFiles[b].name;
+                // sort asc or desc
+                std::ranges::sort(shown, [this](int _a, int _b) -> bool
+                {
+                    const std::string keyA = SHARED::RunTimestampKey(m_runFiles[_a].name);
+                    const std::string keyB = SHARED::RunTimestampKey(m_runFiles[_b].name);
+
+                    if (keyA != keyB) return m_sortAscending ? keyA < keyB : keyA > keyB;
+
+                    // tie break identical stambs
+                    return m_runFiles[_a].name < m_runFiles[_b].name;
                 });
 
                 // Display entries as selectables and add if clicked

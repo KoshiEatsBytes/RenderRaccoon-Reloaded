@@ -100,6 +100,23 @@ namespace RR
         return std::string(buffer.begin(), buffer.end());
     }
 
+    bool FileSystem::DeleteOutputFile(const std::string &_relativePath) const
+    {
+        const fSysPath fullPath = GetOutputFolder() / _relativePath;
+
+        std::error_code error;
+        const bool removed = std::filesystem::remove(fullPath, error);
+
+        if (error)
+        {
+            Warn("[FILESYSTEM - DELETE] Could not delete '", fullPath, "': ", error.message());
+            return false;
+        }
+
+        // flase w/o error means was already gone
+        return removed;
+    }
+
     fSysPath FileSystem::GetExecutableFolder() const
     {
 #if defined _WIN32

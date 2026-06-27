@@ -35,6 +35,7 @@ namespace RR
             const std::vector<std::string>& _extensions = {}) const;
 
         std::string LoadOutputFileText(const std::string& _relativePath);
+        bool DeleteOutputFile(const std::string& _relativePath) const;
 
         fSysPath GetExecutableFolder() const;
         fSysPath GetAssetFolder() const;
