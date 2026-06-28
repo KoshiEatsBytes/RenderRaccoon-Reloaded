@@ -25,7 +25,7 @@ namespace RR
             for (int sx = 0; sx < _dim - 1; ++sx)
             {
                 const int cx[4] = {sx, sx + 1, sx + 1, sx};
-                const int cz[4] = {sx + 1, sz + 1, sz, sz};
+                const int cz[4] = {sz + 1, sz + 1, sz, sz};
 
                 const float layer = static_cast<float>(
                     GetBlockInfo(_block[sx + sz * _dim]).faceLayer[upFace]);

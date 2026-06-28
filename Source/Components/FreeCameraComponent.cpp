@@ -16,6 +16,7 @@ namespace RR
     void FreeCameraComponent::Init()
     {
         SetFOV(75.f);
+        SetFarPlane(15000);
     }
 
     void FreeCameraComponent::PreUpdate(float _deltaTime)

@@ -268,26 +268,32 @@ namespace RR
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
     {
-        auto eraseFar = [&](auto& _map, int _range)
-        {
-            for (auto it = _map.begin(); it != _map.end();)
-            {
-                const int dist = std::max(std::abs(it->first.x - _centre.x),
-                                          std::abs(it->first.z - _centre.z));
-
-                // Unload out of range
-                if (dist > _range)
-                    it = _map.erase(it);
-                else
-                    ++it;
-            }
-        };
-
         const int chunkRange = m_lodEnabled ? m_coreRadius + 1 : m_meshRadius + 1;
         const int tileRange  = m_meshRadius + 2;
 
-        eraseFar(m_chunks,   chunkRange);
-        eraseFar(m_lodTiles, tileRange);
+        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        {
+            const int dist = std::max(std::abs(it->first.x - _centre.x),
+                                      std::abs(it->first.z - _centre.z));
+
+            // Unload out of range
+            if (dist > chunkRange)
+                it = m_chunks.erase(it);
+            else
+                ++it;
+        }
+
+        // drop any that entered the core or left RD
+        for (auto it = m_lodTiles.begin(); it != m_lodTiles.end();)
+        {
+            const int dist = std::max(std::abs(it->first.x - _centre.x),
+                                      std::abs(it->first.z - _centre.z));
+
+            if (dist <= m_coreRadius || dist > tileRange)
+                it = m_lodTiles.erase(it);
+            else
+                ++it;
+        }
     }
 
     void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
