@@ -10,6 +10,7 @@
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkManager.h"
 #include "WorldGen/SurfaceLOD.hpp"
+#include "Render/Voxels/SurfaceMesher.h"
 #include "WorldGen/WorldGen.hpp"
 
 namespace SHARED
@@ -67,16 +68,26 @@ bool VoxelScene::Init()
     }
 
     // Chunk generator lambda
-    RR::ChunkGenerator generator = [this](RR::Chunk& chunk) {
-        WORLDGEN::GenerateColumn(chunk, m_genConfig);
+    RR::ChunkGenerator generator = [this](RR::Chunk& _chunk) {
+        WORLDGEN::GenerateColumn(_chunk, m_genConfig);
+    };
+
+    // LOD mesher lambda
+    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::MeshData
+    {
+        const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, m_genConfig);
+        const int skirt = 2 * (1 << _level);
+
+        return RR::MeshSurface(field.dim, _level, field.height, field.block, skirt);
     };
 
     // instantiate chunk manager with generator and mats
     m_chunkManager = std::make_unique<RR::ChunkManager>(
-        generator, m_voxelBlocksMat, m_voxelVegMat);
+        generator, lodMesher, m_voxelBlocksMat, m_voxelVegMat);
 
-    // Apply the run render distance
+    // apply run info settings
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
+    m_chunkManager->SetLodEnabled(m_runInfo.lod);
 
     // Set sky box color
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);

@@ -167,16 +167,18 @@ namespace WORLDGEN
     inline void ProveSurfaceMesher()
     {
         using RR::CHUNK::BLOCK;
-        const int dim = 5, level = 2;
+        const int dim = 5, level = 2, skirt = 8;
         const std::vector<int>   h(dim * dim, 80);
         const std::vector<BLOCK> b(dim * dim, BLOCK::GRASS);
 
-        const RR::MeshData m = RR::MeshSurface(dim, level, h, b);
+        const RR::MeshData m = RR::MeshSurface(dim, level, h, b, skirt);
 
         const std::size_t verts = m.vertices.size() / 9;
         const std::size_t quads = (dim - 1) * (dim - 1);
-
-        const bool ok = verts == quads * 4 && m.indices.size() == quads * 6;
+        const std::size_t segs  = (skirt > 0) ? 4 * (dim - 1) : 0;
+        const std::size_t expV  = quads * 4 + segs * 4;
+        const std::size_t expI  = quads * 6 + segs * 12;
+        const bool ok = (verts == expV) && (m.indices.size() == expI);
 
         if (ok)
             RR::Success("[SurfaceMesher] flat L2: ", quads, " quads -> ", verts, " verts / ", m.indices.size(), " indices");

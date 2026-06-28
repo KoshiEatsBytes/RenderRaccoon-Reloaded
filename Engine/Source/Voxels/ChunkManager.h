@@ -13,11 +13,14 @@
 
 namespace RR
 {
+    using LodMesher = std::function<MeshData(CHUNK::Coord, int)>;
+
     class Material;
     class ChunkManager
     {
     public:
-        ChunkManager(ChunkGenerator _generator, std::shared_ptr<Material> _blockMat,
+        ChunkManager(ChunkGenerator _generator, LodMesher _mesher,
+            std::shared_ptr<Material> _blockMat,
             std::shared_ptr<Material> _vegMat);
         ~ChunkManager();
 
@@ -31,6 +34,8 @@ namespace RR
         void SetRenderDistance(int _distance);
         int  GetRenderDistance() const;
 
+        void SetLodEnabled(bool _enabled);
+
         bool IsChunkMeshedAt(const vec3& _pos);
         bool IsStreamingIdle() const;
         float GetCoverage() const;
@@ -41,14 +46,21 @@ namespace RR
         void GenerateChunk(CHUNK::Coord _coord);
         void BuildChunkMesh(Chunk& _chunk);
 
-        int EnsureGenerated(CHUNK::Coord _centre);
-        int EnsureMeshed(CHUNK::Coord _centre);
-        bool NeighboursGenerated(CHUNK::Coord _coord);
+        int   EnsureGenerated(CHUNK::Coord _centre);
+        int   EnsureMeshed(CHUNK::Coord _centre);
+        int   EnsureTiles(CHUNK::Coord _centre);
+        bool  NeighboursGenerated(CHUNK::Coord _coord);
         float ComputeCoverage(CHUNK::Coord _centre) const;
+
+        int LevelForDistance(int _dist) const;
 
         Chunk* GetChunk(CHUNK::Coord _coord);
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
+
+        // Algorithms
+        ChunkGenerator m_generator;
+        LodMesher      m_lodMesher;
 
         // terrain/visual
         std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash> m_chunks;
@@ -58,21 +70,28 @@ namespace RR
         std::shared_ptr<Material> m_blockMat;
         std::shared_ptr<Material> m_vegMat;
 
-        ChunkGenerator m_generator;
         std::vector<CHUNK::Coord> m_genOffsets;
         int m_offsetsBuiltForRadius = -1;
 
         CHUNK::Coord m_lastCoords;
         bool  m_streamingIdle = false;
         bool  m_firstFrame    = true;
-        int   m_meshRadius    = 8;
         float m_coverage      = 1.0f;
 
         // Quality settings
         bool m_fancyLeaves = true;
+        bool m_lodEnabled  = false;
+
+        // RD settings
+        int m_meshRadius = 16; // total RD
+        int m_coreRadius = 16; // full detail RD
 
         // Per frame budget
         static constexpr int kGenBudget  = 1;
         static constexpr int kMeshBudget = 1;
+
+        // lod rings and budgets
+        static constexpr int kMaxLodLevel = 4;
+        static constexpr int kTileBudget  = 2;
     };
 }

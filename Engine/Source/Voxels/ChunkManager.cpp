@@ -23,10 +23,10 @@ namespace RR
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
-    ChunkManager::ChunkManager(ChunkGenerator _generator,
+    ChunkManager::ChunkManager(ChunkGenerator _generator, LodMesher _mesher,
         std::shared_ptr<Material> _blockMat,  std::shared_ptr<Material> _vegMat)
-        : m_blockMat(std::move(_blockMat)), m_vegMat(std::move(_vegMat)),
-          m_generator(std::move(_generator))
+        : m_generator(std::move(_generator)), m_lodMesher(std::move(_mesher)),
+          m_blockMat(std::move(_blockMat)), m_vegMat(std::move(_vegMat))
     {
     }
 
@@ -59,8 +59,9 @@ namespace RR
         // check budgets, if 0 CM idle
         const int generated = EnsureGenerated(centre);
         const int meshed    = EnsureMeshed(centre);
+        const int tiled     = EnsureTiles(centre);
 
-        if (generated == 0 && meshed == 0)
+        if (generated == 0 && meshed == 0 && tiled == 0)
         {
             m_streamingIdle = true;
             m_coverage      = 1.0f;
@@ -173,6 +174,12 @@ namespace RR
         return m_meshRadius;
     }
 
+    void ChunkManager::SetLodEnabled(bool _enabled)
+    {
+        m_lodEnabled = _enabled;
+        Clear();
+    }
+
     bool ChunkManager::IsChunkMeshedAt(const vec3& _pos)
     {
         const Chunk* chunk = GetChunk(WorldToChunk(_pos));
@@ -212,6 +219,24 @@ namespace RR
         return static_cast<float>(meshed) / static_cast<float>(total);
     }
 
+    int ChunkManager::LevelForDistance(int _dist) const
+    {
+        // return full detail chunk level if lod off or inner radius
+        if (!m_lodEnabled || _dist <= m_coreRadius) return 0;
+
+        int level = 1;
+        int edge  = m_coreRadius * 2;
+
+        // calculate level of stepping out from dist
+        while (_dist > edge && level < kMaxLodLevel)
+        {
+            edge *= 2;
+            level++;
+        }
+
+        return level;
+    }
+
     void ChunkManager::RebuildRingOffset()
     {
         m_genOffsets.clear();
@@ -243,8 +268,6 @@ namespace RR
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
     {
-        const int range = m_meshRadius + 2;
-
         auto eraseFar = [&](auto& _map, int _range)
         {
             for (auto it = _map.begin(); it != _map.end();)
@@ -260,8 +283,11 @@ namespace RR
             }
         };
 
-        eraseFar(m_chunks,   range);
-        eraseFar(m_lodTiles, range);
+        const int chunkRange = m_lodEnabled ? m_coreRadius + 1 : m_meshRadius + 1;
+        const int tileRange  = m_meshRadius + 2;
+
+        eraseFar(m_chunks,   chunkRange);
+        eraseFar(m_lodTiles, tileRange);
     }
 
     void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
@@ -293,15 +319,18 @@ namespace RR
         _chunk.state = CHUNK::STATE::MESHED;
     }
 
-
-
     int ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
     {
+        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
         int generated = 0;
+
         for (const CHUNK::Coord offset : m_genOffsets)
         {
             // discard if budget cap is overrun
             if (generated >= kGenBudget) break;
+
+            // check if in range
+            if (chessDist(offset) > chunkRange + 1) break;
 
             const int cx = _centre.x + offset.x;
             const int cz = _centre.z + offset.z;
@@ -318,14 +347,16 @@ namespace RR
 
     int ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
     {
+        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
         int meshed = 0;
+
         for (const CHUNK::Coord offset : m_genOffsets)
         {
             // discard if budget is overrun
             if (meshed >= kMeshBudget) break;
 
             // check if the chunk is in range
-            if (chessDist(offset) > m_meshRadius) break;
+            if (chessDist(offset) > chunkRange) break;
 
             const int cx = _centre.x + offset.x;
             const int cz = _centre.z + offset.z;
@@ -339,6 +370,52 @@ namespace RR
             ++meshed;
         }
         return meshed;
+    }
+
+    int ChunkManager::EnsureTiles(CHUNK::Coord _centre)
+    {
+        using namespace CHUNK;
+
+        if (!m_lodEnabled) return 0;
+
+        int built = 0;
+        for (const Coord offset : m_genOffsets)
+        {
+            // Dont stall on single thread
+            if (built >= kTileBudget) break;
+
+            const int dist = chessDist(offset);
+            // dont tile core chunks
+            if (dist <= m_coreRadius) continue;
+            if (dist >  m_meshRadius) break;
+
+            const int lodLevel = LevelForDistance(dist);
+            const Coord cords {
+                _centre.x + offset.x,
+                _centre.z + offset.z
+            };
+
+            const auto it = m_lodTiles.find(cords);
+            // already tiled
+            if (it != m_lodTiles.end() &&
+                it->second.level == lodLevel)
+                continue;
+
+            // extract mesh surface
+            const MeshData data = m_lodMesher(cords, lodLevel);
+
+            // mesh tile
+            LodTile tile;
+            tile.cords = cords;
+            tile.level = lodLevel;
+            tile.mesh  = std::make_unique<Mesh>(data.layout, data.vertices, data.indices);
+
+            // save meshed tile
+            m_lodTiles[cords] = std::move(tile);
+            ++built;
+        }
+
+        return built;
     }
 
     // Check neighboring chunks, if all generated return true
