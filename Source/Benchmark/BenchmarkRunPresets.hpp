@@ -10,11 +10,11 @@ namespace NAMING
     inline void AppendDetails(const RR::RunInfo& _runInfo, std::string& _str)
     {
         // Appends to str techniques used
-        if (_runInfo.lod)        _str.append("-LOD");
-        if (_runInfo.async)      _str.append("-MT");
-        if (_runInfo.scheduling) _str.append("-SM");
-        if (_runInfo.lodCache)   _str.append("-LC");
-        if (_runInfo.greedy)     _str.append("-GM");
+        if (_runInfo.lod)         _str.append("-LOD");
+        if (_runInfo.aggregation) _str.append("-LA");
+        if (_runInfo.greedy)      _str.append("-GM");
+        if (_runInfo.async)       _str.append("-MT");
+        if (_runInfo.scheduling)  _str.append("-SM");
 
         // and render dist
         _str.append("-R" + std::to_string(_runInfo.renderDistance));
@@ -36,14 +36,17 @@ namespace DETERMINISTIC
     {
         BASELINE,
 
+        // Rendering
         LOD_ONLY,
+        LOD_AGG,
+        LOD_GM,
+
+        // Scheduling
         MT_ONLY,
         SS_ONLY,
-        LOD_LC,
-        GM_ONLY,
 
-        ALL_RD32,
-        ALL_RD384,
+        ALL_BASE,
+        ALL_HORIZON,
 
         COUNT
     };
@@ -69,11 +72,11 @@ namespace DETERMINISTIC
             case SCENE::BASELINE:
             {
                 // Baseline no techniques
-                runInfo.lod        = false;
-                runInfo.async      = false;
-                runInfo.scheduling = false;
-                runInfo.lodCache   = false;
-                runInfo.greedy     = false;
+                runInfo.lod         = false;
+                runInfo.async       = false;
+                runInfo.scheduling  = false;
+                runInfo.aggregation = false;
+                runInfo.greedy      = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -86,11 +89,11 @@ namespace DETERMINISTIC
             case SCENE::LOD_ONLY:
             {
                 // LOD only
-                runInfo.lod        = true;
-                runInfo.async      = false;
-                runInfo.scheduling = false;
-                runInfo.lodCache   = false;
-                runInfo.greedy     = false;
+                runInfo.lod         = true;
+                runInfo.async       = false;
+                runInfo.scheduling  = false;
+                runInfo.aggregation = false;
+                runInfo.greedy      = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -103,11 +106,11 @@ namespace DETERMINISTIC
             case SCENE::MT_ONLY:
             {
                 // MT only
-                runInfo.lod        = false;
-                runInfo.async      = true;
-                runInfo.scheduling = false;
-                runInfo.lodCache   = false;
-                runInfo.greedy     = false;
+                runInfo.lod         = false;
+                runInfo.async       = true;
+                runInfo.scheduling  = false;
+                runInfo.aggregation = false;
+                runInfo.greedy      = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -120,11 +123,11 @@ namespace DETERMINISTIC
             case SCENE::SS_ONLY:
             {
                 // SS only
-                runInfo.lod        = false;
-                runInfo.async      = false;
-                runInfo.scheduling = true;
-                runInfo.lodCache   = false;
-                runInfo.greedy     = false;
+                runInfo.lod         = false;
+                runInfo.async       = false;
+                runInfo.scheduling  = true;
+                runInfo.aggregation = false;
+                runInfo.greedy      = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -134,14 +137,14 @@ namespace DETERMINISTIC
             }
             break;
 
-            case SCENE::LOD_LC:
+            case SCENE::LOD_AGG:
             {
-                // LOD and LC only
-                runInfo.lod        = true;
-                runInfo.async      = false;
-                runInfo.scheduling = false;
-                runInfo.lodCache   = true;
-                runInfo.greedy     = false;
+                // LOD + aggregation
+                runInfo.lod         = true;
+                runInfo.async       = false;
+                runInfo.scheduling  = false;
+                runInfo.aggregation = true;
+                runInfo.greedy      = false;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -150,14 +153,14 @@ namespace DETERMINISTIC
                 NAMING::AppendDetails(runInfo, scene);
             }
                 break;
-            case SCENE::GM_ONLY:
+            case SCENE::LOD_GM:
             {
-                // GM only
-                runInfo.lod        = false;
-                runInfo.async      = false;
-                runInfo.scheduling = false;
-                runInfo.lodCache   = false;
-                runInfo.greedy     = true;
+                // LOD + greedy
+                runInfo.lod         = true;
+                runInfo.async       = false;
+                runInfo.scheduling  = false;
+                runInfo.aggregation = false;
+                runInfo.greedy      = true;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -167,14 +170,14 @@ namespace DETERMINISTIC
             }
             break;
 
-            case SCENE::ALL_RD32:
+            case SCENE::ALL_BASE:
             {
                 // All techniques
-                runInfo.lod        = true;
-                runInfo.async      = true;
-                runInfo.scheduling = true;
-                runInfo.lodCache   = true;
-                runInfo.greedy     = true;
+                runInfo.lod         = true;
+                runInfo.async       = true;
+                runInfo.scheduling  = true;
+                runInfo.aggregation = true;
+                runInfo.greedy      = true;
                 // Render dist
                 runInfo.renderDistance = kBaselineRenderDistance;
 
@@ -184,14 +187,14 @@ namespace DETERMINISTIC
             }
             break;
 
-            case SCENE::ALL_RD384:
+            case SCENE::ALL_HORIZON:
             {
                 // All techniques + extreme RD
-                runInfo.lod        = true;
-                runInfo.async      = true;
-                runInfo.scheduling = true;
-                runInfo.lodCache   = true;
-                runInfo.greedy     = true;
+                runInfo.lod         = true;
+                runInfo.async       = true;
+                runInfo.scheduling  = true;
+                runInfo.aggregation = true;
+                runInfo.greedy      = true;
                 // Render dist
                 runInfo.renderDistance = kLodRenderDistance;
 

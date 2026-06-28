@@ -99,11 +99,11 @@ void Benchmark::Update(float _deltaTime)
             info.name       = "TestBenchWithPhysics";
             info.scene      = "PhysicsBench";
             info.seed       = 1234567890;
-            info.lod        = false;
-            info.async      = false;
-            info.scheduling = false;
-            info.lodCache   = false;
-            info.greedy     = false;
+            info.lod         = false;
+            info.aggregation = false;
+            info.greedy      = false;
+            info.async       = false;
+            info.scheduling  = false;
 
             m_bench->RequestStartLogging(info);
         }

@@ -827,17 +827,28 @@ void MainMenuScene::DrawOptimizationToggles()
     {
         ImGui::TableNextColumn();
         ImGui::Checkbox("Level Of Detail",  &m_runInfo.lod);
-        ImGui::TableNextColumn();
-        ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
-        ImGui::TableNextColumn();
-        ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
-        ImGui::TableNextColumn();
-        ImGui::Checkbox("LOD caching",      &m_runInfo.lodCache);
-        // lod cache can't exist without lod
-        if (m_runInfo.lodCache) m_runInfo.lod = true;
+
+        // block aggregation and greedy meshing if no LOD
+        if (!m_runInfo.lod)
+        {
+            m_runInfo.aggregation = false;
+            m_runInfo.greedy = false;
+        }
 
         ImGui::TableNextColumn();
+        ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
+        ImGui::BeginDisabled(!m_runInfo.lod);
+        ImGui::TableNextColumn();
         ImGui::Checkbox("Greedy Meshing",   &m_runInfo.greedy);
+        ImGui::EndDisabled();
+
+        // Scheduling optimizations
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
+        ImGui::BeginDisabled(!m_runInfo.lod);
+        ImGui::TableNextColumn();
+        ImGui::Checkbox("LOD Aggregation",  &m_runInfo.aggregation);
+        ImGui::EndDisabled();
         ImGui::EndTable();
     }
     ImGui::PopFont();
@@ -1164,11 +1175,11 @@ namespace AT
             ImGui::TextColored(color, "%s %s", _on ? "[x]" : "[ ]", _label);
         };
 
-        tag("LOD", info.lod);                ImGui::SameLine();
-        tag("Multi-Threading", info.async);  ImGui::SameLine();
-        tag("Scheduling", info.scheduling);  ImGui::SameLine();
-        tag("LOD Cache", info.lodCache);     ImGui::SameLine();
-        tag("Greedy", info.greedy);
+        tag("LOD", info.lod);                 ImGui::SameLine();
+        tag("LOD-Aggregation", info.aggregation); ImGui::SameLine();
+        tag("Greedy-Meshing", info.greedy);           ImGui::SameLine();
+        tag("Multi-Threading", info.async);   ImGui::SameLine();
+        tag("Smart-Scheduling", info.scheduling);
         ImGui::PopFont();
     }
 }
@@ -1744,10 +1755,10 @@ void MainMenuScene::DrawComparePanel()
         ImGui::TableSetupColumn("Stut", 0, 1.0f, CT::COL_STUT);
         ImGui::TableSetupColumn("Cov",  0, 1.0f, CT::COL_COV);
         ImGui::TableSetupColumn("LOD", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("LA",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("MT",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("SS",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("LC",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("RD",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("##rm", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
@@ -1907,10 +1918,10 @@ void MainMenuScene::DrawComparePanel()
                 };
 
                 techniques(info.lod);
+                techniques(info.aggregation);
+                techniques(info.greedy);
                 techniques(info.async);
                 techniques(info.scheduling);
-                techniques(info.lodCache);
-                techniques(info.greedy);
 
                 ImGui::TableNextColumn();
                 ImGui::TextColored(SHARED::kValueColor, "%d", info.renderDistance);

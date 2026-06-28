@@ -36,11 +36,11 @@ namespace RR
         bool        deterministic = false;
 
         // Optimizations
-        bool lod        = false;
-        bool async      = false;
-        bool scheduling = false;
-        bool lodCache   = false;
-        bool greedy     = false;
+        bool lod         = false;
+        bool aggregation = false;
+        bool greedy      = false;
+        bool async       = false;
+        bool scheduling  = false;
 
         // Render config
         int   renderDistance = 16;

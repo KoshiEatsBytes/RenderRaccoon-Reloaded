@@ -72,10 +72,10 @@ namespace RR
                     else if (key == "config")        runData.info.config        = std::string(val);
                     else if (key == "completed")     runData.info.completed     = (val == "1" || val == "true");
                     else if (key == "lod")           runData.info.lod           = (val == "1");
+                    else if (key == "aggregation")   runData.info.aggregation   = (val == "1");
+                    else if (key == "greedy")        runData.info.greedy        = (val == "1");
                     else if (key == "async")         runData.info.async         = (val == "1");
                     else if (key == "scheduling")    runData.info.scheduling    = (val == "1");
-                    else if (key == "lodCache")      runData.info.lodCache      = (val == "1");
-                    else if (key == "greedy")        runData.info.greedy        = (val == "1");
                     else if (key == "deterministic") runData.info.deterministic = (val == "1" || val == "true");
                     else if (key == "gpu")           runData.info.gpuName       = std::string(val);
                     else if (key == "cpu")           runData.info.cpuName       = std::string(val);
