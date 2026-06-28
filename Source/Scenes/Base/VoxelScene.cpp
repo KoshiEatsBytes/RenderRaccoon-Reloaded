@@ -9,6 +9,7 @@
 #include "Scenes/MainMenuScene.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkManager.h"
+#include "WorldGen/SurfaceLOD.hpp"
 #include "WorldGen/WorldGen.hpp"
 
 namespace SHARED
@@ -107,6 +108,9 @@ bool VoxelScene::Init()
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
 
+    // DELETE BEFORE RELEASE
+    WORLDGEN::ProveSurfaceLOD(m_genConfig);
+    WORLDGEN::ProveSurfaceMesher();
 
     OnInit();
     return true;

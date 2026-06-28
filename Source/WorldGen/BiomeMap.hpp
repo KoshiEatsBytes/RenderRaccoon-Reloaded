@@ -314,13 +314,24 @@ namespace WORLDGEN
         return out;
     }
 
+    inline BiomeGrid BuildBiomeGridSpan(int _originX, int _originZ, int _span, int _margin,
+        const WorldGenConfig& _config)
+    {
+        const int ox = _originX - _margin;
+        const int oz = _originZ - _margin;
+        const int w  = _span + 2 * _margin;
+
+        BiomeGrid grid {
+            ox, oz, w, FinalArea(ox, oz, w, w, _config)
+        };
+
+        return grid;
+    }
+
     // Build a chunk's biome grid
     inline BiomeGrid BuildBiomeGrid(int _chunkX, int _chunkZ, int _margin, const WorldGenConfig& _config)
     {
-        const int ox = _chunkX * RR::CHUNK::kSizeX - _margin;
-        const int oz = _chunkZ * RR::CHUNK::kSizeZ - _margin;
-        const int w  = RR::CHUNK::kSizeX + 2 * _margin;
-        const int h  = RR::CHUNK::kSizeZ + 2 * _margin;
-        return BiomeGrid{ ox, oz, w, FinalArea(ox, oz, w, h, _config) };
+        return BuildBiomeGridSpan(_chunkX * RR::CHUNK::kSizeX, _chunkZ * RR::CHUNK::kSizeZ,
+                              RR::CHUNK::kSizeX, _margin, _config);
     }
 }

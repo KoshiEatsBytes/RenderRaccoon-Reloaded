@@ -8,6 +8,7 @@
 #include "Render/Frustum.h"
 #include "Voxels/Chunk.h"
 #include "Voxels/ChunkData.h"
+#include "Voxels/LodTile.h"
 #include "Render/Voxels/ChunkMesher.h"
 
 namespace RR
@@ -49,7 +50,11 @@ namespace RR
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
 
+        // terrain/visual
         std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash> m_chunks;
+        std::unordered_map<CHUNK::Coord, LodTile, CHUNK::CoordHash>                m_lodTiles;
+
+        // mats
         std::shared_ptr<Material> m_blockMat;
         std::shared_ptr<Material> m_vegMat;
 

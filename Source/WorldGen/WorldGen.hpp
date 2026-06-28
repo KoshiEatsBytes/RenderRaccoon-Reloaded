@@ -21,8 +21,7 @@ namespace WORLDGEN
         int mesa  = 0;
     };
 
-    // Optimization to blend biomes more efficently
-    inline std::array<BlendSums, 256> BuildBlendSums(const BiomeGrid& _grid, const WorldGenConfig& _config)
+    inline std::vector<BlendSums> BuildBlendSumsSpan(const BiomeGrid& _grid, int _span, const WorldGenConfig& _config)
     {
         const int radius = _config.biomeBlendRadius;
         const int gw     = _grid.w;
@@ -66,16 +65,16 @@ namespace WORLDGEN
             }
         }
 
-        // horizontal pass
-        std::vector<int> hBase (16 * gw);
-        std::vector<int> hAmp  (16 * gw);
-        std::vector<int> hMtn  (16 * gw);
-        std::vector<int> hTaiga(16 * gw);
-        std::vector<int> hMesa (16 * gw);
+        // horizontal pass span wide
+        std::vector<int> hBase (_span * gw);
+        std::vector<int> hAmp  (_span * gw);
+        std::vector<int> hMtn  (_span * gw);
+        std::vector<int> hTaiga(_span * gw);
+        std::vector<int> hMesa (_span * gw);
 
         for (int gj = 0; gj < gw; ++gj)
         {
-            for (int x = 0; x < 16; ++x)
+            for (int x = 0; x < _span; ++x)
             {
                 int base  = 0;
                 int amp   = 0;
@@ -93,7 +92,7 @@ namespace WORLDGEN
                     mesa  += sMesa[i];
                 }
 
-                const int hi = x + gj * 16;
+                const int hi = x + gj * _span;
 
                 hBase[hi]  = base;
                 hAmp[hi]   = amp;
@@ -103,11 +102,11 @@ namespace WORLDGEN
             }
         }
 
-        // vertical pass
-        std::array<BlendSums, 256> out{};
-        for (int z = 0; z < 16; ++z)
+        // vertical pass - span x span
+        std::vector<BlendSums> out(static_cast<size_t>(_span) * _span);
+        for (int z = 0; z < _span; ++z)
         {
-            for (int x = 0; x < 16; ++x)
+            for (int x = 0; x < _span; ++x)
             {
                 int base  = 0;
                 int amp   = 0;
@@ -117,7 +116,8 @@ namespace WORLDGEN
 
                 for (int k = 0; k < win; ++k)
                 {
-                    const int hi = x + (z + k) * 16;
+                    const int hi = x + (z + k) * _span;
+
                     base  += hBase[hi];
                     amp   += hAmp[hi];
                     mtn   += hMtn[hi];
@@ -125,11 +125,17 @@ namespace WORLDGEN
                     mesa  += hMesa[hi];
                 }
 
-                out[x + z * 16] = { base, amp, mtn, taiga, mesa };
+                out[x + z * _span] = { base, amp, mtn, taiga, mesa };
             }
         }
 
         return out;
+    }
+
+    // Optimization to blend biomes more efficently
+    inline std::vector<BlendSums> BuildBlendSums(const BiomeGrid& _grid, const WorldGenConfig& _config)
+    {
+        return BuildBlendSumsSpan(_grid, RR::CHUNK::kSizeX, _config);
     }
 
     // Mountain influence at a column from the blend sums, 0 is lowland
@@ -573,7 +579,7 @@ namespace WORLDGEN
         const BiomeGrid grid = BuildBiomeGrid(_chunk.coord.x, _chunk.coord.z, margin, _config);
 
         // precompute every column's window sums once per chunk
-        const std::array<BlendSums, 256> sums = BuildBlendSums(grid, _config);
+        const std::vector<BlendSums> sums = BuildBlendSums(grid, _config);
         const int total = (2 * margin + 1) * (2 * margin + 1);
 
         for (int z = 0; z < kSizeZ; ++z)

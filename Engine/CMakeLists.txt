@@ -122,6 +122,9 @@ set(PROJECT_SOURCE_FILES
         Source/Render/Frustum.h
         Source/Render/Voxels/VoxelSkybox.cpp
         Source/Render/Voxels/VoxelSkybox.h
+        Source/Voxels/LodTile.h
+        Source/Render/Voxels/SurfaceMesher.cpp
+        Source/Render/Voxels/SurfaceMesher.h
 )
 
 # Compose application structure

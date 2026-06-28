@@ -104,6 +104,24 @@ namespace RR
             queue.Submit(command);
         }
 
+        // Distant LOD surface tiles
+        for (auto& [coord, tile] : m_lodTiles)
+        {
+            if (!tile.mesh) continue;
+            if (!IntersectsFrustum(coord)) continue;
+
+            auto model = glm::translate(mat4(1.0f),
+                vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
+
+            RenderCommand command;
+            command.material    = m_blockMat.get();
+            command.mesh        = tile.mesh.get();
+            command.modelMatrix = model;
+            command.color       = vec3(1.0f);
+            queue.Submit(command);
+        }
+
+
         // Render vegetation AFTER opaque blocks
         for (auto& [coord, chunk] : m_chunks)
         {
@@ -130,6 +148,7 @@ namespace RR
     {
         // Triggers regeneration from scratch
         m_chunks.clear();
+        m_lodTiles.clear();
         m_firstFrame = true;
     }
 
@@ -226,18 +245,23 @@ namespace RR
     {
         const int range = m_meshRadius + 2;
 
-        // Form an outer rings where chunks that fell out are unloaded
-        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        auto eraseFar = [&](auto& _map, int _range)
         {
-            const int dist = std::max(std::abs(it->first.x - _centre.x),
-                                      std::abs(it->first.z - _centre.z));
+            for (auto it = _map.begin(); it != _map.end();)
+            {
+                const int dist = std::max(std::abs(it->first.x - _centre.x),
+                                          std::abs(it->first.z - _centre.z));
 
-            // erase out of bound chunk
-            if (dist > range)
-                it = m_chunks.erase(it);
-            else
-                ++it;
-        }
+                // Unload out of range
+                if (dist > _range)
+                    it = _map.erase(it);
+                else
+                    ++it;
+            }
+        };
+
+        eraseFar(m_chunks,   range);
+        eraseFar(m_lodTiles, range);
     }
 
     void ChunkManager::GenerateChunk(CHUNK::Coord _coord)

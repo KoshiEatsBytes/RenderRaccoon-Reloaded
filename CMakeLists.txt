@@ -44,6 +44,7 @@ set(PROJECT_SOURCE_FILES
         Source/Scenes/MainMenuScene.cpp
         Source/Scenes/MainMenuScene.h
         Source/Benchmark/CameraPath.hpp
+        Source/WorldGen/SurfaceLOD.hpp
 )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SOURCE_FILES})
