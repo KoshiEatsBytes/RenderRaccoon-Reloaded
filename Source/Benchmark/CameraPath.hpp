@@ -258,21 +258,21 @@ namespace BENCH
                 PathSegment l1;
                 l1.move = PathSegment::MOVE::GOTO;
                 l1.target = vec3(600.f, 160.f, -600.f);
-                l1.speed = 45.f;
+                l1.speed = 70.f;
                 l1.look  = PathSegment::LOOK::FACE_TRAVEL;
                 path.Add(l1);
 
                 PathSegment look1;
                 look1.move = PathSegment::MOVE::HOLD;
-                look1.holdSeconds = 6.f;
+                look1.holdSeconds = 3.f;
                 look1.look = PathSegment::LOOK::ROTATE_YAW;
-                look1.yawSweepDeg = 360.f;
+                look1.yawSweepDeg = 180.f;
                 path.Add(look1);
 
                 PathSegment back;
                 back.move = PathSegment::MOVE::GOTO;
                 back.target = spawn;
-                back.speed = 45.f;
+                back.speed = 70.f;
                 back.look  = PathSegment::LOOK::FACE_TRAVEL;
                 path.Add(back);
             }
