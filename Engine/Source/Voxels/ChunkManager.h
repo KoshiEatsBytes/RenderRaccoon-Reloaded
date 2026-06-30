@@ -10,6 +10,7 @@
 #include "Voxels/ChunkData.h"
 #include "Voxels/LodTile.h"
 #include "Render/Voxels/ChunkMesher.h"
+#include "Render/Voxels/SurfaceMesher.h"
 
 namespace RR
 {

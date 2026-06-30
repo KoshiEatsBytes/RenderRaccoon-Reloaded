@@ -1,6 +1,7 @@
 
 #pragma once
 #include <vector>
+#include <climits>
 
 #include "WorldGen.hpp"
 #include "WorldGenConfig.h"
@@ -49,17 +50,53 @@ namespace WORLDGEN
 
         for (int sz = 0; sz < dim; ++sz)
         {
-            const int lz = sz * stride;
-
             for (int sx = 0; sx < dim; ++sx)
             {
-                const int lx = sx * stride;
-                const int wx = originX + lx;
-                const int wz = originZ + lz;
+                // forward footprint, coll this plateou covers
+                const int lxMin = sx * stride;
+                const int lzMin = sz * stride;
 
-                const BIOME      biome = grid.At(wx, wz);
-                const BlendSums& sum = sums[lx + lz * span];
-                const int        land = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
+                // scan stride, keep tallest column
+                int bestLand = INT_MIN;
+                int bestLx   = lxMin;
+                int bestLz   = lzMin;
+
+                for (int dz = 0; dz < stride; ++dz)
+                {
+                    const int lz = lzMin + dz;
+
+                    // only inclusive far edge
+                    if (lz >= span) break;
+
+                    for (int dx = 0; dx < stride; ++dx)
+                    {
+                        const int lx = lxMin + dx;
+
+                        if (lx >= span) break;
+
+                        const int wx = originX + lx;
+                        const int wz = originZ + lz;
+
+                        const BlendSums& sum  = sums[lx + lz * span];
+                        const int        land = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
+
+                        // Finds best for cell
+                        if (land > bestLand)
+                        {
+                            bestLand = land;
+                            bestLx   = lx;
+                            bestLz   = lz;
+                        }
+                    }
+                }
+
+                // classify winning column
+                const int   wx    = originX + bestLx;
+                const int   wz    = originZ + bestLz;
+                const BIOME biome = grid.At(wx, wz);
+                const int   land  = bestLand;
+
+                const BlendSums& sum = sums[bestLx + bestLz * span];
 
                 int   surfaceY = land;
                 BLOCK block;
@@ -98,11 +135,11 @@ namespace WORLDGEN
                     }
                 }
 
-                const int i = sx + sz * dim;
-                field.height[i] = surfaceY;
-                field.block[i]  = block;
-                field.side[i]   = side;
-                field.biome[i]  = biome;
+                const int idx = sx + sz * dim;
+                field.height[idx] = surfaceY;
+                field.block[idx]  = block;
+                field.side[idx]   = side;
+                field.biome[idx]  = biome;
             }
         }
 
@@ -193,7 +230,7 @@ namespace WORLDGEN
         // flat field: cells^2 tops + 4*cells perimeter skirts, all single-sided
         const std::size_t verts = m.vertices.size() / 9;
         const std::size_t quads = (dim - 1) * (dim - 1);
-        const std::size_t segs  = (skirt > 0) ? 4 * (dim - 1) : 0;
+        const std::size_t segs  = (skirt > 0) ? 2 * (dim - 1) : 0;
         const std::size_t expV  = (quads + segs) * 4;
         const std::size_t expI  = (quads + segs) * 6;
         const bool ok = (verts == expV) && (m.indices.size() == expI);

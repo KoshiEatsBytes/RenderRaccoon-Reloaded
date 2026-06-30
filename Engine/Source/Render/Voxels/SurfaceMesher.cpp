@@ -8,9 +8,10 @@ namespace RR
     using uInt32 = std::uint32_t;
 
     MeshData MeshSurface(int _dim, int _level,
-                         const std::vector<int>& _height,
-                         const std::vector<BLOCK>& _block,
-                         int _skirtDepth)
+                     const std::vector<int>& _height,
+                     const std::vector<BLOCK>& _block,
+                     const std::vector<BLOCK>& _side,     // <-- add
+                     int _skirtDepth)
     {
         MeshData out;
         out.layout = VoxelVertexLayout();
@@ -67,7 +68,7 @@ namespace RR
 
                 // Lookup texture layers
                 const auto topLayer  = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
-                const auto sideLayer = static_cast<float>(GetBlockInfo(block).faceLayer[sideFace]);
+                const auto sideLayer = static_cast<float>(GetBlockInfo(_side[cx + cz * _dim]).faceLayer[sideFace]);
 
                 // world space of this cell
                 const auto minX   = static_cast<float>(cx * stride);
