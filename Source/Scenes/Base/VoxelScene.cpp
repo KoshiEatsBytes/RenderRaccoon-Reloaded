@@ -132,6 +132,7 @@ bool VoxelScene::Init()
     // DELETE BEFORE RELEASE
     WORLDGEN::ProveSurfaceLOD(m_genConfig);
     WORLDGEN::ProveSurfaceMesher();
+    WORLDGEN::ProveRiverCarve(m_genConfig);
 
     OnInit();
     return true;

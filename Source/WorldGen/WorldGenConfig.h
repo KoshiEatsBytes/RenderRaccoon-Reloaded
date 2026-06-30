@@ -195,10 +195,12 @@ namespace WORLDGEN
         float ironThresh    = 0.88f;
         float copperThresh  = 0.85f;
 
-        // LOD VEG --------------------------------------------------------------------------------------------------
-        float lodCanopyCoverage = 0.5f;
-        int   proxyMaxLevel     = 2;     // canopy beyong this ring
-        float proxyKeepBase     = 1.0f;  // match core desnity
-        float proxyKeepFalloff  = 0.4f;
+        // LOD SETTINGS  --------------------------------------------------------------------------------------------------
+        float lodCanopyCoverage   = 0.5f;
+        int   proxyMaxLevel       = 2;     // canopy beyong this ring
+        float proxyKeepBase       = 1.0f;  // match core desnity
+        float proxyKeepFalloff    = 0.4f;
+        int lodRiverCarveMaxLevel = 2;    // carve rivers up to this LOD, after is coloration only
+        float lodRiverWetProfile  = 0.5f;
     };
 }

@@ -21,6 +21,12 @@ namespace WORLDGEN
         int mesa  = 0;
     };
 
+    struct RiverCarve
+    {
+        int terrHeight = 0;
+        int waterTop   = 0;
+    };
+
     inline std::vector<BlendSums> BuildBlendSumsSpan(const BiomeGrid& _grid, int _span, const WorldGenConfig& _config)
     {
         const int radius = _config.biomeBlendRadius;
@@ -422,6 +428,37 @@ namespace WORLDGEN
         return Smooth(1.0f - distBlocks / _config.riverHalfWidth);   
     }
 
+    inline RiverCarve OpenRiverCarve(int _land, float _valleyTerr, bool _boring,
+                                     BIOME _biome, const WorldGenConfig& _config)
+    {
+        RiverCarve out { _land, _config.waterLevel};
+
+        if (_valleyTerr <= 0.0f) return out;
+
+        const int shelfBed   = _config.riverLevel - _config.riverShelfDepth;
+        const int channelBed = _config.riverLevel - _config.riverDepth;
+
+        const float sharp = _biome == BIOME::MESA ? _config.riverBankSharpnessMesa
+                                                  : _config.riverBankSharpnessMtn;
+
+        float valleyTerr = _valleyTerr;
+        if (_boring)
+        {
+            valleyTerr = std::pow(_valleyTerr, sharp);
+        }
+
+        float bed = Lerp(static_cast<float>(_land), static_cast<float>(shelfBed), valleyTerr);
+        const float channelStep = std::clamp((_valleyTerr - _config.channelThreshold) /
+                                             (1.0f - _config.channelThreshold), 0.0f, 1.0f);
+
+        bed = Lerp(bed, static_cast<float>(channelBed), channelStep);
+
+        out.terrHeight = std::min(_land, static_cast<int>(bed));
+        out.waterTop   = std::max(_config.waterLevel, _config.riverLevel);
+        return out;
+
+    }
+
     inline void PlaceTrees(RR::Chunk& _chunk, const WorldGenConfig& _config)
     {
         using namespace RR::CHUNK;
@@ -612,7 +649,6 @@ namespace WORLDGEN
 
                 if (profile > 0.0f)
                 {
-                    const int shelfBed   = _config.riverLevel - _config.riverShelfDepth;
                     const int channelBed = _config.riverLevel - _config.riverDepth;
 
                     // Tunnel ceiling
@@ -636,14 +672,9 @@ namespace WORLDGEN
                     }
                     else if (valleyTerr > 0.0f && !walledUp)
                     {
-                        // ramp terrain down to the channel, flat water fill
-                        const float sharp = (biome == BIOME::MESA) ? _config.riverBankSharpnessMesa : _config.riverBankSharpnessMtn;
-                        const float vt    = boringRegion ? std::pow(valleyTerr, sharp) : valleyTerr;
-                        float bed = Lerp(static_cast<float>(land), static_cast<float>(shelfBed), vt);
-                        const float channelT = std::clamp((valleyTerr - _config.channelThreshold) / (1.0f - _config.channelThreshold), 0.0f, 1.0f);
-                        bed = Lerp(bed, static_cast<float>(channelBed), channelT);
-                        terrHeight = std::min(land, static_cast<int>(bed));
-                        waterTop   = std::max(_config.waterLevel, _config.riverLevel);
+                        const RiverCarve riverCarve = OpenRiverCarve(land, valleyTerr, boringRegion, biome, _config);
+                        terrHeight = riverCarve.terrHeight;
+                        waterTop   = riverCarve.waterTop;
                     }
                 }
                 const bool underWater = terrHeight < waterTop;

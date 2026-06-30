@@ -31,6 +31,7 @@ namespace WORLDGEN
     {
         using namespace RR::CHUNK;
         const bool collectProxies = _level >= 1 && _level <= _cfg.proxyMaxLevel;
+        const bool riverCarve     = _level >= 1 && _level <= _cfg.lodRiverCarveMaxLevel;
 
         const int stride  = 1 << _level;
         const int span    = kSizeX + 1;
@@ -67,6 +68,12 @@ namespace WORLDGEN
                 int bestLz     = lzMin;
                 int canopyArea = 0;
 
+                // river state
+                long  sumHeight    = 0;
+                float bestProfile  = 0.0f;
+                int   colCount     = 0;
+                bool  riverTouched = false;
+
                 const std::size_t treeStart = field.trees.size();
 
                 for (int dz = 0; dz < stride; ++dz)
@@ -85,8 +92,38 @@ namespace WORLDGEN
                         const int wx = originX + lx;
                         const int wz = originZ + lz;
 
-                        const BlendSums& sum  = sums[lx + lz * span];
-                        const int        land = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
+                        const BlendSums& sum       = sums[lx + lz * span];
+                        const int        land      = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
+                        const BIOME      currBiome = grid.At(wx, wz);
+
+                        int   riverHeight = land;
+                        float valleyTerr  = 0.0f;
+
+                        if (_level >= 1)
+                        {
+                            float profile = RiverProfile(wx, wz, _cfg);
+
+                            if (!_cfg.taigaRivers) profile *= 1.0f - static_cast<float>(sum.taiga) / total;
+
+                            if (profile > 0.0f)
+                            {
+                                const float riverAllow = std::clamp(static_cast<float>(_cfg.riverMaxHeight - land) /
+                                                                    _cfg.riverFade, 0.0f, 1.0f);
+                                valleyTerr = profile * riverAllow;
+
+                                if (riverCarve && valleyTerr > 0.0f)
+                                {
+                                    // save widest river point
+                                    bestProfile = std::max(bestProfile, valleyTerr);
+
+                                    // extract river, boring disabled
+                                    const RiverCarve rivCarve = OpenRiverCarve(land, valleyTerr, false, currBiome, _cfg);
+
+                                    riverHeight = rivCarve.terrHeight;
+                                    riverTouched = true;
+                                }
+                            }
+                        }
 
                         // Finds best for cell
                         if (land > bestLand)
@@ -96,11 +133,14 @@ namespace WORLDGEN
                             bestLz   = lz;
                         }
 
+                        // Soften water line
+                        sumHeight += riverHeight;
+                        ++colCount;
+
                         // Push back proxies into field
-                        if (land >= _cfg.waterLevel &&
+                        if (land >= _cfg.waterLevel && valleyTerr <= 0.0f &&
                             lx < kSizeX && lz < kSizeZ)
                         {
-                            const BIOME currBiome = grid.At(wx, wz);
 
                             if (TreeSpawnRoll(wx, wz, currBiome, _cfg))
                             {
@@ -137,15 +177,23 @@ namespace WORLDGEN
                     }
                 }
 
+                // recomputer render height if river
+                const int renderHeight = riverTouched ? static_cast<int>(sumHeight / std::max(colCount, 1))
+                                                      : bestLand;
+
                 // anchor this cells proxies to the plateau the skin renders
                 for (std::size_t i = treeStart; i < field.trees.size(); ++i)
-                    field.trees[i].baseY = bestLand;
+                {
+                    field.trees[i].baseY = renderHeight;
+                }
 
                 // classify winning column
-                const int   wx    = originX + bestLx;
-                const int   wz    = originZ + bestLz;
-                const BIOME biome = grid.At(wx, wz);
-                const int   land  = bestLand;
+                const int   wx          = originX + bestLx;
+                const int   wz          = originZ + bestLz;
+                const BIOME biome       = grid.At(wx, wz);
+                const int   land        = renderHeight;
+                const int   riverWaterY = std::max(_cfg.waterLevel, _cfg.riverLevel);
+                const bool  riverWater  = riverCarve && bestProfile >= _cfg.lodRiverWetProfile;
 
                 const BlendSums& sum = sums[bestLx + bestLz * span];
 
@@ -162,7 +210,15 @@ namespace WORLDGEN
                 STRATA_KIND kind = STRATA_KIND::FLAT;
                 BLOCK       flat = GetBiome(biome).subsurface;
 
-                if (land < _cfg.waterLevel)
+                // claffication head
+                if (riverWater)
+                {
+                    // flat ribbon at riverLevel
+                    surfaceY = riverWaterY;
+                    const bool frozen = _cfg.iceEnabled && (biome == BIOME::TAIGA || biome == BIOME::TUNDRA);
+                    block = frozen ? BLOCK::ICE : BLOCK::WATER;
+                }
+                else if (land < _cfg.waterLevel)
                 {
                     surfaceY = _cfg.waterLevel;
                     block    = BLOCK::WATER;
@@ -353,6 +409,32 @@ namespace WORLDGEN
             RR::Success("[SurfaceMesher] flat L2: ", quads, " quads -> ", verts, " verts / ", m.indices.size(), " indices");
         else
             RR::Error  ("[SurfaceMesher] bad counts: verts=", verts, " idx=", m.indices.size());
+    }
+
+    inline void ProveRiverCarve(const WorldGenConfig& _cfg)
+    {
+        const int channelBed = _cfg.riverLevel - _cfg.riverDepth;
+        const int wTop       = std::max(_cfg.waterLevel, _cfg.riverLevel);
+        bool ok = true;
+
+        // (1) no river -> untouched
+        { const RiverCarve r = OpenRiverCarve(80, 0.0f, false, BIOME::PLAINS, _cfg);
+            ok &= (r.terrHeight == 80 && r.waterTop == _cfg.waterLevel); }
+
+        // (2) faint bank -> dips toward shelf, stays dry (above water)
+        { const RiverCarve r = OpenRiverCarve(80, 0.2f, false, BIOME::PLAINS, _cfg);
+            ok &= (r.terrHeight < 80 && r.terrHeight > wTop); }
+
+        // (3) channel centre -> below the water surface, water at riverLevel
+        { const RiverCarve r = OpenRiverCarve(80, 1.0f, false, BIOME::PLAINS, _cfg);
+            ok &= (r.terrHeight <= channelBed && r.terrHeight < wTop && r.waterTop == wTop); }
+
+        // (4) clamp -> never raises terrain above land
+        { const RiverCarve r = OpenRiverCarve(55, 1.0f, false, BIOME::PLAINS, _cfg);
+            ok &= (r.terrHeight <= 55); }
+
+        ok ? RR::Success("[RiverCarve] regimes dry/shelf/channel/clamp OK")
+           : RR::Error  ("[RiverCarve] regime mismatch");
     }
 }
 
