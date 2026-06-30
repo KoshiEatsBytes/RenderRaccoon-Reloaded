@@ -202,5 +202,6 @@ namespace WORLDGEN
         float proxyKeepFalloff    = 0.4f;
         int lodRiverCarveMaxLevel = 2;    // carve rivers up to this LOD, after is coloration only
         float lodRiverWetProfile  = 0.5f;
+        float lodRiverPaintThresh = 0.5f;
     };
 }

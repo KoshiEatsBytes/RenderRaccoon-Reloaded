@@ -111,16 +111,19 @@ namespace WORLDGEN
                                                                     _cfg.riverFade, 0.0f, 1.0f);
                                 valleyTerr = profile * riverAllow;
 
-                                if (riverCarve && valleyTerr > 0.0f)
+                                if (valleyTerr > 0.0f)
                                 {
                                     // save widest river point
                                     bestProfile = std::max(bestProfile, valleyTerr);
 
-                                    // extract river, boring disabled
-                                    const RiverCarve rivCarve = OpenRiverCarve(land, valleyTerr, false, currBiome, _cfg);
+                                    if (riverCarve)
+                                    {
+                                        // extract river, boring disabled
+                                        const RiverCarve rivCarve = OpenRiverCarve(land, valleyTerr, false, currBiome, _cfg);
 
-                                    riverHeight = rivCarve.terrHeight;
-                                    riverTouched = true;
+                                        riverHeight = rivCarve.terrHeight;
+                                        riverTouched = true;
+                                    }
                                 }
                             }
                         }
@@ -159,7 +162,7 @@ namespace WORLDGEN
 
                                     field.trees.push_back(
                                         { lx, lz, land, trunkH, canopyH, shape.leafRadius,
-                                          shape.crownTopFrac, shape.log, GetVegTypes(currBiome).canopy });
+                                          shape.crownTopFrac, shape.log, GetVegTypes(currBiome).proxyCanopy });
                                 }
                             }
                             else if (collectProxies && CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
@@ -210,12 +213,15 @@ namespace WORLDGEN
                 STRATA_KIND kind = STRATA_KIND::FLAT;
                 BLOCK       flat = GetBiome(biome).subsurface;
 
+                const bool frozen     = _cfg.iceEnabled && (biome == BIOME::TAIGA || biome == BIOME::TUNDRA);
+                const bool riverPaint = _level > _cfg.lodRiverCarveMaxLevel && bestProfile >= _cfg.lodRiverPaintThresh;
+
                 // claffication head
                 if (riverWater)
                 {
                     // flat ribbon at riverLevel
                     surfaceY = riverWaterY;
-                    const bool frozen = _cfg.iceEnabled && (biome == BIOME::TAIGA || biome == BIOME::TUNDRA);
+
                     block = frozen ? BLOCK::ICE : BLOCK::WATER;
                 }
                 else if (land < _cfg.waterLevel)
@@ -254,7 +260,7 @@ namespace WORLDGEN
                 const BiomeVegTypes& veg = GetVegTypes(biome);
                 int canopyDepth = 0;
 
-                if (_level > _cfg.proxyMaxLevel)
+                if (!riverPaint && _level > _cfg.proxyMaxLevel)
                 {
                     // canopy raise per biome veg
                     if (veg.canopy != BLOCK::AIR && land >= _cfg.waterLevel &&
@@ -268,8 +274,22 @@ namespace WORLDGEN
                     }
                 }
 
-                const int idx     = sx + sz * dim;
-                const int colBase = idx * RR::kLodBandDepth;
+                // caluclates most top block
+                BLOCK topBlock = block;
+                if (riverPaint)
+                {
+                    if (frozen)
+                    {
+                        topBlock = BLOCK::ICE;
+                    }
+                    else
+                    {
+                        topBlock =  BLOCK::WATER;
+                    }
+                }
+
+                const int idx        = sx + sz * dim;
+                const int colBase    = idx * RR::kLodBandDepth;
 
                 // small helper for side bands
                 auto bandBlock = [&](int _depth) -> BLOCK
@@ -307,7 +327,7 @@ namespace WORLDGEN
 
                 // populate the rest
                 field.height[idx] = surfaceY;
-                field.block[idx]  = block;
+                field.block[idx]  = topBlock;
                 field.biome[idx]  = biome;
             }
         }
