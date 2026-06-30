@@ -17,6 +17,7 @@ namespace WORLDGEN
         int dim   = 0;
 
         std::vector<RR::CHUNK::BLOCK> block;
+        std::vector<RR::CHUNK::BLOCK> side;
         std::vector<BIOME>            biome;
         std::vector<int>              height;
     };
@@ -43,6 +44,7 @@ namespace WORLDGEN
         field.dim   = dim;
         field.height.resize(dim * dim);
         field.block.resize(dim * dim);
+        field.side.resize(dim * dim);
         field.biome.resize(dim * dim);
 
         for (int sz = 0; sz < dim; ++sz)
@@ -61,15 +63,21 @@ namespace WORLDGEN
 
                 int   surfaceY = land;
                 BLOCK block;
+                BLOCK side;
 
                 if (land < _cfg.waterLevel)
                 {
                     surfaceY = _cfg.waterLevel;
                     block    = BLOCK::WATER;
+                    side     = GetBiome(biome).subsurface;
                 }
                 else if (biome == BIOME::MOUNTAINS)
                 {
                     block = MountainSurface(land, wx, wz, _cfg);
+
+                    // snow above, and keep strata
+                    side  = (block == BLOCK::SNOW) ? BLOCK::SNOW
+                                                   : StoneAt(wx, land - 1, wz, _cfg);
                 }
                 else
                 {
@@ -78,14 +86,22 @@ namespace WORLDGEN
 
                     // survive terracotta bands
                     if (biome == BIOME::MESA && mesaCliff > 0.0f)
-                        block = MesaStrata(land, wx, wz, _cfg);
+                    {
+                        block = MesaStrata(land,     wx, wz, _cfg);
+                        side  = MesaStrata(land - 1, wx, wz, _cfg);
+                    }
                     else
+                    {
                         block = GetBiome(biome).surface;
+                        side  = GetBiome(biome).cliffEligible ? StoneAt(wx, land - 1, wz, _cfg)
+                                                              : GetBiome(biome).subsurface;
+                    }
                 }
 
                 const int i = sx + sz * dim;
                 field.height[i] = surfaceY;
                 field.block[i]  = block;
+                field.side[i]   = side;
                 field.biome[i]  = biome;
             }
         }
@@ -170,14 +186,16 @@ namespace WORLDGEN
         const int dim = 5, level = 2, skirt = 8;
         const std::vector<int>   h(dim * dim, 80);
         const std::vector<BLOCK> b(dim * dim, BLOCK::GRASS);
+        const std::vector<BLOCK> s(dim * dim, BLOCK::DIRT);
 
-        const RR::MeshData m = RR::MeshSurface(dim, level, h, b, skirt);
+        const RR::MeshData m = RR::MeshSurface(dim, level, h, b, s, skirt);
 
+        // flat field: cells^2 tops + 4*cells perimeter skirts, all single-sided
         const std::size_t verts = m.vertices.size() / 9;
         const std::size_t quads = (dim - 1) * (dim - 1);
         const std::size_t segs  = (skirt > 0) ? 4 * (dim - 1) : 0;
-        const std::size_t expV  = quads * 4 + segs * 4;
-        const std::size_t expI  = quads * 6 + segs * 12;
+        const std::size_t expV  = (quads + segs) * 4;
+        const std::size_t expI  = (quads + segs) * 6;
         const bool ok = (verts == expV) && (m.indices.size() == expI);
 
         if (ok)

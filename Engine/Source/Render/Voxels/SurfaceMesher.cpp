@@ -8,132 +8,129 @@ namespace RR
     using uInt32 = std::uint32_t;
 
     MeshData MeshSurface(int _dim, int _level,
-        const std::vector<int> &_height,
-        const std::vector<BLOCK> &_block,
-        int _skirtDepth)
+                         const std::vector<int>& _height,
+                         const std::vector<BLOCK>& _block,
+                         int _skirtDepth)
     {
         MeshData out;
         out.layout = VoxelVertexLayout();
 
-        const int stride = 1 << _level;
-        const int upFace = static_cast<int>(FACE::UP);
-        uInt32    base = 0;
+        const int stride   = 1 << _level;
+        const int cells    = _dim - 1;
+        const int upFace   = static_cast<int>(FACE::UP);
+        const int sideFace = static_cast<int>(FACE::NORTH);
+        uInt32    baseIndex     = 0;
 
-        // 4 verts per quad, not shared
-        for (int sz = 0; sz < _dim - 1; ++sz)
+        // Reserve memory upfront
+        const int maxQuads = cells * cells * 5;
+        out.vertices.reserve(maxQuads * 4 * 9);
+        out.indices.reserve(maxQuads * 6);
+
+        // Pushes vertex layout into result
+        auto pushVertex = [&](float _x,  float _y,  float _z,
+                          float _nx, float _ny, float _nz,
+                          float _u,  float _w,
+                          float _layer)
         {
-            for (int sx = 0; sx < _dim - 1; ++sx)
-            {
-                const int cx[4] = {sx, sx + 1, sx + 1, sx};
-                const int cz[4] = {sz + 1, sz + 1, sz, sz};
+            out.vertices.insert(out.vertices.end(), {
+            _x,  _y,   _z,
+            _nx, _ny, _nz,
+            _u,  _w,
+            _layer
+            });
+        };
 
-                const float layer = static_cast<float>(
-                    GetBlockInfo(_block[sx + sz * _dim]).faceLayer[upFace]);
-
-                for (int corner = 0; corner < 4; ++corner)
-                {
-                    const int   gx = cx[corner];
-                    const int   gz = cz[corner];
-                    const float lx = static_cast<float>(gx * stride);
-                    const float lz = static_cast<float>(gz * stride);
-                    const float ly = static_cast<float>(_height[gx + gz * _dim] + 1);
-
-                    // pos, local tile space
-                    out.vertices.push_back(lx);
-                    out.vertices.push_back(ly);
-                    out.vertices.push_back(lz);
-                    // normal facing up, top face
-                    out.vertices.push_back(0.0f);
-                    out.vertices.push_back(1.0f);
-                    out.vertices.push_back(0.0f);
-                    // uv, continuos per blocc
-                    out.vertices.push_back(lx);
-                    out.vertices.push_back(lz);
-                    // layer
-                    out.vertices.push_back(layer);
-                }
-
-                // mapping per face
-                out.indices.push_back(base + 0);
-                out.indices.push_back(base + 1);
-                out.indices.push_back(base + 2);
-                out.indices.push_back(base + 0);
-                out.indices.push_back(base + 2);
-                out.indices.push_back(base + 3);
-                base += 4;
-            }
-        }
-
-        if (_skirtDepth > 0)
+        // assembled quad from VL into output
+        auto pushQuad = [&]()
         {
-            const int sideFace = static_cast<int>(FACE::NORTH);
-
-            // Renders a chunk's skirt given the grid pos
-            auto emitSkirt = [&](int _gx0, int _gz0, int _gx1, int _gz1)
-            {
-                const float x0 = static_cast<float>(_gx0 * stride);
-                const float z0 = static_cast<float>(_gz0 * stride);
-                const float x1 = static_cast<float>(_gx1 * stride);
-                const float z1 = static_cast<float>(_gz1 * stride);
-
-                const float yT0 = static_cast<float>(_height[_gx0 + _gz0 * _dim] + 1);
-                const float yT1 = static_cast<float>(_height[_gx1 + _gz1 * _dim] + 1);
-
-                const float yB0 = yT0 - static_cast<float>(_skirtDepth);
-                const float yB1 = yT1 - static_cast<float>(_skirtDepth);
-
-                const float layer = static_cast<float>(
-                    GetBlockInfo(_block[_gx0 + _gz0 * _dim]).faceLayer[sideFace]);
-
-                const float px[4] = { x0, x1, x1, x0 };
-                const float pz[4] = { z0, z1, z1, z0 };
-                const float py[4] = { yT0, yT1, yB1, yB0 };
-                const float uu[4] = { 0.f, static_cast<float>(stride), static_cast<float>(stride), 0.f};
-                const float vv[4] = { 0.f, 0.f, static_cast<float>(stride), static_cast<float>(stride)};
-
-                for (int k = 0; k < 4; ++k)
+            out.indices.insert(out.indices.end(),
                 {
-                    // pos
-                    out.vertices.push_back(px[k]);
-                    out.vertices.push_back(py[k]);
-                    out.vertices.push_back(pz[k]);
-                    // nor
-                    out.vertices.push_back(0.f);
-                    out.vertices.push_back(1.f);
-                    out.vertices.push_back(0.f);
-                    // uv
-                    out.vertices.push_back(uu[k]);
-                    out.vertices.push_back(vv[k]);
-                    // layer
-                    out.vertices.push_back(layer);
-                }
+                    // tris n1
+                    baseIndex + 0,
+                    baseIndex + 1,
+                    baseIndex + 2,
+                    // this n2
+                    baseIndex + 0,
+                    baseIndex + 2,
+                    baseIndex + 3
+                });
+            baseIndex += 4;
+        };
 
-                // double sided face
-                out.indices.push_back(base+0);
-                out.indices.push_back(base+1);
-                out.indices.push_back(base+2);
-                out.indices.push_back(base+0);
-                out.indices.push_back(base+2);
-                out.indices.push_back(base+3);
-                out.indices.push_back(base+0);
-                out.indices.push_back(base+2);
-                out.indices.push_back(base+1);
-                out.indices.push_back(base+0);
-                out.indices.push_back(base+3);
-                out.indices.push_back(base+2);
-                base += 4;
-            };
-
-            for (int s = 0; s < _dim - 1; ++s)
+        // Iterate cells in heightmap grid
+        for (int cz = 0; cz < cells; ++cz)
+        {
+            for (int cx = 0; cx < cells; ++cx)
             {
-                // north
-                emitSkirt(s, 0, s + 1, 0);
-                // south
-                emitSkirt(s, _dim - 1, s + 1, _dim - 1);
-                // west
-                emitSkirt(0, s, 0, s + 1);
-                // east
-                emitSkirt(_dim - 1, s, _dim - 1, s + 1);
+                const int   height    = _height[cx + cz * _dim];
+                const BLOCK block     = _block[cx + cz * _dim];
+
+                // Lookup texture layers
+                const auto topLayer  = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
+                const auto sideLayer = static_cast<float>(GetBlockInfo(block).faceLayer[sideFace]);
+
+                // world space of this cell
+                const auto minX   = static_cast<float>(cx * stride);
+                const auto maxX   = static_cast<float>((cx + 1) * stride);
+                const auto minZ   = static_cast<float>(cz * stride);
+                const auto maxZ   = static_cast<float>((cz + 1) * stride);
+                const auto yTop = static_cast<float>(height + 1);
+
+                // flat top face
+                pushVertex(minX, yTop, maxZ, 0, 1, 0, minX, maxZ, topLayer);
+                pushVertex(maxX, yTop, maxZ, 0, 1, 0, maxX, maxZ, topLayer);
+                pushVertex(maxX, yTop, minZ, 0, 1, 0, maxX, minZ, topLayer);
+                pushVertex(minX, yTop, minZ, 0, 1, 0, minX, minZ, topLayer);
+                pushQuad();
+
+                // get height of neighbor cell, drop a skirt if out of bounds
+                auto neighbourHeight = [&](int _nx, int _nz) -> int
+                {
+                    if (_nx<0 || _nz<0 || _nx>=_dim || _nz>=_dim)
+                    {
+                        return height - _skirtDepth;
+                    }
+
+                    return _height[_nx + _nz*_dim];
+                };
+
+                auto pushRiser = [&](float _ax, float _az, float _uA,
+                                     float _bx, float _bz, float _uB,
+                                     float _nx, float _ny, float _nz,
+                                     float _bottomY) -> void
+                {
+                    pushVertex(_ax, _bottomY, _az,  _nx, _ny, _nz,  _uA, _bottomY,  sideLayer);
+                    pushVertex(_bx, _bottomY, _bz,  _nx, _ny, _nz,  _uB, _bottomY,  sideLayer);
+                    pushVertex(_bx, yTop,    _bz,  _nx, _ny, _nz,  _uB, yTop,     sideLayer);
+                    pushVertex(_ax, yTop,    _az,  _nx, _ny, _nz,  _uA, yTop,     sideLayer);
+                    pushQuad();
+                };
+
+                // push a riser wherever the neighbour is lower. Off-tile neighbours
+                // +X
+                if (const int neighbour = neighbourHeight(cx + 1, cz); neighbour < height)
+                {
+                    pushRiser(maxX, maxZ, maxZ,  maxX, minZ, minZ,   1, 0,  0,
+                        static_cast<float>(neighbour + 1));
+                }
+                // -X
+                if (const int neighbour = neighbourHeight(cx - 1, cz); neighbour < height)
+                {
+                    pushRiser(minX, minZ, minZ,  minX, maxZ, maxZ,  -1, 0,  0,
+                        static_cast<float>(neighbour + 1));
+                }
+                // +Z
+                if (const int neighbour = neighbourHeight(cx, cz + 1); neighbour < height)
+                {
+                    pushRiser(minX, maxZ, minX,  maxX, maxZ, maxX,   0, 0,  1,
+                        static_cast<float>(neighbour + 1));
+                }
+                // -Z
+                if (const int neighbour = neighbourHeight(cx, cz - 1); neighbour < height)
+                {
+                    pushRiser(maxX, minZ, maxX,  minX, minZ, minX,   0, 0, -1,
+                        static_cast<float>(neighbour + 1));
+                }
             }
         }
 

@@ -12,5 +12,6 @@ namespace RR
     MeshData MeshSurface(int _dim, int _level,
         const std::vector<int>& _height,
         const std::vector<CHUNK::BLOCK>& _block,
+        const std::vector<CHUNK::BLOCK>& _side,
         int _skirtDepth = 0);
 }

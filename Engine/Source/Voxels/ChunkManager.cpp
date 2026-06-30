@@ -23,6 +23,7 @@ namespace RR
 
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
+    // Inject generator and mesher as lambdas, thread safe
     ChunkManager::ChunkManager(ChunkGenerator _generator, LodMesher _mesher,
         std::shared_ptr<Material> _blockMat,  std::shared_ptr<Material> _vegMat)
         : m_generator(std::move(_generator)), m_lodMesher(std::move(_mesher)),
@@ -200,23 +201,33 @@ namespace RR
     // scan the loaded chunks and count those meshed within the mesh radius.
     float ChunkManager::ComputeCoverage(CHUNK::Coord _centre) const
     {
+        // mesh range
         const int span  = 2 * m_meshRadius + 1;
-        // Mesh in range size
-        const int total = span * span;
+        const int total = span* span;
+
         if (total <= 0) return 1.0f;
 
-        int meshed = 0;
-        for (const auto& [coord, chunk] : m_chunks)
+        int covered = 0;
+        // coverage of core chunks
+        for (const auto& [cords, chunk] : m_chunks)
         {
-            if (chunk->state != CHUNK::STATE::MESHED) continue;
-
-            const int dist = std::max(std::abs(coord.x - _centre.x),
-                                      std::abs(coord.z - _centre.z));
-
-            if (dist <= m_meshRadius) ++meshed;
+            if (std::max(std::abs(cords.x - _centre.x), std::abs(cords.z - _centre.z)) <= m_meshRadius &&
+                chunk->state == CHUNK::STATE::MESHED)
+            {
+                ++covered;
+            }
+        }
+        // Coverage of lod tiles
+        for (const auto& [cords, tile] : m_lodTiles)
+        {
+            if (std::max(std::abs(cords.x - _centre.x), std::abs(cords.z - _centre.z)) <= m_meshRadius &&
+                tile.mesh)
+            {
+                ++covered;
+            }
         }
 
-        return static_cast<float>(meshed) / static_cast<float>(total);
+        return static_cast<float>(covered) / static_cast<float>(total);
     }
 
     int ChunkManager::LevelForDistance(int _dist) const
@@ -271,6 +282,7 @@ namespace RR
         const int chunkRange = m_lodEnabled ? m_coreRadius + 1 : m_meshRadius + 1;
         const int tileRange  = m_meshRadius + 2;
 
+        // unload far chunks
         for (auto it = m_chunks.begin(); it != m_chunks.end();)
         {
             const int dist = std::max(std::abs(it->first.x - _centre.x),

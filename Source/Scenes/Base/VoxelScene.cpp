@@ -76,9 +76,10 @@ bool VoxelScene::Init()
     RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::MeshData
     {
         const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, m_genConfig);
-        const int skirt = 2 * (1 << _level);
+        // skirt size to cover holes, tweak later
+        const int skirt = 8 * (1 << _level);
 
-        return RR::MeshSurface(field.dim, _level, field.height, field.block, skirt);
+        return RR::MeshSurface(field.dim, _level, field.height, field.block, field.side, skirt);
     };
 
     // instantiate chunk manager with generator and mats
