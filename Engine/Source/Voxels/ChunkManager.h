@@ -48,12 +48,16 @@ namespace RR
         void SetRingGrowth(float _growth);
         void SetMaxLevel(int _level);
 
+        // Pure-voxel core radius, lod needs higher
+        static constexpr int kDefaultCoreRadius = 16;
+
         bool IsChunkMeshedAt(const vec3& _pos);
         bool IsStreamingIdle() const;
         float GetCoverage() const;
 
     private:
         void RebuildRingOffset();
+        void NormalizeRanges();
         void UnloadFar(CHUNK::Coord _centre);
         void GenerateChunk(CHUNK::Coord _coord);
         void BuildChunkMesh(Chunk& _chunk);
@@ -96,7 +100,7 @@ namespace RR
 
         // RD settings
         int m_meshRadius = 16; // total RD
-        int m_coreRadius = 16; // full detail RD
+        int m_coreRadius = kDefaultCoreRadius; // full detail RD
 
         // Lod ring shaping
         float m_ringGrowth = 2.f;

@@ -8,6 +8,7 @@
 
 #include "Scenes/MainMenuScene.h"
 
+#include "Voxels/ChunkManager.h"
 #include "BenchmarkScene.h"
 #include "FreeRoamScene.h"
 #include "imgui.h"
@@ -893,14 +894,14 @@ void MainMenuScene::DrawRenderDistance()
     SHARED::CenteredText("RENDER DISTANCE");
     ImGui::Separator();
     ImGui::Spacing();
-
-    // Only unlock extra chungs with LOD enabled
+    
     const int maxRD = m_runInfo.lod ? 384 : 32;
-    m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, 2, maxRD);
+    const int minRD = m_runInfo.lod ? 2 * RR::ChunkManager::kDefaultCoreRadius : 2;
+    m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, minRD, maxRD);
 
     //ImGui::TextUnformatted("Custom Render Distance:");
     ImGui::SetNextItemWidth(-FLT_MIN);
-    ImGui::SliderInt("##render_distance", &m_runInfo.renderDistance, 2, maxRD,
+    ImGui::SliderInt("##render_distance", &m_runInfo.renderDistance, minRD, maxRD,
         "%d chunks", ImGuiSliderFlags_AlwaysClamp);
 }
 

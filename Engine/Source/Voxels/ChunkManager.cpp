@@ -179,6 +179,7 @@ namespace RR
     void ChunkManager::SetRenderDistance(int _distance)
     {
         m_meshRadius = _distance;
+        NormalizeRanges();
     }
 
     int ChunkManager::GetRenderDistance() const
@@ -189,13 +190,22 @@ namespace RR
     void ChunkManager::SetLodEnabled(bool _enabled)
     {
         m_lodEnabled = _enabled;
+        NormalizeRanges();
         Clear();
     }
 
     void ChunkManager::SetCoreRadius(int _radius)
     {
         m_coreRadius = _radius;
+        NormalizeRanges();
         Clear();
+    }
+
+    // LOD needs at least one ringn RD must exceed the pure-voxel core, else the tile band
+    void ChunkManager::NormalizeRanges()
+    {
+        if (m_lodEnabled && m_meshRadius <= m_coreRadius)
+            m_meshRadius = m_coreRadius + 1;
     }
 
     void ChunkManager::SetRingGrowth(float _growth)
