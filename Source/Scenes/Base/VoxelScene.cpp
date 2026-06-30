@@ -67,6 +67,12 @@ bool VoxelScene::Init()
         assert(vegArr && vegArr->GetLayerCount() == RR::CHUNK::BLOCKTEX::COUNT);
     }
 
+    // Threshold in between colors start dissolving and are fully dissolved
+    constexpr float flatStart = 384.f; // 16 chunks
+    constexpr float flatEnd   = 768.f; // 48 chunks
+    m_voxelBlocksMat->SetParam("uFlatStart", flatStart);
+    m_voxelBlocksMat->SetParam("uFlatEnd",   flatEnd);
+
     // Chunk generator lambda
     RR::ChunkGenerator generator = [this](RR::Chunk& _chunk) {
         WORLDGEN::GenerateColumn(_chunk, m_genConfig);

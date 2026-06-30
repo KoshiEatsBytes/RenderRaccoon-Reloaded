@@ -234,7 +234,8 @@ namespace RR
                                         t[2].get<float>());
                         }
 
-                        result->SetParam("uTint[" + std::to_string(i)+ "]", tint);
+                        result->SetParam("uTint[" + std::to_string(i) + "]", tint);
+                        result->SetParam("uAvgColor[" + std::to_string(i) + "]", arrayTex->GetAvgColor(i));
                     }
                 }
             }

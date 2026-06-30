@@ -43,6 +43,9 @@ namespace RR
         glBindTexture(GL_TEXTURE_2D_ARRAY, id);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+        // for colors avg
+        std::vector<vec3> avgColors;
+
         for (int i = 0; i < layerCount; i++)
         {
             // Check if file is valid, if not abort
@@ -96,6 +99,16 @@ namespace RR
                 i, baseWidth, baseHeight, 1, GL_RGBA,
                 GL_UNSIGNED_BYTE, data);
 
+            vec3 sum {0.0f};
+            const int texels = width * height;
+            for (int pix = 0; pix < texels; ++pix)
+            {
+                sum.r += static_cast<float>(data[pix * 4 + 0]);
+                sum.g += static_cast<float>(data[pix * 4 + 1]);
+                sum.b += static_cast<float>(data[pix * 4 + 2]);
+            }
+            avgColors.push_back(sum / (static_cast<float>(texels) * 255.0f));
+
             stbi_image_free(data);
         }
 
@@ -112,8 +125,19 @@ namespace RR
         result->m_layerCount = layerCount;
         result->m_width      = baseWidth;
         result->m_height     = baseHeight;
+        result->m_avgColors  = std::move(avgColors);
 
         return result;
+    }
+
+    const std::vector<vec3>& TextureArray::GetAvgColors() const
+    {
+        return m_avgColors;
+    }
+
+    vec3 TextureArray::GetAvgColor(int _index) const
+    {
+        return m_avgColors[_index];
     }
 
     GLuint TextureArray::GetTextureID() const
