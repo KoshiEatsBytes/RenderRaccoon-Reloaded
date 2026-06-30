@@ -35,7 +35,11 @@ namespace RR
         void SetRenderDistance(int _distance);
         int  GetRenderDistance() const;
 
+        // Lod tuning
         void SetLodEnabled(bool _enabled);
+        void SetCoreRadius(int _radius);
+        void SetRingGrowth(float _growth);
+        void SetMaxLevel(int _level);
 
         bool IsChunkMeshedAt(const vec3& _pos);
         bool IsStreamingIdle() const;
@@ -87,12 +91,15 @@ namespace RR
         int m_meshRadius = 16; // total RD
         int m_coreRadius = 16; // full detail RD
 
+        // Lod ring shaping
+        float m_ringGrowth = 2.0f;
+        int   m_maxLevel = 4;
+
         // Per frame budget
         static constexpr int kGenBudget  = 1;
         static constexpr int kMeshBudget = 1;
 
         // lod rings and budgets
-        static constexpr int kMaxLodLevel = 4;
         static constexpr int kTileBudget  = 2;
     };
 }

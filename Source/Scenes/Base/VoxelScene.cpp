@@ -79,7 +79,7 @@ bool VoxelScene::Init()
         // skirt size to cover holes, tweak later
         const int skirt = 8 * (1 << _level);
 
-        return RR::MeshSurface(field.dim, _level, field.height, field.block, field.side, skirt);
+        return RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn, skirt);
     };
 
     // instantiate chunk manager with generator and mats

@@ -181,6 +181,24 @@ namespace RR
         Clear();
     }
 
+    void ChunkManager::SetCoreRadius(int _radius)
+    {
+        m_coreRadius = _radius;
+        Clear();
+    }
+
+    void ChunkManager::SetRingGrowth(float _growth)
+    {
+        m_ringGrowth = _growth;
+        Clear();
+    }
+
+    void ChunkManager::SetMaxLevel(int _level)
+    {
+        m_maxLevel = _level;
+        Clear();
+    }
+
     bool ChunkManager::IsChunkMeshedAt(const vec3& _pos)
     {
         const Chunk* chunk = GetChunk(WorldToChunk(_pos));
@@ -232,17 +250,17 @@ namespace RR
 
     int ChunkManager::LevelForDistance(int _dist) const
     {
-        // return full detail chunk level if lod off or inner radius
+        // full detail in the core, or whenever lod is off
         if (!m_lodEnabled || _dist <= m_coreRadius) return 0;
 
-        int level = 1;
-        int edge  = m_coreRadius * 2;
+        int   level = 1;
+        float edge  = m_coreRadius * m_ringGrowth;   // outer edge of ring 1
 
-        // calculate level of stepping out from dist
-        while (_dist > edge && level < kMaxLodLevel)
+        // step outward by the growth factor until the ring contains _dist
+        while (_dist > static_cast<int>(edge) && level < m_maxLevel)
         {
-            edge *= 2;
-            level++;
+            edge *= m_ringGrowth;
+            ++level;
         }
 
         return level;

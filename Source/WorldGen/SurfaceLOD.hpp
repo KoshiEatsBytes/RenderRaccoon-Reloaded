@@ -18,7 +18,7 @@ namespace WORLDGEN
         int dim   = 0;
 
         std::vector<RR::CHUNK::BLOCK> block;
-        std::vector<RR::CHUNK::BLOCK> side;
+        std::vector<RR::CHUNK::BLOCK> sideColumn;
         std::vector<BIOME>            biome;
         std::vector<int>              height;
     };
@@ -45,7 +45,7 @@ namespace WORLDGEN
         field.dim   = dim;
         field.height.resize(dim * dim);
         field.block.resize(dim * dim);
-        field.side.resize(dim * dim);
+        field.sideColumn.resize(dim * dim * RR::kLodBandDepth);
         field.biome.resize(dim * dim);
 
         for (int sz = 0; sz < dim; ++sz)
@@ -100,45 +100,83 @@ namespace WORLDGEN
 
                 int   surfaceY = land;
                 BLOCK block;
-                BLOCK side;
+
+                enum STRATA_KIND
+                {
+                    FLAT,
+                    STONE,
+                    MESA_BANDS
+                };
+
+                STRATA_KIND kind = STRATA_KIND::FLAT;
+                BLOCK       flat = GetBiome(biome).subsurface;
 
                 if (land < _cfg.waterLevel)
                 {
                     surfaceY = _cfg.waterLevel;
                     block    = BLOCK::WATER;
-                    side     = GetBiome(biome).subsurface;
                 }
                 else if (biome == BIOME::MOUNTAINS)
                 {
                     block = MountainSurface(land, wx, wz, _cfg);
 
                     // snow above, and keep strata
-                    side  = (block == BLOCK::SNOW) ? BLOCK::SNOW
-                                                   : StoneAt(wx, land - 1, wz, _cfg);
+                    kind = STRATA_KIND::STONE;
                 }
                 else
                 {
                     const float mesaMask  = MesaMask(sum, total, _cfg);
                     const float mesaCliff = ApronMask(mesaMask, _cfg.mesaApron, _cfg.mesaApronThresh);
 
-                    // survive terracotta bands
                     if (biome == BIOME::MESA && mesaCliff > 0.0f)
                     {
-                        block = MesaStrata(land,     wx, wz, _cfg);
-                        side  = MesaStrata(land - 1, wx, wz, _cfg);
+                        block = MesaStrata(land, wx, wz, _cfg);
+                        kind = STRATA_KIND::MESA_BANDS;
                     }
                     else
                     {
                         block = GetBiome(biome).surface;
-                        side  = GetBiome(biome).cliffEligible ? StoneAt(wx, land - 1, wz, _cfg)
-                                                              : GetBiome(biome).subsurface;
+
+                        if (GetBiome(biome).cliffEligible)
+                        {
+                            kind = STRATA_KIND::STONE;
+                        }
                     }
                 }
 
-                const int idx = sx + sz * dim;
+                const int idx     = sx + sz * dim;
+                const int colBase = idx * RR::kLodBandDepth;
+
+                // small helper for side bands
+                auto bandBlock = [&](int _depth) -> BLOCK
+                {
+                    const int worldY = surfaceY - _depth;
+
+                    switch (kind)
+                    {
+                        case STONE:
+                            return StoneAt(wx, worldY, wz, _cfg);
+
+                        case MESA_BANDS:
+                            return MesaStrata(worldY, wx, wz, _cfg);
+
+                        default:
+                            return flat;
+                    }
+                };
+
+                // Inject sides into field, 0 is surface block
+                field.sideColumn[colBase] = block;
+
+                const int fillDepth = _level <= 1 ? RR::kLodBandDepth : 2;
+                for (int depth = 1; depth < fillDepth; ++depth)
+                {
+                    field.sideColumn[colBase + depth] = bandBlock(depth);
+                }
+
+                // populate the rest
                 field.height[idx] = surfaceY;
                 field.block[idx]  = block;
-                field.side[idx]   = side;
                 field.biome[idx]  = biome;
             }
         }
@@ -223,7 +261,8 @@ namespace WORLDGEN
         const int dim = 5, level = 2, skirt = 8;
         const std::vector<int>   h(dim * dim, 80);
         const std::vector<BLOCK> b(dim * dim, BLOCK::GRASS);
-        const std::vector<BLOCK> s(dim * dim, BLOCK::DIRT);
+        const std::vector<BLOCK> s(dim*dim*RR::kLodBandDepth, BLOCK::DIRT);
+
 
         const RR::MeshData m = RR::MeshSurface(dim, level, h, b, s, skirt);
 
