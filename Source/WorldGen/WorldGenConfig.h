@@ -196,9 +196,9 @@ namespace WORLDGEN
         float copperThresh  = 0.85f;
 
         // LOD VEG --------------------------------------------------------------------------------------------------
-        float lodCanopyThresh = 0.95f;
-        int   proxyMaxLevel   = 2;     // canopy beyong this ring
-        float proxyKeepBase   = 1.0f;  // match core desnity
-        float proxyKeepFalloff= 0.4f;
+        float lodCanopyCoverage = 0.5f;
+        int   proxyMaxLevel     = 2;     // canopy beyong this ring
+        float proxyKeepBase     = 1.0f;  // match core desnity
+        float proxyKeepFalloff  = 0.4f;
     };
 }

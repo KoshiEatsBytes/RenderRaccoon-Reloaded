@@ -11,15 +11,18 @@ namespace RR
     constexpr int kLodBandDepth = 32;
     // how many steps
     constexpr int kLodBandStep  = 1;
-    constexpr int kProxyWidth = 2;
-
     struct LodTreeProxy
     {
         int localX;
         int localZ;
         int baseY;
-        int height;
+        int trunkHeight;    // visible log below the canopy
+        int canopyHeight;   // foliage height
+        int radius;         // crown half ehgith 
 
+        float crownTopFrac; // crown top width
+
+        CHUNK::BLOCK log;
         CHUNK::BLOCK canopy;
     };
 

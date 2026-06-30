@@ -2,6 +2,7 @@
 #pragma once
 #include <vector>
 #include <climits>
+#include <algorithm>
 
 #include "WorldGen.hpp"
 #include "WorldGenConfig.h"
@@ -61,9 +62,10 @@ namespace WORLDGEN
                 const int lzMin = sz * stride;
 
                 // scan stride, keep tallest column
-                int bestLand = INT_MIN;
-                int bestLx   = lxMin;
-                int bestLz   = lzMin;
+                int bestLand   = INT_MIN;
+                int bestLx     = lxMin;
+                int bestLz     = lzMin;
+                int canopyArea = 0;
 
                 for (int dz = 0; dz < stride; ++dz)
                 {
@@ -98,17 +100,35 @@ namespace WORLDGEN
                         {
                             const BIOME currBiome = grid.At(wx, wz);
 
-                            if (TreeSpawnRoll(wx, wz, currBiome, _cfg) &&
-                                HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
+                            if (TreeSpawnRoll(wx, wz, currBiome, _cfg))
                             {
-                                const BiomeVeg& biomeVeg = _cfg.biomeVegetation[static_cast<int>(currBiome)];
+                                const int radius = GetTreeShape(GetVegTypes(currBiome).tree).leafRadius;
+                                canopyArea += (2 * radius + 1) * (2 * radius + 1);
 
+                                if (collectProxies && HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
+                                {
+                                    const BiomeVeg&  biomeVeg = _cfg.biomeVegetation[static_cast<int>(currBiome)];
+                                    const TreeShape& shape    = GetTreeShape(GetVegTypes(currBiome).tree);
+
+                                    const int totalH  = PickHeight(HashU32(wx, wz, _cfg.seed + 1314u),
+                                                                   biomeVeg.treeMinHeight, biomeVeg.treeMaxHeight);
+                                    const int canopyH = std::max(1, static_cast<int>(totalH * shape.canopyFrac));
+                                    const int trunkH  = std::max(0, totalH - canopyH);
+
+                                    field.trees.push_back(
+                                        { lx, lz, land, trunkH, canopyH, shape.leafRadius,
+                                          shape.crownTopFrac, shape.log, GetVegTypes(currBiome).canopy });
+                                }
+                            }
+                            else if (CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
+                                     HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
+                            {
+                                const int cactusH = 3 + static_cast<int>(HashFloat(wx, wz, _cfg.seed + 1002u) * 3.0f);
                                 field.trees.push_back(
-                                    { lx, lz, land,
-                                        PickHeight(HashU32(wx, wz, _cfg.seed + 1314u),
-                                        biomeVeg.treeMinHeight,
-                                        biomeVeg.treeMaxHeight),
-                                        GetVegTypes(currBiome).canopy
+                                    { lx, lz,
+                                        land, cactusH,
+                                        0, 0, 0.0f,
+                                        BLOCK::CACTUS, BLOCK::CACTUS
                                     });
                             }
                         }
@@ -169,23 +189,20 @@ namespace WORLDGEN
                     }
                 }
 
+                const BiomeVegTypes& veg = GetVegTypes(biome);
+                int canopyDepth = 0;
+
                 if (_level > _cfg.proxyMaxLevel)
                 {
                     // canopy raise per biome veg
-                    const BiomeVegTypes& veg = GetVegTypes(biome);
-                    int canopyDepth = 0;
-
-                    if (veg.canopy != BLOCK::AIR && land >= _cfg.waterLevel)
+                    if (veg.canopy != BLOCK::AIR && land >= _cfg.waterLevel &&
+                        canopyArea > stride * stride * _cfg.lodCanopyCoverage)
                     {
-                        if (TreeClump(wx, wz, biome, _cfg) > _cfg.lodCanopyThresh)
-                        {
-                            const BiomeVeg& vd = _cfg.biomeVegetation[static_cast<int>(biome)];
-
-                            // canopy properties per-biome
-                            canopyDepth = (vd.treeMinHeight + vd.treeMaxHeight) / 2;
-                            surfaceY   += canopyDepth;
-                            block       = veg.canopy;
-                        }
+                        const BiomeVeg& vd = _cfg.biomeVegetation[static_cast<int>(biome)];
+                        // canopy properties per-biome
+                        canopyDepth = (vd.treeMinHeight + vd.treeMaxHeight) / 2;
+                        surfaceY   += canopyDepth;
+                        block       = veg.canopy;
                     }
                 }
 
@@ -216,7 +233,14 @@ namespace WORLDGEN
                 const int fillDepth = _level <= 1 ? RR::kLodBandDepth : 2;
                 for (int depth = 1; depth < fillDepth; ++depth)
                 {
-                    field.sideColumn[colBase + depth] = bandBlock(depth);
+                    if (depth < canopyDepth)
+                    {
+                        field.sideColumn[colBase + depth] = veg.canopy;
+                    }
+                    else
+                    {
+                        field.sideColumn[colBase + depth] = bandBlock(depth);
+                    }
                 }
 
                 // populate the rest

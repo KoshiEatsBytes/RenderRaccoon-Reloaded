@@ -68,6 +68,30 @@ namespace WORLDGEN
         return kVegTypes[static_cast<std::size_t>(_biome)];
     }
 
+    // Per-tree-type shape leaf span and trunk size
+    struct TreeShape
+    {
+        int   leafRadius;    // canopy, half width
+        float canopyFrac;    // proxy only - fraction of tree which is fogliage
+        float crownTopFrac;  // proxy only - crown top width
+        BLOCK log;           // trunk block
+    };
+
+    // Tree shape
+    inline constexpr TreeShape kTreeShape[] = {
+        /* NONE         */ { 0, 0.00f, 0.00f, BLOCK::AIR        },
+        /* OAK          */ { 2, 0.55f, 0.60f, BLOCK::OAKLOG     },  
+        /* SPRUCE_TALL  */ { 5, 0.85f, 0.35f, BLOCK::SPRUCE_LOG },  
+        /* SPRUCE_SMALL */ { 2, 0.85f, 0.30f, BLOCK::SPRUCE_LOG }, 
+        /* ACACIA       */ { 3, 0.35f, 1.00f, BLOCK::ACACIA_LOG },  
+    };
+    static_assert(std::size(kTreeShape) == static_cast<std::size_t>(TREE::COUNT));
+
+    inline constexpr const TreeShape& GetTreeShape(TREE _tree)
+    {
+        return kTreeShape[static_cast<int>(_tree)];
+    }
+
     // Picks the a random flower using the hash and the specified flowerset
     inline BLOCK PickFlower(FLOWERS _set, uInt32 _hash)
     {
@@ -167,6 +191,17 @@ namespace WORLDGEN
             HashFloat(_wx, _wz, _config.seed + 1010u)     <
             _config.biomeVegetation[static_cast<int>(_biome)].tree *
             TreeClump(_wx, _wz, _biome, _config))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    inline bool CactusSpawnRoll(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
+    {
+        if (GetVegTypes(_biome).cactus                         &&
+            HashFloat(_wx, _wz, _config.seed + 1001u) <
+            _config.biomeVegetation[static_cast<int>(_biome)].cactus)
         {
             return true;
         }
@@ -289,16 +324,19 @@ namespace WORLDGEN
         const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
+        const int   R   = GetTreeShape(TREE::OAK).leafRadius;
+        const BLOCK log = GetTreeShape(TREE::OAK).log;
+
         // Trunk first
         for (int y = _rootY + 1; y <= topY; ++y)
         {
-            SetClipped(_chunk, _lx, y, _lz, BLOCK::OAKLOG);
+            SetClipped(_chunk, _lx, y, _lz, log);
         }
 
         // canopy, fill around the logs
         for (int dy = -2; dy <= 1; ++dy)
         {
-            const int radius = (dy <= -1) ? 2 : 1;
+            const int radius = (dy <= -1) ? R : R - 1;
             const int height = topY + dy;
 
             for (int dz = -radius; dz <= radius; ++dz)
@@ -306,9 +344,9 @@ namespace WORLDGEN
                 for (int dx = -radius; dx <= radius; ++dx)
                 {
                     // round the 5x5 shape
-                    const bool corner2   = radius == 2 && std::abs(dx) == 2 && std::abs(dz) == 2;
+                    const bool corner2   = radius == R && std::abs(dx) == R && std::abs(dz) == R;
                     // plus shaped tree top
-                    const bool capCorner = dy == 1 && std::abs(dx) == 1 && std::abs(dz) == 1;
+                    const bool capCorner = dy == 1 && std::abs(dx) == R - 1 && std::abs(dz) == R - 1;
 
                     if (corner2 || capCorner) continue;
 
@@ -327,13 +365,16 @@ namespace WORLDGEN
         const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
+        const int   R   = GetTreeShape(TREE::SPRUCE_TALL).leafRadius;
+        const BLOCK log = GetTreeShape(TREE::SPRUCE_TALL).log;
+
         // 2x2 trunk
         for (int y = _rootY + 1; y <= topY; ++y)
         {
-            SetClipped(_chunk, _lx,     y, _lz,     BLOCK::SPRUCE_LOG);
-            SetClipped(_chunk, _lx + 1, y, _lz,     BLOCK::SPRUCE_LOG);
-            SetClipped(_chunk, _lx,     y, _lz + 1, BLOCK::SPRUCE_LOG);
-            SetClipped(_chunk, _lx + 1, y, _lz + 1, BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx,     y, _lz,     log);
+            SetClipped(_chunk, _lx + 1, y, _lz,     log);
+            SetClipped(_chunk, _lx,     y, _lz + 1, log);
+            SetClipped(_chunk, _lx + 1, y, _lz + 1, log);
         }
 
         // pointed tip over the 2x2
@@ -353,7 +394,7 @@ namespace WORLDGEN
             int radius      = depth / 2;  
 
             // fallbacks to prevent weird shapes
-            if (radius > 5) radius = 5;                        
+            if (radius > R) radius = R;                        
             if (depth % 3 == 0 && radius > 0) radius -= 1;      
 
             for (int dz = -radius; dz <= radius + 1; ++dz)
@@ -382,9 +423,12 @@ namespace WORLDGEN
         const int trunkHeight = PickHeight(_hash, _minH, _maxH);
         const int topY        = _rootY + trunkHeight;
 
+        const int   R   = GetTreeShape(TREE::SPRUCE_SMALL).leafRadius;
+        const BLOCK log = GetTreeShape(TREE::SPRUCE_SMALL).log;
+
         for (int y=_rootY+1; y<=topY; ++y)
         {
-            SetClipped(_chunk, _lx, y, _lz, BLOCK::SPRUCE_LOG);
+            SetClipped(_chunk, _lx, y, _lz, log);
         }
         SetClippedIfAir(_chunk, _lx, topY + 1, _lz, BLOCK::TUNDRA_SPRUCE_LEAVES);
 
@@ -392,7 +436,7 @@ namespace WORLDGEN
         {
             // compact 2 tier cone
             const int depth = topY - y;
-            const int radius = (depth % 2 == 0) ? 1 : 2;
+            const int radius = (depth % 2 == 0) ? R - 1 : R;
 
             for (int dz = -radius; dz <= radius; ++dz)
             {
@@ -413,17 +457,20 @@ namespace WORLDGEN
     {
         using namespace RR::CHUNK;
 
+        const int   R   = GetTreeShape(TREE::ACACIA).leafRadius;
+        const BLOCK log = GetTreeShape(TREE::ACACIA).log;
+
         // for acacia create a two layer tree
         auto plate = [&](int _cx, int _cy, int _cz)
         {
-            for (int dz = -3; dz <= 3; ++dz)
+            for (int dz = -R; dz <= R; ++dz)
             {
-                for (int dx = -3; dx <= 3; ++dx)
+                for (int dx = -R; dx <= R; ++dx)
                 {
                     const int dist2 = dx * dx + dz * dz;
 
-                    if (dist2 <= 9) SetClippedIfAir(_chunk, _cx + dx, _cy,     _cz + dz, BLOCK::ACACIA_LEAVES);
-                    if (dist2 <= 4) SetClippedIfAir(_chunk, _cx + dx, _cy + 1, _cz + dz, BLOCK::ACACIA_LEAVES);
+                    if (dist2 <= R * R)             SetClippedIfAir(_chunk, _cx + dx, _cy,     _cz + dz, BLOCK::ACACIA_LEAVES);
+                    if (dist2 <= (R - 1) * (R - 1)) SetClippedIfAir(_chunk, _cx + dx, _cy + 1, _cz + dz, BLOCK::ACACIA_LEAVES);
                 }
             }
         };
@@ -437,7 +484,7 @@ namespace WORLDGEN
                 _bz += _dirZ; 
                 _by += 1;
 
-                SetClipped(_chunk, _bx, _by, _bz, BLOCK::ACACIA_LOG);
+                SetClipped(_chunk, _bx, _by, _bz, log);
             }
             plate(_bx, _by, _bz);
         };
@@ -448,7 +495,7 @@ namespace WORLDGEN
 
         for (int y = _rootY + 1; y <= bendY; ++y)
         {
-            SetClipped(_chunk, _lx, y, _lz, BLOCK::ACACIA_LOG);
+            SetClipped(_chunk, _lx, y, _lz, log);
         }
 
         const int DX[4] = { 1, -1, 0, 0 };

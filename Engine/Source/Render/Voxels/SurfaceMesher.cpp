@@ -142,7 +142,7 @@ namespace RR
                         return;
                     }
 
-                    // L1: banded cliff face in kLodBandStep-tall steps
+                    // banded cliff face
                     for (int y = bottomY; y <= height; y += kLodBandStep)
                     {
                         // sample top block, so topmost keeps at 0
@@ -196,9 +196,9 @@ namespace RR
         const int sideFace  = static_cast<int>(FACE::NORTH);
         uInt32    baseIndex = 0;
 
-        // skip bottom
-        out.vertices.reserve(_trees.size() * 5 * 4 * 9);
-        out.indices.reserve (_trees.size() * 5 * 6);
+        // up to 9 faces/tree 
+        out.vertices.reserve(_trees.size() * 9 * 4 * 9);
+        out.indices.reserve (_trees.size() * 9 * 6);
 
         // Pushes vertex layout into result
         auto pushVertex = [&](float _x,  float _y,  float _z,
@@ -231,55 +231,120 @@ namespace RR
             baseIndex += 4;
         };
 
+        // box witrh optional top for proxies
+        auto pushBox = [&](float _x0, float _x1, float _y0, float _y1, float _z0, float _z1,
+                           float _layer, bool _top)
+        {
+            const float width  = _x1 - _x0;
+            const float height = _y1 - _y0;
+            const float depth  = _z1 - _z0;
+
+            if (_top)
+            {
+                pushVertex(_x0,_y1,_z1, 0,1,0, 0,depth, _layer);
+                pushVertex(_x1,_y1,_z1, 0,1,0, width,depth, _layer);
+                pushVertex(_x1,_y1,_z0, 0,1,0, width,0, _layer);
+                pushVertex(_x0,_y1,_z0, 0,1,0, 0,0, _layer);
+                pushQuad();
+            }
+            // West
+            pushVertex(_x1,_y0,_z1, 1,0,0, 0,0, _layer);
+            pushVertex(_x1,_y0,_z0, 1,0,0, depth,0, _layer);
+            pushVertex(_x1,_y1,_z0, 1,0,0, depth,height, _layer);
+            pushVertex(_x1,_y1,_z1, 1,0,0, 0,height, _layer);
+            pushQuad();
+            // East
+            pushVertex(_x0,_y0,_z0, -1,0,0, 0,0, _layer);
+            pushVertex(_x0,_y0,_z1, -1,0,0, depth,0, _layer);
+            pushVertex(_x0,_y1,_z1, -1,0,0, depth,height, _layer);
+            pushVertex(_x0,_y1,_z0, -1,0,0, 0,height, _layer);
+            pushQuad();
+            // South
+            pushVertex(_x0,_y0,_z1, 0,0,1, 0,0, _layer);
+            pushVertex(_x1,_y0,_z1, 0,0,1, width,0, _layer);
+            pushVertex(_x1,_y1,_z1, 0,0,1, width,height, _layer);
+            pushVertex(_x0,_y1,_z1, 0,0,1, 0,height, _layer);
+            pushQuad();
+            // North
+            pushVertex(_x1,_y0,_z0, 0,0,-1, 0,0, _layer);
+            pushVertex(_x0,_y0,_z0, 0,0,-1, width,0, _layer);
+            pushVertex(_x0,_y1,_z0, 0,0,-1, width,height, _layer);
+            pushVertex(_x1,_y1,_z0, 0,0,-1, 0,height, _layer);
+            pushQuad();
+        };
+
+        // sqwaure base and smaller top, tryin to mimic tree
+        auto pushCrown = [&](float _cx, float _cz, float _baseR, float _topR,
+                             float _y0, float _y1, float _layer)
+        {
+            const float bx0 = _cx - _baseR,         bx1 = _cx + _baseR + 1.0f;
+            const float bz0 = _cz - _baseR,         bz1 = _cz + _baseR + 1.0f;
+            const float ctrX = (bx0 + bx1) * 0.5f,  ctrZ = (bz0 + bz1) * 0.5f;
+            const float tx0 = ctrX - _topR,         tx1 = ctrX + _topR;
+            const float tz0 = ctrZ - _topR,         tz1 = ctrZ + _topR;
+
+            const float width  = bx1 - bx0;
+            const float height = _y1 - _y0;
+            const float depth  = bz1 - bz0;
+
+            // top
+            pushVertex(tx0,_y1,tz1, 0,1,0, 0,depth, _layer);
+            pushVertex(tx1,_y1,tz1, 0,1,0, width,depth, _layer);
+            pushVertex(tx1,_y1,tz0, 0,1,0, width,0, _layer);
+            pushVertex(tx0,_y1,tz0, 0,1,0, 0,0, _layer);
+            pushQuad();
+            // West
+            pushVertex(bx1,_y0,bz1, 1,0,0, 0,0, _layer);
+            pushVertex(bx1,_y0,bz0, 1,0,0, depth,0, _layer);
+            pushVertex(tx1,_y1,tz0, 1,0,0, depth,height, _layer);
+            pushVertex(tx1,_y1,tz1, 1,0,0, 0,height, _layer);
+            pushQuad();
+            // East
+            pushVertex(bx0,_y0,bz0, -1,0,0, 0,0, _layer);
+            pushVertex(bx0,_y0,bz1, -1,0,0, depth,0, _layer);
+            pushVertex(tx0,_y1,tz1, -1,0,0, depth,height, _layer);
+            pushVertex(tx0,_y1,tz0, -1,0,0, 0,height, _layer);
+            pushQuad();
+            // South
+            pushVertex(bx0,_y0,bz1, 0,0,1, 0,0, _layer);
+            pushVertex(bx1,_y0,bz1, 0,0,1, width,0, _layer);
+            pushVertex(tx1,_y1,tz1, 0,0,1, width,height, _layer);
+            pushVertex(tx0,_y1,tz1, 0,0,1, 0,height, _layer);
+            pushQuad();
+            // North
+            pushVertex(bx1,_y0,bz0, 0,0,-1, 0,0, _layer);
+            pushVertex(bx0,_y0,bz0, 0,0,-1, width,0, _layer);
+            pushVertex(tx0,_y1,tz0, 0,0,-1, width,height, _layer);
+            pushVertex(tx1,_y1,tz0, 0,0,-1, 0,height, _layer);
+            pushQuad();
+        };
+
         for (const LodTreeProxy& tree : _trees)
         {
-            // canopy is a UniformBlock so side and layers match
-            const auto top  = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[upFace]);
-            const auto side = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[sideFace]);
+            // canopy is a UniformBlock, log is sided fatch what i sneede
+            const auto canopyLayer = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[upFace]);
+            const auto logLayer    = static_cast<float>(GetBlockInfo(tree.log).faceLayer[sideFace]);
 
-            const float x0 = static_cast<float>(tree.localX);
-            const float x1 = static_cast<float>(tree.localX + kProxyWidth);
-            const float z0 = static_cast<float>(tree.localZ);
-            const float z1 = static_cast<float>(tree.localZ + kProxyWidth);
-            const float y0 = static_cast<float>(tree.baseY + 1);
-            const float y1 = static_cast<float>(tree.baseY + 1 + tree.height);
-            const float fw = static_cast<float>(kProxyWidth);
-            const float fh = static_cast<float>(tree.height);
+            const float cx     = static_cast<float>(tree.localX);
+            const float cz     = static_cast<float>(tree.localZ);
+            const float radius = static_cast<float>(tree.radius);
 
-            // TOP
-            pushVertex(x0,y1,z1, 0,1,0, 0,fw,  top);
-            pushVertex(x1,y1,z1, 0,1,0, fw,fw, top);
-            pushVertex(x1,y1,z0, 0,1,0, fw,0,  top);
-            pushVertex(x0,y1,z0, 0,1,0, 0,0,   top);
-            pushQuad();
+            const float trunkBot  = static_cast<float>(tree.baseY + 1);
+            const float trunkTop  = trunkBot + static_cast<float>(tree.trunkHeight);
+            const float canopyTop = trunkTop + static_cast<float>(tree.canopyHeight);
 
-            // West
-            pushVertex(x1,y0,z1, 1,0,0, 0,0,   side);
-            pushVertex(x1,y0,z0, 1,0,0, fw,0,  side);
-            pushVertex(x1,y1,z0, 1,0,0, fw,fh, side);
-            pushVertex(x1,y1,z1, 1,0,0, 0,fh,  side);
-            pushQuad();
-
-            // East
-            pushVertex(x0,y0,z0, -1,0,0, 0,0,   side);
-            pushVertex(x0,y0,z1, -1,0,0, fw,0,  side);
-            pushVertex(x0,y1,z1, -1,0,0, fw,fh, side);
-            pushVertex(x0,y1,z0, -1,0,0, 0,fh,  side);
-            pushQuad();
-
-            // South
-            pushVertex(x0,y0,z1, 0,0,1, 0,0,   side);
-            pushVertex(x1,y0,z1, 0,0,1, fw,0,  side);
-            pushVertex(x1,y1,z1, 0,0,1, fw,fh, side);
-            pushVertex(x0,y1,z1, 0,0,1, 0,fh,  side);
-            pushQuad();
-
-            // North
-            pushVertex(x1,y0,z0, 0,0,-1, 0,0,   side);
-            pushVertex(x0,y0,z0, 0,0,-1, fw,0,  side);
-            pushVertex(x0,y1,z0, 0,0,-1, fw,fh, side);
-            pushVertex(x1,y1,z0, 0,0,-1, 0,fh,  side);
-            pushQuad();
+            // trunk
+            if (tree.trunkHeight > 0)
+            {
+                pushBox(cx, cx + 1.0f, trunkBot, trunkTop, cz, cz + 1.0f, logLayer, tree.canopyHeight == 0);
+            }
+                
+            // crown for trees only
+            if (tree.canopyHeight > 0)
+            {
+                const float topR = (radius + 0.5f) * tree.crownTopFrac;
+                pushCrown(cx, cz, radius, topR, trunkTop, canopyTop, canopyLayer);
+            }
         }
 
         return out;
