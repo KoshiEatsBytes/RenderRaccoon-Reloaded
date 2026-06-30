@@ -97,6 +97,12 @@ namespace RR::CHUNK
         TUNDRA_SPRUCE_LEAVES,
         GOLD_ORE,
 
+        // LOD only canopy blocks
+        CANOPY_OAK,
+        CANOPY_SPRUCE,
+        CANOPY_TUNDRA,
+        CANOPY_ACACIA,
+
         COUNT
     };
 
@@ -381,7 +387,11 @@ namespace RR::CHUNK
             /* Savanna Grass */ CrossBlock  (SAVANNA_SHORT_GRASS),
             /* Snow Grass    */ CrossBlock  (SNOW_SHORT_GRASS),
             /* Tundra Spruce */ LeafBlock   (TUNDRA_SPRUCE_LEAVES),
-            /* Gold Ore      */ UniformBlock(GOLD_ORE)
+            /* Gold Ore      */ UniformBlock(GOLD_ORE),
+            /* Canopy Oak    */ UniformBlock(OAK_LEAVES),
+            /* Canopy Spruce */ UniformBlock(SPRUCE_LEAVES),
+            /* Canopy Tundra */ UniformBlock(TUNDRA_SPRUCE_LEAVES),
+            /* Canopy Acacia */ UniformBlock(ACACIA_LEAVES)
         }
     };
 

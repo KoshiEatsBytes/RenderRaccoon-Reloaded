@@ -8,6 +8,7 @@
 #include "Helpers/Printer.hpp"
 #include "Render/Voxels/SurfaceMesher.h"
 #include "Voxels/ChunkData.h"
+#include "Vegetation.hpp"
 
 namespace WORLDGEN
 {
@@ -19,6 +20,7 @@ namespace WORLDGEN
 
         std::vector<RR::CHUNK::BLOCK> block;
         std::vector<RR::CHUNK::BLOCK> sideColumn;
+        std::vector<RR::LodTreeProxy> trees;
         std::vector<BIOME>            biome;
         std::vector<int>              height;
     };
@@ -27,6 +29,7 @@ namespace WORLDGEN
     inline SurfaceField ExtractSurface(RR::CHUNK::Coord _cords, int _level, const WorldGenConfig& _cfg)
     {
         using namespace RR::CHUNK;
+        const bool collectProxies = _level >= 1 && _level <= _cfg.proxyMaxLevel;
 
         const int stride  = 1 << _level;
         const int span    = kSizeX + 1;
@@ -34,6 +37,7 @@ namespace WORLDGEN
         const int originX = _cords.x * kSizeX;
         const int originZ = _cords.z * kSizeZ;
         const int margin  = _cfg.biomeBlendRadius;
+
 
         // build biome and blend once per tile
         const BiomeGrid              grid = BuildBiomeGridSpan(originX, originZ, span, margin, _cfg);
@@ -86,6 +90,27 @@ namespace WORLDGEN
                             bestLand = land;
                             bestLx   = lx;
                             bestLz   = lz;
+                        }
+
+                        // Push back proxies into field
+                        if (collectProxies && land >= _cfg.waterLevel &&
+                            lx < kSizeX && lz < kSizeZ)
+                        {
+                            const BIOME currBiome = grid.At(wx, wz);
+
+                            if (TreeSpawnRoll(wx, wz, currBiome, _cfg) &&
+                                HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
+                            {
+                                const BiomeVeg& biomeVeg = _cfg.biomeVegetation[static_cast<int>(currBiome)];
+
+                                field.trees.push_back(
+                                    { lx, lz, land,
+                                        PickHeight(HashU32(wx, wz, _cfg.seed + 1314u),
+                                        biomeVeg.treeMinHeight,
+                                        biomeVeg.treeMaxHeight),
+                                        GetVegTypes(currBiome).canopy
+                                    });
+                            }
                         }
                     }
                 }
@@ -140,6 +165,26 @@ namespace WORLDGEN
                         if (GetBiome(biome).cliffEligible)
                         {
                             kind = STRATA_KIND::STONE;
+                        }
+                    }
+                }
+
+                if (_level > _cfg.proxyMaxLevel)
+                {
+                    // canopy raise per biome veg
+                    const BiomeVegTypes& veg = GetVegTypes(biome);
+                    int canopyDepth = 0;
+
+                    if (veg.canopy != BLOCK::AIR && land >= _cfg.waterLevel)
+                    {
+                        if (TreeClump(wx, wz, biome, _cfg) > _cfg.lodCanopyThresh)
+                        {
+                            const BiomeVeg& vd = _cfg.biomeVegetation[static_cast<int>(biome)];
+
+                            // canopy properties per-biome
+                            canopyDepth = (vd.treeMinHeight + vd.treeMaxHeight) / 2;
+                            surfaceY   += canopyDepth;
+                            block       = veg.canopy;
                         }
                     }
                 }

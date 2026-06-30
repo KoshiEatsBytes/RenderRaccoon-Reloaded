@@ -121,6 +121,17 @@ namespace RR
             command.modelMatrix = model;
             command.color       = vec3(1.0f);
             queue.Submit(command);
+
+            // if mesh renders, render poxies too
+            if (tile.proxyMesh)
+            {
+                RenderCommand proxyCmd;
+                proxyCmd.material    = m_blockMat.get();
+                proxyCmd.mesh        = tile.proxyMesh.get();
+                proxyCmd.modelMatrix = model;
+                proxyCmd.color       = vec3(1.0f);
+                queue.Submit(proxyCmd);
+            }
         }
 
 
@@ -438,15 +449,20 @@ namespace RR
                 continue;
 
             // extract mesh surface
-            const MeshData data = m_lodMesher(cords, lodLevel);
-
-            // mesh tile
+            const LodMeshResult data = m_lodMesher(cords, lodLevel);
             LodTile tile;
+
+            // assemble surface mesh
             tile.cords = cords;
             tile.level = lodLevel;
-            tile.mesh  = std::make_unique<Mesh>(data.layout, data.vertices, data.indices);
+            tile.mesh  = std::make_unique<Mesh>(data.surface.layout, data.surface.vertices, data.surface.indices);
 
-            // save meshed tile
+            // assemble proxies mesh (if present)
+            if (!data.proxies.indices.empty())
+            {
+                tile.proxyMesh = std::make_unique<Mesh>(data.proxies.layout, data.proxies.vertices, data.proxies.indices);
+            }
+
             m_lodTiles[cords] = std::move(tile);
             ++built;
         }

@@ -11,6 +11,17 @@ namespace RR
     constexpr int kLodBandDepth = 32;
     // how many steps
     constexpr int kLodBandStep  = 1;
+    constexpr int kProxyWidth = 2;
+
+    struct LodTreeProxy
+    {
+        int localX;
+        int localZ;
+        int baseY;
+        int height;
+
+        CHUNK::BLOCK canopy;
+    };
 
     // Triangulates a dim x dim strided field
     // aka meshes top faces only for lod
@@ -19,4 +30,7 @@ namespace RR
         const std::vector<CHUNK::BLOCK>& _block,
         const std::vector<CHUNK::BLOCK>& _sideColumn,
         int _skirtDepth = 0);
+
+    // Triangulates vegetation canopies
+    MeshData MeshProxies(const std::vector<LodTreeProxy>& _trees, int _level);
 }

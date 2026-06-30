@@ -14,7 +14,14 @@
 
 namespace RR
 {
-    using LodMesher = std::function<MeshData(CHUNK::Coord, int)>;
+    // lod mesh data for render
+    struct LodMeshResult
+    {
+        MeshData surface;
+        MeshData proxies;
+    };
+
+    using LodMesher = std::function<LodMeshResult(CHUNK::Coord, int)>;
 
     class Material;
     class ChunkManager

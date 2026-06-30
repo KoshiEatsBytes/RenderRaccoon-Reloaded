@@ -15,5 +15,6 @@ namespace RR
         int level = 1;
 
         std::unique_ptr<Mesh> mesh;
+        std::unique_ptr<Mesh> proxyMesh;
     };
 }

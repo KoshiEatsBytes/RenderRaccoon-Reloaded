@@ -186,6 +186,104 @@ namespace RR
 
         return out;
     }
+
+    MeshData MeshProxies(const std::vector<LodTreeProxy> &_trees, int _level)
+    {
+        MeshData out;
+        out.layout = VoxelVertexLayout();
+
+        const int upFace    = static_cast<int>(FACE::UP);
+        const int sideFace  = static_cast<int>(FACE::NORTH);
+        uInt32    baseIndex = 0;
+
+        // skip bottom
+        out.vertices.reserve(_trees.size() * 5 * 4 * 9);
+        out.indices.reserve (_trees.size() * 5 * 6);
+
+        // Pushes vertex layout into result
+        auto pushVertex = [&](float _x,  float _y,  float _z,
+                          float _nx, float _ny, float _nz,
+                          float _u,  float _w,
+                          float _layer)
+        {
+            out.vertices.insert(out.vertices.end(), {
+            _x,  _y,   _z,
+            _nx, _ny, _nz,
+            _u,  _w,
+            _layer
+            });
+        };
+
+        // assembled quad from VL into output
+        auto pushQuad = [&]()
+        {
+            out.indices.insert(out.indices.end(),
+                {
+                    // tris n1
+                    baseIndex + 0,
+                    baseIndex + 1,
+                    baseIndex + 2,
+                    // this n2
+                    baseIndex + 0,
+                    baseIndex + 2,
+                    baseIndex + 3
+                });
+            baseIndex += 4;
+        };
+
+        for (const LodTreeProxy& tree : _trees)
+        {
+            // canopy is a UniformBlock so side and layers match
+            const auto top  = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[upFace]);
+            const auto side = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[sideFace]);
+
+            const float x0 = static_cast<float>(tree.localX);
+            const float x1 = static_cast<float>(tree.localX + kProxyWidth);
+            const float z0 = static_cast<float>(tree.localZ);
+            const float z1 = static_cast<float>(tree.localZ + kProxyWidth);
+            const float y0 = static_cast<float>(tree.baseY + 1);
+            const float y1 = static_cast<float>(tree.baseY + 1 + tree.height);
+            const float fw = static_cast<float>(kProxyWidth);
+            const float fh = static_cast<float>(tree.height);
+
+            // TOP
+            pushVertex(x0,y1,z1, 0,1,0, 0,fw,  top);
+            pushVertex(x1,y1,z1, 0,1,0, fw,fw, top);
+            pushVertex(x1,y1,z0, 0,1,0, fw,0,  top);
+            pushVertex(x0,y1,z0, 0,1,0, 0,0,   top);
+            pushQuad();
+
+            // West
+            pushVertex(x1,y0,z1, 1,0,0, 0,0,   side);
+            pushVertex(x1,y0,z0, 1,0,0, fw,0,  side);
+            pushVertex(x1,y1,z0, 1,0,0, fw,fh, side);
+            pushVertex(x1,y1,z1, 1,0,0, 0,fh,  side);
+            pushQuad();
+
+            // East
+            pushVertex(x0,y0,z0, -1,0,0, 0,0,   side);
+            pushVertex(x0,y0,z1, -1,0,0, fw,0,  side);
+            pushVertex(x0,y1,z1, -1,0,0, fw,fh, side);
+            pushVertex(x0,y1,z0, -1,0,0, 0,fh,  side);
+            pushQuad();
+
+            // South
+            pushVertex(x0,y0,z1, 0,0,1, 0,0,   side);
+            pushVertex(x1,y0,z1, 0,0,1, fw,0,  side);
+            pushVertex(x1,y1,z1, 0,0,1, fw,fh, side);
+            pushVertex(x0,y1,z1, 0,0,1, 0,fh,  side);
+            pushQuad();
+
+            // North
+            pushVertex(x1,y0,z0, 0,0,-1, 0,0,   side);
+            pushVertex(x0,y0,z0, 0,0,-1, fw,0,  side);
+            pushVertex(x0,y1,z0, 0,0,-1, fw,fh, side);
+            pushVertex(x1,y1,z0, 0,0,-1, 0,fh,  side);
+            pushQuad();
+        }
+
+        return out;
+    }
 }
 
 

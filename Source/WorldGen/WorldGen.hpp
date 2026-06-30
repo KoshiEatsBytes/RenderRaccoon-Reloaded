@@ -450,11 +450,9 @@ namespace WORLDGEN
 
                 // check if tree or boulder should be placed
                 // clumping modulates the per-biome tree density into thickets/clearings
-                const bool placeTree = vegTypes.tree != TREE::NONE
-                                       && HashFloat(wx, wz, _config.seed + 1010u)
-                                            < details.tree * TreeClump(wx, wz, biome, _config);
-                const bool placeBoulder = !placeTree && vegTypes.boulders
-                                          && HashFloat(wx, wz, _config.seed + 1012u) < details.boulder;
+                const bool placeTree    = TreeSpawnRoll(wx, wz, biome, _config);
+                const bool placeBoulder = !placeTree && vegTypes.boulders &&
+                                           HashFloat(wx, wz, _config.seed + 1012u) < details.boulder;
 
                 // Discard if none
                 if (!placeTree && !placeBoulder) continue;

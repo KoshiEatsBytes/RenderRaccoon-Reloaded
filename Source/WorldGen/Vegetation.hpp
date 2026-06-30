@@ -43,6 +43,7 @@ namespace WORLDGEN
         BLOCK   bush;
         bool    cactus;
         bool    boulders;
+        BLOCK   canopy;   
     };
 
     // tree margin
@@ -50,14 +51,14 @@ namespace WORLDGEN
 
     // Indexed by biome
     inline constexpr BiomeVegTypes kVegTypes[] = {
-        /* PLAINS    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::AIR,       false, false },
-        /* FOREST    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::BUSH,           false, false },
-        /* DESERT    */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,      true,  false },
-        /* MESA      */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,      false, false },
-        /* TAIGA     */ { TREE::SPRUCE_TALL,  BLOCK::FERN,          FLOWERS::NONE,            BLOCK::DEAD_BUSH,      false, true  },
-        /* TUNDRA    */ { TREE::SPRUCE_SMALL, BLOCK::SNOW_SHORT_GRASS,    FLOWERS::TULIPS,          BLOCK::AIR,       false, false },
-        /* MOUNTAINS */ { TREE::NONE,         BLOCK::SHORT_GRASS,         FLOWERS::NONE,            BLOCK::AIR,       false, false },
-        /* SAVANNA   */ { TREE::ACACIA,       BLOCK::SAVANNA_SHORT_GRASS, FLOWERS::POPPY_DANDELION, BLOCK::AIR,       false, false },
+        /* PLAINS    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::AIR,        false, false, BLOCK::AIR           },
+        /* FOREST    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::BUSH,       false, false, BLOCK::CANOPY_OAK    },
+        /* DESERT    */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,  true,  false, BLOCK::AIR           },
+        /* MESA      */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,  false, false, BLOCK::AIR           },
+        /* TAIGA     */ { TREE::SPRUCE_TALL,  BLOCK::FERN,                FLOWERS::NONE,            BLOCK::DEAD_BUSH,  false, true,  BLOCK::CANOPY_SPRUCE },
+        /* TUNDRA    */ { TREE::SPRUCE_SMALL, BLOCK::SNOW_SHORT_GRASS,    FLOWERS::TULIPS,          BLOCK::AIR,        false, false, BLOCK::CANOPY_TUNDRA },
+        /* MOUNTAINS */ { TREE::NONE,         BLOCK::SHORT_GRASS,         FLOWERS::NONE,            BLOCK::AIR,        false, false, BLOCK::AIR           },
+        /* SAVANNA   */ { TREE::ACACIA,       BLOCK::SAVANNA_SHORT_GRASS, FLOWERS::POPPY_DANDELION, BLOCK::AIR,        false, false, BLOCK::CANOPY_ACACIA },
     };
     static_assert(std::size(kVegTypes) == static_cast<std::size_t>(BIOME::COUNT));
 
@@ -158,6 +159,24 @@ namespace WORLDGEN
         if (amount <= 0.0f) return 1.0f;
 
         return Lerp(1.0f, TreeClumpField(_wx, _wz, _config), amount);
+    }
+
+    inline bool TreeSpawnRoll(int _wx, int _wz, BIOME _biome, const WorldGenConfig& _config)
+    {
+        if (GetVegTypes(_biome).tree != TREE::NONE                 &&
+            HashFloat(_wx, _wz, _config.seed + 1010u)     <
+            _config.biomeVegetation[static_cast<int>(_biome)].tree *
+            TreeClump(_wx, _wz, _biome, _config))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    // To keep or not to keep proxies, that is the question *philosophy pose*
+    inline float ProxyKeep(int _level, const WorldGenConfig& _config)
+    {
+        return _config.proxyKeepBase * std::pow(_config.proxyKeepFalloff, static_cast<float>(_level - 1));
     }
 
     // Tunable trunk height, deterministic pick min/max

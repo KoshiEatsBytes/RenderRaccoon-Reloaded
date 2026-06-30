@@ -79,13 +79,16 @@ bool VoxelScene::Init()
     };
 
     // LOD mesher lambda
-    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::MeshData
+    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::LodMeshResult
     {
         const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, m_genConfig);
-        // skirt size to cover holes, tweak later
         const int skirt = 8 * (1 << _level);
 
-        return RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn, skirt);
+        // proxies and surface mesh
+        RR::LodMeshResult out;
+        out.surface = RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn, skirt);
+        out.proxies = RR::MeshProxies(field.trees, _level);
+        return out;
     };
 
     // instantiate chunk manager with generator and mats
