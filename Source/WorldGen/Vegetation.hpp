@@ -51,13 +51,13 @@ namespace WORLDGEN
 
     // Indexed by biome
     inline constexpr BiomeVegTypes kVegTypes[] = {
-        /* PLAINS    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::AIR,        false, false, BLOCK::AIR           },
-        /* FOREST    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::BUSH,       false, false, BLOCK::CANOPY_OAK    },
-        /* DESERT    */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,  true,  false, BLOCK::AIR           },
-        /* MESA      */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,            BLOCK::DEAD_BUSH,  false, false, BLOCK::AIR           },
-        /* TAIGA     */ { TREE::SPRUCE_TALL,  BLOCK::FERN,                FLOWERS::NONE,            BLOCK::DEAD_BUSH,  false, true,  BLOCK::CANOPY_SPRUCE },
+        /* PLAINS    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,             BLOCK::AIR,        false, false, BLOCK::AIR    },
+        /* FOREST    */ { TREE::OAK,          BLOCK::SHORT_GRASS,         FLOWERS::ALL,                  BLOCK::BUSH,       false, false, BLOCK::CANOPY_OAK    },
+        /* DESERT    */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,                 BLOCK::DEAD_BUSH,  true,  false, BLOCK::AIR    },
+        /* MESA      */ { TREE::NONE,         BLOCK::SHORT_DRY_GRASS,     FLOWERS::NONE,                 BLOCK::DEAD_BUSH,  false, false, BLOCK::AIR    },
+        /* TAIGA     */ { TREE::SPRUCE_TALL,  BLOCK::FERN,          FLOWERS::NONE,                 BLOCK::DEAD_BUSH,  false, true,  BLOCK::CANOPY_SPRUCE },
         /* TUNDRA    */ { TREE::SPRUCE_SMALL, BLOCK::SNOW_SHORT_GRASS,    FLOWERS::TULIPS,          BLOCK::AIR,        false, false, BLOCK::CANOPY_TUNDRA },
-        /* MOUNTAINS */ { TREE::NONE,         BLOCK::SHORT_GRASS,         FLOWERS::NONE,            BLOCK::AIR,        false, false, BLOCK::AIR           },
+        /* MOUNTAINS */ { TREE::NONE,         BLOCK::SHORT_GRASS,         FLOWERS::NONE,            BLOCK::AIR,        false, false, BLOCK::AIR    },
         /* SAVANNA   */ { TREE::ACACIA,       BLOCK::SAVANNA_SHORT_GRASS, FLOWERS::POPPY_DANDELION, BLOCK::AIR,        false, false, BLOCK::CANOPY_ACACIA },
     };
     static_assert(std::size(kVegTypes) == static_cast<std::size_t>(BIOME::COUNT));

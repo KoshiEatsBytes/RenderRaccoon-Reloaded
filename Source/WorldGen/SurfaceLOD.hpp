@@ -67,6 +67,8 @@ namespace WORLDGEN
                 int bestLz     = lzMin;
                 int canopyArea = 0;
 
+                const std::size_t treeStart = field.trees.size();
+
                 for (int dz = 0; dz < stride; ++dz)
                 {
                     const int lz = lzMin + dz;
@@ -95,7 +97,7 @@ namespace WORLDGEN
                         }
 
                         // Push back proxies into field
-                        if (collectProxies && land >= _cfg.waterLevel &&
+                        if (land >= _cfg.waterLevel &&
                             lx < kSizeX && lz < kSizeZ)
                         {
                             const BIOME currBiome = grid.At(wx, wz);
@@ -120,7 +122,7 @@ namespace WORLDGEN
                                           shape.crownTopFrac, shape.log, GetVegTypes(currBiome).canopy });
                                 }
                             }
-                            else if (CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
+                            else if (collectProxies && CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
                                      HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
                             {
                                 const int cactusH = 3 + static_cast<int>(HashFloat(wx, wz, _cfg.seed + 1002u) * 3.0f);
@@ -134,6 +136,10 @@ namespace WORLDGEN
                         }
                     }
                 }
+
+                // anchor this cells proxies to the plateau the skin renders
+                for (std::size_t i = treeStart; i < field.trees.size(); ++i)
+                    field.trees[i].baseY = bestLand;
 
                 // classify winning column
                 const int   wx    = originX + bestLx;
@@ -272,7 +278,7 @@ namespace WORLDGEN
         {
             const SurfaceField           f = ExtractSurface(c, 0, _cfg);
             const BiomeGrid              g = BuildBiomeGrid(c.x, c.z, margin, _cfg);
-            const std::vector<BlendSums> s = BuildBlendSums(g, _cfg);      // span 16
+            const std::vector<BlendSums> s = BuildBlendSums(g, _cfg);      
 
             for (int z = 0; z < kSizeZ && matchOk; ++z)
             {
@@ -335,7 +341,7 @@ namespace WORLDGEN
 
         const RR::MeshData m = RR::MeshSurface(dim, level, h, b, s, skirt);
 
-        // flat field: cells^2 tops + 4*cells perimeter skirts, all single-sided
+        // flat field all cells single sided
         const std::size_t verts = m.vertices.size() / 9;
         const std::size_t quads = (dim - 1) * (dim - 1);
         const std::size_t segs  = (skirt > 0) ? 2 * (dim - 1) : 0;

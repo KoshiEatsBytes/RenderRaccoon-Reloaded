@@ -99,7 +99,7 @@ namespace RR
         int m_coreRadius = 16; // full detail RD
 
         // Lod ring shaping
-        float m_ringGrowth = 2.0f;
+        float m_ringGrowth = 2.f;
         int   m_maxLevel = 4;
 
         // Per frame budget
