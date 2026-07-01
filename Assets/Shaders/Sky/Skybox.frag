@@ -2,7 +2,9 @@
 
 out vec4 FragColor;
 
-in vec3 vDir;
+in vec4 vWorld;
+
+uniform vec3 uCameraPos;
 
 uniform vec3 uSkyHorizon;
 uniform vec3 uSkyZenith;
@@ -15,7 +17,7 @@ uniform sampler2D uSunTex;
 void main()
 {
     // calcualte horizon zenith threshold and color
-    vec3  dir = normalize(vDir);
+    vec3  dir = normalize(vWorld.xyz / vWorld.w - uCameraPos);
     float t   = pow(clamp(dir.y, 0.0, 1.0), 0.5);
     vec3  col = mix(uSkyHorizon, uSkyZenith, t);
 
