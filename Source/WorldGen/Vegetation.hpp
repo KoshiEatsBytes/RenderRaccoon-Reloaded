@@ -82,9 +82,9 @@ namespace WORLDGEN
     // Tree shape
     inline constexpr TreeShape kTreeShape[] = {
         /* NONE         */ { 0, 0.00f, 0.00f, BLOCK::AIR        },
-        /* OAK          */ { 2, 0.55f, 0.60f, BLOCK::OAKLOG     },  
-        /* SPRUCE_TALL  */ { 5, 0.85f, 0.35f, BLOCK::SPRUCE_LOG },  
-        /* SPRUCE_SMALL */ { 2, 0.85f, 0.30f, BLOCK::SPRUCE_LOG }, 
+        /* OAK          */ { 2, 0.65f, 0.675f, BLOCK::OAKLOG     },
+        /* SPRUCE_TALL  */ { 5, 0.85f, 0.40f, BLOCK::SPRUCE_LOG },
+        /* SPRUCE_SMALL */ { 2, 0.85f, 0.35f, BLOCK::SPRUCE_LOG },
         /* ACACIA       */ { 3, 0.35f, 1.00f, BLOCK::ACACIA_LOG },  
     };
     static_assert(std::size(kTreeShape) == static_cast<std::size_t>(TREE::COUNT));

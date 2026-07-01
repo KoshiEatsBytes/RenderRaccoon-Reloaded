@@ -11,6 +11,8 @@
 #include "Engine.h"
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "miniaudio.h"
+
 namespace RR
 {
     // LOCAL -----------------------------------------------------------------------------------------------------------
@@ -62,6 +64,9 @@ namespace RR
         const int meshed    = EnsureMeshed(centre);
         const int tiled     = EnsureTiles(centre);
 
+        // retire old visual once its replacement is uplaoded
+        RetireReplaced(centre);
+
         if (generated == 0 && meshed == 0 && tiled == 0)
         {
             m_streamingIdle = true;
@@ -110,6 +115,11 @@ namespace RR
         for (auto& [coord, tile] : m_lodTiles)
         {
             if (!tile.mesh) continue;
+
+            // if a real chunk is over this cord it wins, therefore skip
+            const auto cit = m_chunks.find(coord);
+            if (cit != m_chunks.end() && cit->second->mesh) continue;
+
             if (!IntersectsFrustum(coord)) continue;
 
             auto model = glm::translate(mat4(1.0f),
@@ -318,29 +328,64 @@ namespace RR
 
     void ChunkManager::UnloadFar(CHUNK::Coord _centre)
     {
-        const int chunkRange = m_lodEnabled ? m_coreRadius + 1 : m_meshRadius + 1;
-        const int tileRange  = m_meshRadius + 2;
+        const int tileRange = m_meshRadius + 2;
 
-        // unload far chunks
+        // only remove out of view, not inbetween lod bands
         for (auto it = m_chunks.begin(); it != m_chunks.end();)
         {
             const int dist = std::max(std::abs(it->first.x - _centre.x),
                                       std::abs(it->first.z - _centre.z));
 
-            // Unload out of range
-            if (dist > chunkRange)
+            if (dist > tileRange)
                 it = m_chunks.erase(it);
             else
                 ++it;
         }
 
-        // drop any that entered the core or left RD
+        // remove far lod bands
         for (auto it = m_lodTiles.begin(); it != m_lodTiles.end();)
         {
             const int dist = std::max(std::abs(it->first.x - _centre.x),
                                       std::abs(it->first.z - _centre.z));
 
-            if (dist <= m_coreRadius || dist > tileRange)
+            if (dist > tileRange)
+                it = m_lodTiles.erase(it);
+            else
+                ++it;
+        }
+    }
+
+    void ChunkManager::RetireReplaced(CHUNK::Coord _centre)
+    {
+        // a chunk that translated from lod0 to 1 waits for the tile to be ready to be replaced
+        for (auto it = m_chunks.begin(); it != m_chunks.end();)
+        {
+            const int dist = std::max(std::abs(it->first.x - _centre.x),
+                                      std::abs(it->first.z - _centre.z));
+
+            const auto tileIt = m_lodTiles.find(it->first);
+
+            // log if tile is ready
+            const bool tileReady = tileIt != m_lodTiles.end() && tileIt->second.mesh;
+
+            // +1 to prevent a null ring between 0 and 1
+            if (dist > m_coreRadius + 1 && tileReady)
+                it = m_chunks.erase(it);
+            else
+                ++it;
+        }
+
+        // a tile whos inside the core, drop once chunk is meshed
+        for (auto it = m_lodTiles.begin(); it != m_lodTiles.end(); )
+        {
+            const int  dist  = std::max(std::abs(it->first.x - _centre.x),
+                                        std::abs(it->first.z - _centre.z));
+
+            const Chunk* chunk = GetChunk(it->first);
+            const bool chunkReady = chunk && chunk->state == CHUNK::STATE::MESHED;
+
+            // drop current chunk if replacement tile is ready
+            if (dist <= m_coreRadius && chunkReady)
                 it = m_lodTiles.erase(it);
             else
                 ++it;
@@ -442,20 +487,51 @@ namespace RR
             if (built >= kTileBudget) break;
 
             const int dist = chessDist(offset);
-            // dont tile core chunks
-            if (dist <= m_coreRadius) continue;
             if (dist >  m_meshRadius) break;
 
-            const int lodLevel = LevelForDistance(dist);
             const Coord cords {
                 _centre.x + offset.x,
                 _centre.z + offset.z
             };
 
             const auto it = m_lodTiles.find(cords);
+            const int current = it != m_lodTiles.end() ? it->second.level : -1;
+
+            int lodLevel;
+            if (dist <= m_coreRadius)
+            {
+                // core zone, cheap until main has been rendered
+                const Chunk* chunk = GetChunk(cords);
+                // real chunk is ready
+                if (chunk && chunk->state == STATE::MESHED) continue;
+                if (current >= 0) continue;
+
+                // until then use cheap chunks
+                lodLevel = 1;
+            }
+            else
+            {
+
+                // only change lod level when the distance has cleared the specified threshold
+                lodLevel = LevelForDistance(dist);
+                if (current >= 0)
+                {
+                    if (lodLevel > current)
+                    {
+                        lodLevel = LevelForDistance(dist - m_lodHysteresis);
+                    }
+                    else if (lodLevel < current)
+                    {
+                        lodLevel = LevelForDistance(dist + m_lodHysteresis);
+                    }
+                }
+            }
+
+            // skip if already correct
+            if (current == lodLevel) continue;
+
             // already tiled
-            if (it != m_lodTiles.end() &&
-                it->second.level == lodLevel)
+            if (it != m_lodTiles.end() && it->second.level == lodLevel)
                 continue;
 
             // extract mesh surface

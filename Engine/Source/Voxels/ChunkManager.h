@@ -59,6 +59,7 @@ namespace RR
         void RebuildRingOffset();
         void NormalizeRanges();
         void UnloadFar(CHUNK::Coord _centre);
+        void RetireReplaced(CHUNK::Coord _centre);
         void GenerateChunk(CHUNK::Coord _coord);
         void BuildChunkMesh(Chunk& _chunk);
 
@@ -103,8 +104,9 @@ namespace RR
         int m_coreRadius = kDefaultCoreRadius; // full detail RD
 
         // Lod ring shaping
-        float m_ringGrowth = 2.f;
-        int   m_maxLevel = 4;
+        float m_ringGrowth    = 2.f;
+        int   m_maxLevel      = 4;
+        int   m_lodHysteresis = 2; // chunks of deadband around each ring
 
         // Per frame budget
         static constexpr int kGenBudget  = 1;

@@ -26,7 +26,7 @@ namespace RR
         // Hint only, may be re-allocated for cliffs
         const int estQuads = cells * cells * 8;
         out.vertices.reserve(static_cast<std::size_t>(estQuads) * 4 * 9);
-        out.indices.reserve (static_cast<std::size_t>(estQuads) * 6);
+        out.indices.reserve (static_cast<std::size_t>(estQuads) * 12);
 
         // Pushes vertex layout into result
         auto pushVertex = [&](float _x,  float _y,  float _z,
@@ -55,6 +55,29 @@ namespace RR
                     baseIndex + 0,
                     baseIndex + 2,
                     baseIndex + 3
+                });
+            baseIndex += 4;
+        };
+
+        auto pushQuadDouble = [&]()
+        {
+            // double faced quad
+            out.indices.insert(out.indices.end(),
+                {
+                    // front
+                    baseIndex + 0,
+                    baseIndex + 1,
+                    baseIndex + 2,
+                    baseIndex + 0,
+                    baseIndex + 2,
+                    baseIndex + 3,
+                    // back
+                    baseIndex + 0,
+                    baseIndex + 2,
+                    baseIndex + 1,
+                    baseIndex + 0,
+                    baseIndex + 3,
+                    baseIndex + 2
                 });
             baseIndex += 4;
         };
@@ -122,7 +145,7 @@ namespace RR
                         pushVertex(_bx, _lo, _bz, _nx,_ny,_nz, _uB, _lo, _layer);
                         pushVertex(_bx, _hi, _bz, _nx,_ny,_nz, _uB, _hi, _layer);
                         pushVertex(_ax, _hi, _az, _nx,_ny,_nz, _uA, _hi, _layer);
-                        pushQuad();
+                        pushQuadDouble();
                     };
 
                     // skirt or far ring
@@ -325,13 +348,13 @@ namespace RR
             const auto canopyLayer = static_cast<float>(GetBlockInfo(tree.canopy).faceLayer[upFace]);
             const auto logLayer    = static_cast<float>(GetBlockInfo(tree.log).faceLayer[sideFace]);
 
-            const float cx     = static_cast<float>(tree.localX);
-            const float cz     = static_cast<float>(tree.localZ);
-            const float radius = static_cast<float>(tree.radius);
+            const auto cx     = static_cast<float>(tree.localX);
+            const auto cz     = static_cast<float>(tree.localZ);
+            const auto radius = static_cast<float>(tree.radius);
 
-            const float trunkBot  = static_cast<float>(tree.baseY + 1);
-            const float trunkTop  = trunkBot + static_cast<float>(tree.trunkHeight);
-            const float canopyTop = trunkTop + static_cast<float>(tree.canopyHeight);
+            const auto trunkBot  = static_cast<float>(tree.baseY + 1);
+            const auto trunkTop  = trunkBot + static_cast<float>(tree.trunkHeight);
+            const auto canopyTop = trunkTop + static_cast<float>(tree.canopyHeight);
 
             // trunk
             if (tree.trunkHeight > 0)
