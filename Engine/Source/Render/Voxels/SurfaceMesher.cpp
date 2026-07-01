@@ -10,8 +10,7 @@ namespace RR
     MeshData MeshSurface(int _dim, int _level,
                      const std::vector<int>& _height,
                      const std::vector<BLOCK>& _block,
-                     const std::vector<BLOCK>& _sideColumn,
-                     int _skirtDepth)
+                     const std::vector<BLOCK>& _sideColumn)
     {
         MeshData out;
         out.layout = VoxelVertexLayout();
@@ -82,10 +81,10 @@ namespace RR
             baseIndex += 4;
         };
 
-        // Iterate cells in heightmap grid
-        for (int cz = 0; cz < cells; ++cz)
+        // Iterate inner cells in heightmap grid
+        for (int cz = 1; cz < cells; ++cz)
         {
-            for (int cx = 0; cx < cells; ++cx)
+            for (int cx = 1; cx < cells; ++cx)
             {
                 const int   height = _height[cx + cz * _dim];
                 const BLOCK block  = _block [cx + cz * _dim];
@@ -94,10 +93,10 @@ namespace RR
                 const auto topLayer = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
 
                 // world space of this cell
-                const auto minX = static_cast<float>(cx * stride);
-                const auto maxX = static_cast<float>((cx + 1) * stride);
-                const auto minZ = static_cast<float>(cz * stride);
-                const auto maxZ = static_cast<float>((cz + 1) * stride);
+                const auto minX = static_cast<float>((cx - 1) * stride);
+                const auto maxX = static_cast<float>(cx * stride);
+                const auto minZ = static_cast<float>((cz - 1) * stride);
+                const auto maxZ = static_cast<float>(cz* stride);
                 const auto yTop = static_cast<float>(height + 1);
 
                 // flat top face
@@ -118,23 +117,17 @@ namespace RR
                 };
 
                 // get height of neighbor cell, if false drop skirt
-                auto neighbour = [&](int _nx, int _nz, int& _outTop) -> bool
+                auto neighbour = [&](int _nx, int _nz, int& _outTop)
                 {
-                    if (_nx < 0 || _nz < 0 || _nx >= _dim || _nz >= _dim)
-                    {
-                        _outTop = height - _skirtDepth;
-                        return false;
-                    }
-
+                    // unconditional apron
                     _outTop = _height[_nx + _nz * _dim];
-                    return true;
                 };
 
                 // wall along one edge down to neighbour top height
                 auto pushWall = [&](float _ax, float _az, float _uA,
                                     float _bx, float _bz, float _uB,
                                     float _nx, float _ny, float _nz,
-                                    int _neighbourTop, bool _banded) -> void
+                                    int _neighbourTop) -> void
                 {
                     const int bottomY = _neighbourTop + 1;
 
@@ -149,7 +142,7 @@ namespace RR
                     };
 
                     // skirt or far ring
-                    if (!_banded || !bandFaces)
+                    if (!bandFaces)
                     {
                         const int capBands  = stride;
                         const int capBottom = std::max(bottomY, height + 1 - capBands);
@@ -181,28 +174,28 @@ namespace RR
                 int  nTop;
 
                 // West
-                bool inBetween = neighbour(cx + 1, cz, nTop);
+                neighbour(cx + 1, cz, nTop);
                 if (nTop < height)
                 {
-                    pushWall(maxX, maxZ, maxZ,  maxX, minZ, minZ,   1,0, 0, nTop, inBetween);
+                    pushWall(maxX, maxZ, maxZ,  maxX, minZ, minZ,   1, 0, 0, nTop);
                 }
                 // East
-                inBetween = neighbour(cx - 1, cz, nTop);
+                neighbour(cx - 1, cz, nTop);
                 if (nTop < height)
                 {
-                    pushWall(minX, minZ, minZ,  minX, maxZ, maxZ,  -1,0, 0, nTop, inBetween);
+                    pushWall(minX, minZ, minZ,  minX, maxZ, maxZ,  -1, 0, 0, nTop);
                 }
                 // South
-                inBetween = neighbour(cx, cz + 1, nTop);
+                neighbour(cx, cz + 1, nTop);
                 if (nTop < height)
                 {
-                    pushWall(minX, maxZ, minX,  maxX, maxZ, maxX,   0,0, 1, nTop, inBetween);
+                    pushWall(minX, maxZ, minX,  maxX, maxZ, maxX,   0, 0, 1, nTop);
                 }
                 // North
-                inBetween = neighbour(cx, cz - 1, nTop);
+                neighbour(cx, cz - 1, nTop);
                 if (nTop < height)
                 {
-                    pushWall(maxX, minZ, maxX,  minX, minZ, minX,   0,0,-1, nTop, inBetween);
+                    pushWall(maxX, minZ, maxX,  minX, minZ, minX,   0,0,-1, nTop);
                 }
             }
         }

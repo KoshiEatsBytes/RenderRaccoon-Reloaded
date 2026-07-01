@@ -34,30 +34,34 @@ namespace WORLDGEN
         const bool riverCarve     = _level >= 1 && _level <= _cfg.lodRiverCarveMaxLevel;
 
         const int stride  = 1 << _level;
-        const int span    = kSizeX + 1;
-        const int dim     = (kSizeX >> _level) + 1;
+        const int nCells  = kSizeX >> _level;
+        const int padG    = nCells + 2;
+        const int apron   = stride;
+        const int span    = kSizeX + 2 * apron;
         const int originX = _cords.x * kSizeX;
         const int originZ = _cords.z * kSizeZ;
         const int margin  = _cfg.biomeBlendRadius;
 
-
         // build biome and blend once per tile
-        const BiomeGrid              grid = BuildBiomeGridSpan(originX, originZ, span, margin, _cfg);
+        const BiomeGrid              grid = BuildBiomeGridSpan(originX - apron, originZ - apron, span, margin, _cfg);
         const std::vector<BlendSums> sums = BuildBlendSumsSpan(grid, span, _cfg);
         const int                    total = (2 * margin + 1) * (2 * margin + 1);
 
         SurfaceField field;
         field.level = _level;
-        field.dim   = dim;
-        field.height.resize(dim * dim);
-        field.block.resize(dim * dim);
-        field.sideColumn.resize(dim * dim * RR::kLodBandDepth);
-        field.biome.resize(dim * dim);
+        field.dim   = padG;
+        field.height    .resize(padG * padG);
+        field.block     .resize(padG * padG);
+        field.sideColumn.resize(padG * padG * RR::kLodBandDepth);
+        field.biome     .resize(padG * padG);
 
-        for (int sz = 0; sz < dim; ++sz)
+        for (int sz = -1; sz <= nCells; ++sz)
         {
-            for (int sx = 0; sx < dim; ++sx)
+            for (int sx = -1; sx <= nCells; ++sx)
             {
+                const bool rendered = sx >= 0 && sx < nCells && sz >= 0 && sz < nCells;
+                const int  idx      = (sx + 1) + (sz + 1) * padG;
+
                 // forward footprint, coll this plateou covers
                 const int lxMin = sx * stride;
                 const int lzMin = sz * stride;
@@ -80,19 +84,14 @@ namespace WORLDGEN
                 {
                     const int lz = lzMin + dz;
 
-                    // only inclusive far edge
-                    if (lz >= span) break;
-
                     for (int dx = 0; dx < stride; ++dx)
                     {
                         const int lx = lxMin + dx;
 
-                        if (lx >= span) break;
-
                         const int wx = originX + lx;
                         const int wz = originZ + lz;
 
-                        const BlendSums& sum       = sums[lx + lz * span];
+                        const BlendSums& sum       = sums[(lx + apron) + (lz + apron) * span];
                         const int        land      = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
                         const BIOME      currBiome = grid.At(wx, wz);
 
@@ -141,16 +140,16 @@ namespace WORLDGEN
                         ++colCount;
 
                         // Push back proxies into field
-                        if (land >= _cfg.waterLevel && valleyTerr <= 0.0f &&
-                            lx < kSizeX && lz < kSizeZ)
+                        if (land >= _cfg.waterLevel && valleyTerr <= 0.0f)
                         {
-
                             if (TreeSpawnRoll(wx, wz, currBiome, _cfg))
                             {
                                 const int radius = GetTreeShape(GetVegTypes(currBiome).tree).leafRadius;
                                 canopyArea += (2 * radius + 1) * (2 * radius + 1);
 
-                                if (collectProxies && HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
+                                // push the geometric proxy only for rendered cells in the proxy rings
+                                if (rendered && collectProxies &&
+                                    HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
                                 {
                                     const BiomeVeg&  biomeVeg = _cfg.biomeVegetation[static_cast<int>(currBiome)];
                                     const TreeShape& shape    = GetTreeShape(GetVegTypes(currBiome).tree);
@@ -165,7 +164,7 @@ namespace WORLDGEN
                                           shape.crownTopFrac, shape.log, GetVegTypes(currBiome).proxyCanopy });
                                 }
                             }
-                            else if (collectProxies && CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
+                            else if (rendered && collectProxies && CactusSpawnRoll(wx, wz, currBiome, _cfg) &&
                                      HashFloat(wx, wz, _cfg.seed + 1313u) < ProxyKeep(_level, _cfg))
                             {
                                 const int cactusH = 3 + static_cast<int>(HashFloat(wx, wz, _cfg.seed + 1002u) * 3.0f);
@@ -198,7 +197,7 @@ namespace WORLDGEN
                 const int   riverWaterY = std::max(_cfg.waterLevel, _cfg.riverLevel);
                 const bool  riverWater  = riverCarve && bestProfile >= _cfg.lodRiverWetProfile;
 
-                const BlendSums& sum = sums[bestLx + bestLz * span];
+                const BlendSums& sum = sums[(bestLx + apron) + (bestLz + apron) * span];
 
                 int   surfaceY = land;
                 BLOCK block;
@@ -288,7 +287,6 @@ namespace WORLDGEN
                     }
                 }
 
-                const int idx        = sx + sz * dim;
                 const int colBase    = idx * RR::kLodBandDepth;
 
                 // small helper for side bands
@@ -309,171 +307,36 @@ namespace WORLDGEN
                     }
                 };
 
-                // Inject sides into field, 0 is surface block
-                field.sideColumn[colBase] = block;
-
-                const int fillDepth = _level <= 1 ? RR::kLodBandDepth : 2;
-                for (int depth = 1; depth < fillDepth; ++depth)
-                {
-                    if (depth < canopyDepth)
-                    {
-                        field.sideColumn[colBase + depth] = veg.canopy;
-                    }
-                    else
-                    {
-                        field.sideColumn[colBase + depth] = bandBlock(depth);
-                    }
-                }
-
-                // populate the rest
                 field.height[idx] = surfaceY;
-                field.block[idx]  = topBlock;
-                field.biome[idx]  = biome;
+
+                if (rendered)
+                {
+                    // Inject sides into field, 0 is surface block
+                    field.sideColumn[colBase] = block;
+
+                    const int fillDepth = _level <= 1 ? RR::kLodBandDepth : 2;
+                    for (int depth = 1; depth < fillDepth; ++depth)
+                    {
+                        if (depth < canopyDepth)
+                        {
+                            field.sideColumn[colBase + depth] = veg.canopy;
+                        }
+                        else
+                        {
+                            field.sideColumn[colBase + depth] = bandBlock(depth);
+                        }
+                    }
+
+                    // populate the rest
+                    field.block[idx]  = topBlock;
+                    field.biome[idx]  = biome;
+                }
             }
         }
 
         return field;
     }
-
-    // DELETE BEFORE RELEASE
-    // Console proof for the LOD surface keystone
-    inline void ProveSurfaceLOD(const WorldGenConfig& _cfg)
-    {
-        using namespace RR::CHUNK;
-        const int margin = _cfg.biomeBlendRadius;
-        const int total  = (2 * margin + 1) * (2 * margin + 1);
-
-        const Coord coords[] = {
-            {0, 0},
-            {3, -2},
-            {-5, 7}
-        };
-
-        bool matchOk = true;
-        for (const Coord c : coords)
-        {
-            const SurfaceField           f = ExtractSurface(c, 0, _cfg);
-            const BiomeGrid              g = BuildBiomeGrid(c.x, c.z, margin, _cfg);
-            const std::vector<BlendSums> s = BuildBlendSums(g, _cfg);      
-
-            for (int z = 0; z < kSizeZ && matchOk; ++z)
-            {
-                for (int x = 0; x < kSizeX; ++x)
-                {
-                    const int   wx    = c.x * kSizeX + x;
-                    const int   wz    = c.z * kSizeZ + z;
-                    const BIOME biome = g.At(wx, wz);
-                    const int   land  = TerrainHeightFromSums(s[x + z * kSizeX], wx, wz, total, _cfg);
-                    const int   refY  = (land < _cfg.waterLevel) ? _cfg.waterLevel : land;
-
-                    const int i = x + z * f.dim;
-
-                    if (f.height[i] != refY || f.biome[i] != biome)
-                    {
-                        RR::Error("[SurfaceLOD] A mismatch at (", wx, ",", wz,
-                                  ") field=", f.height[i], " ref=", refY);
-                        matchOk = false;
-                        break;
-                    }
-                }
-            }
-        }
-        if (matchOk)
-            RR::Success("[SurfaceLOD] A: level-0 == full-res 16-path on cols 0..15 (incl neg coords)");
-
-        const SurfaceField a = ExtractSurface({2, 2}, 2, _cfg);
-        const SurfaceField b = ExtractSurface({2, 2}, 2, _cfg);
-
-        if (a.height == b.height && a.block == b.block && a.biome == b.biome)
-            RR::Success("[SurfaceLOD] B: same seed twice -> identical");
-        else
-            RR::Error("[SurfaceLOD] B: NON-DETERMINISTIC");
-
-        WorldGenConfig bumped = _cfg;
-        bumped.seed = _cfg.seed + 1u;
-        const SurfaceField d = ExtractSurface({2, 2}, 2, bumped);
-
-        if (a.height != d.height || a.block != d.block || a.biome != d.biome)
-            RR::Success("[SurfaceLOD] B: seed+1 -> differs");
-        else
-            RR::Error("[SurfaceLOD] B: seed+1 produced identical world");
-
-        const bool dimsOk = ExtractSurface({0,0}, 0, _cfg).dim == 17
-                         && ExtractSurface({0,0}, 1, _cfg).dim == 9
-                         && ExtractSurface({0,0}, 2, _cfg).dim == 5
-                         && ExtractSurface({0,0}, 4, _cfg).dim == 2;
-        dimsOk ? RR::Success("[SurfaceLOD] C: dims 17/9/5/2 for L0/1/2/4")
-               : RR::Error  ("[SurfaceLOD] C: bad dim");
-    }
-
-    inline void ProveSurfaceMesher()
-    {
-        using RR::CHUNK::BLOCK;
-        const int dim = 5, level = 2, skirt = 8;
-        const std::vector<int>   h(dim * dim, 80);
-        const std::vector<BLOCK> b(dim * dim, BLOCK::GRASS);
-        const std::vector<BLOCK> s(dim*dim*RR::kLodBandDepth, BLOCK::DIRT);
-
-
-        const RR::MeshData m = RR::MeshSurface(dim, level, h, b, s, skirt);
-
-        // flat field all cells single sided
-        const std::size_t verts = m.vertices.size() / 9;
-        const std::size_t quads = (dim - 1) * (dim - 1);
-        const std::size_t segs  = (skirt > 0) ? 2 * (dim - 1) : 0;
-        const std::size_t expV  = (quads + segs) * 4;
-        const std::size_t expI  = (quads + segs) * 6;
-        const bool ok = (verts == expV) && (m.indices.size() == expI);
-
-        if (ok)
-            RR::Success("[SurfaceMesher] flat L2: ", quads, " quads -> ", verts, " verts / ", m.indices.size(), " indices");
-        else
-            RR::Error  ("[SurfaceMesher] bad counts: verts=", verts, " idx=", m.indices.size());
-    }
-
-    inline void ProveRiverCarve(const WorldGenConfig& _cfg)
-    {
-        const int channelBed = _cfg.riverLevel - _cfg.riverDepth;
-        const int wTop       = std::max(_cfg.waterLevel, _cfg.riverLevel);
-        bool ok = true;
-
-        // (1) no river -> untouched
-        { const RiverCarve r = OpenRiverCarve(80, 0.0f, false, BIOME::PLAINS, _cfg);
-            ok &= (r.terrHeight == 80 && r.waterTop == _cfg.waterLevel); }
-
-        // (2) faint bank -> dips toward shelf, stays dry (above water)
-        { const RiverCarve r = OpenRiverCarve(80, 0.2f, false, BIOME::PLAINS, _cfg);
-            ok &= (r.terrHeight < 80 && r.terrHeight > wTop); }
-
-        // (3) channel centre -> below the water surface, water at riverLevel
-        { const RiverCarve r = OpenRiverCarve(80, 1.0f, false, BIOME::PLAINS, _cfg);
-            ok &= (r.terrHeight <= channelBed && r.terrHeight < wTop && r.waterTop == wTop); }
-
-        // (4) clamp -> never raises terrain above land
-        { const RiverCarve r = OpenRiverCarve(55, 1.0f, false, BIOME::PLAINS, _cfg);
-            ok &= (r.terrHeight <= 55); }
-
-        ok ? RR::Success("[RiverCarve] regimes dry/shelf/channel/clamp OK")
-           : RR::Error  ("[RiverCarve] regime mismatch");
-    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

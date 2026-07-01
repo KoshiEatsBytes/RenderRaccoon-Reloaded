@@ -82,11 +82,10 @@ bool VoxelScene::Init()
     RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::LodMeshResult
     {
         const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, m_genConfig);
-        const int skirt = 8 * (1 << _level);
 
         // proxies and surface mesh
         RR::LodMeshResult out;
-        out.surface = RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn, skirt);
+        out.surface = RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn);
         out.proxies = RR::MeshProxies(field.trees, _level);
         return out;
     };
@@ -128,11 +127,6 @@ bool VoxelScene::Init()
     m_skybox->SetCloudFade(0.85f, 0.4f);
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
-
-    // DELETE BEFORE RELEASE
-    WORLDGEN::ProveSurfaceLOD(m_genConfig);
-    WORLDGEN::ProveSurfaceMesher();
-    WORLDGEN::ProveRiverCarve(m_genConfig);
 
     OnInit();
     return true;

@@ -31,8 +31,7 @@ namespace RR
     MeshData MeshSurface(int _dim, int _level,
         const std::vector<int>& _height,
         const std::vector<CHUNK::BLOCK>& _block,
-        const std::vector<CHUNK::BLOCK>& _sideColumn,
-        int _skirtDepth = 0);
+        const std::vector<CHUNK::BLOCK>& _sideColumn);
 
     // Triangulates vegetation canopies
     MeshData MeshProxies(const std::vector<LodTreeProxy>& _trees, int _level);
