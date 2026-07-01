@@ -7,7 +7,7 @@ namespace RR
     using namespace CHUNK;
     using uInt32 = std::uint32_t;
 
-    MeshData MeshSurface(int _dim, int _level,
+    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel,
                      const std::vector<int>& _height,
                      const std::vector<BLOCK>& _block,
                      const std::vector<BLOCK>& _sideColumn)
@@ -15,12 +15,28 @@ namespace RR
         MeshData out;
         out.layout = VoxelVertexLayout();
 
-        const bool bandFaces = _level <= 1;
         const int stride      = 1 << _level;
         const int cells       = _dim - 1;
         const int upFace      = static_cast<int>(FACE::UP);
         const int sideFace    = static_cast<int>(FACE::NORTH);
         uInt32    baseIndex   = 0;
+
+        const bool bandFaces = _level <= _bandMaxLevel;
+
+        // sets band stepping
+        int bandStep;
+        if (_level == 3)
+        {
+            bandStep = kLodBandStepL3;
+        }
+        else if (_level == 2)
+        {
+            bandStep = kLodBandStepL2;
+        }
+        else
+        {
+            bandStep = kLodBandStepL1;
+        }
 
         // Hint only, may be re-allocated for cliffs
         const int estQuads = cells * cells * 8;
@@ -159,13 +175,12 @@ namespace RR
                     }
 
                     // banded cliff face
-                    for (int y = bottomY; y <= height; y += kLodBandStep)
+                    for (int y = bottomY; y <= height; y += bandStep)
                     {
-                        // sample top block, so topmost keeps at 0
-                        const int   topBlock = std::min(y + kLodBandStep - 1, height);
+                        const int   topBlock = std::min(y + bandStep - 1, height);
                         const float layer    = sideLayerAt(topBlock);
                         const float y0       = static_cast<float>(y);
-                        const float y1       = static_cast<float>(std::min(y + kLodBandStep, height + 1));
+                        const float y1       = static_cast<float>(std::min(y + bandStep, height + 1));
 
                         pushQuadY(y0, y1, layer);
                     }

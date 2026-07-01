@@ -9,8 +9,11 @@ namespace RR
 {
     // Visible cliff face depth
     constexpr int kLodBandDepth = 32;
-    // how many steps
-    constexpr int kLodBandStep  = 1;
+    // banding settings
+    static constexpr int kLodBandStepL1 = 1;
+    static constexpr int kLodBandStepL2 = 2;
+    static constexpr int kLodBandStepL3 = 4;
+
     struct LodTreeProxy
     {
         int localX;
@@ -28,7 +31,7 @@ namespace RR
 
     // Triangulates a dim x dim strided field
     // aka meshes top faces only for lod
-    MeshData MeshSurface(int _dim, int _level,
+    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel,
         const std::vector<int>& _height,
         const std::vector<CHUNK::BLOCK>& _block,
         const std::vector<CHUNK::BLOCK>& _sideColumn);

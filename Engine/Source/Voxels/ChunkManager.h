@@ -113,6 +113,6 @@ namespace RR
         static constexpr int kMeshBudget = 1;
 
         // lod rings and budgets
-        static constexpr int kTileBudget  = 2;
+        static constexpr int kTileBudget  = 4;
     };
 }

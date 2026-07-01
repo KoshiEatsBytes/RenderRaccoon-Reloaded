@@ -85,7 +85,9 @@ bool VoxelScene::Init()
 
         // proxies and surface mesh
         RR::LodMeshResult out;
-        out.surface = RR::MeshSurface(field.dim, _level, field.height, field.block, field.sideColumn);
+        out.surface = RR::MeshSurface(field.dim, _level, m_genConfig.lodBandMaxLevel,
+            field.height, field.block, field.sideColumn);
+
         out.proxies = RR::MeshProxies(field.trees, _level);
         return out;
     };

@@ -327,7 +327,7 @@ namespace WORLDGEN
                     // Inject sides into field, 0 is surface block
                     field.sideColumn[colBase] = block;
 
-                    const int fillDepth = _level <= 1 ? RR::kLodBandDepth : 2;
+                    const int fillDepth = _level <= _cfg.lodBandMaxLevel ? RR::kLodBandDepth : 2;
                     for (int depth = 1; depth < fillDepth; ++depth)
                     {
                         if (depth < canopyDepth)
