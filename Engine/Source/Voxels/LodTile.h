@@ -12,7 +12,8 @@ namespace RR
     struct LodTile
     {
         CHUNK::Coord cords;
-        int level = 1;
+        int level     = 1;
+        int coreEdges = 0; // edges bordering core chunks
 
         std::unique_ptr<Mesh> mesh;
         std::unique_ptr<Mesh> proxyMesh;

@@ -498,6 +498,7 @@ namespace RR
             const int current = it != m_lodTiles.end() ? it->second.level : -1;
 
             int lodLevel;
+            int coreMask = 0;
             if (dist <= m_coreRadius)
             {
                 // core zone, cheap until main has been rendered
@@ -511,7 +512,6 @@ namespace RR
             }
             else
             {
-
                 // only change lod level when the distance has cleared the specified threshold
                 lodLevel = LevelForDistance(dist);
                 if (current >= 0)
@@ -525,23 +525,32 @@ namespace RR
                         lodLevel = LevelForDistance(dist + m_lodHysteresis);
                     }
                 }
+
+                auto inCore = [&](int _dx, int _dz)
+                {
+                    return chessDist({ offset.x + _dx, offset.z + _dz }) <= m_coreRadius;
+                };
+
+                // bitmap for each of the 4 edges
+                if (inCore(-1, 0)) coreMask |= 0x1;
+                if (inCore( 1, 0)) coreMask |= 0x2;
+                if (inCore( 0,-1)) coreMask |= 0x4;
+                if (inCore( 0, 1)) coreMask |= 0x8;
             }
 
-            // skip if already correct
-            if (current == lodLevel) continue;
-
-            // already tiled
-            if (it != m_lodTiles.end() && it->second.level == lodLevel)
-                continue;
+            // skip only if already correct, same level and boundary
+            const bool sameMask = it != m_lodTiles.end() && it->second.coreEdges == coreMask;
+            if (current == lodLevel && sameMask) continue;
 
             // extract mesh surface
-            const LodMeshResult data = m_lodMesher(cords, lodLevel);
+            const LodMeshResult data = m_lodMesher(cords, lodLevel, coreMask);
             LodTile tile;
 
             // assemble surface mesh
-            tile.cords = cords;
-            tile.level = lodLevel;
-            tile.mesh  = std::make_unique<Mesh>(data.surface.layout, data.surface.vertices, data.surface.indices);
+            tile.cords     = cords;
+            tile.level     = lodLevel;
+            tile.coreEdges = coreMask;
+            tile.mesh      = std::make_unique<Mesh>(data.surface.layout, data.surface.vertices, data.surface.indices);
 
             // assemble proxies mesh (if present)
             if (!data.proxies.indices.empty())

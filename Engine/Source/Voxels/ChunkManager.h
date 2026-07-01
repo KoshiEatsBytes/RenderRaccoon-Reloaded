@@ -21,7 +21,7 @@ namespace RR
         MeshData proxies;
     };
 
-    using LodMesher = std::function<LodMeshResult(CHUNK::Coord, int)>;
+    using LodMesher = std::function<LodMeshResult(CHUNK::Coord, int, int)>;
 
     class Material;
     class ChunkManager

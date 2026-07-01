@@ -79,9 +79,9 @@ bool VoxelScene::Init()
     };
 
     // LOD mesher lambda
-    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level) -> RR::LodMeshResult
+    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level, int _coreEdges) -> RR::LodMeshResult
     {
-        const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, m_genConfig);
+        const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, _coreEdges, m_genConfig);
 
         // proxies and surface mesh
         RR::LodMeshResult out;

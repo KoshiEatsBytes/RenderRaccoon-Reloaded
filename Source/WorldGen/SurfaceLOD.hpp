@@ -27,7 +27,7 @@ namespace WORLDGEN
     };
 
     // distant surface skin for one chunk only, no fill or rivers/tree or veg
-    inline SurfaceField ExtractSurface(RR::CHUNK::Coord _cords, int _level, const WorldGenConfig& _cfg)
+    inline SurfaceField ExtractSurface(RR::CHUNK::Coord _cords, int _level, int _coreEdges, const WorldGenConfig& _cfg)
     {
         using namespace RR::CHUNK;
         const bool collectProxies = _level >= 1 && _level <= _cfg.proxyMaxLevel;
@@ -70,6 +70,7 @@ namespace WORLDGEN
                 int bestLand   = INT_MIN;
                 int bestLx     = lxMin;
                 int bestLz     = lzMin;
+                int minReal    = INT_MAX;
                 int canopyArea = 0;
 
                 // river state
@@ -137,6 +138,8 @@ namespace WORLDGEN
 
                         // Soften water line
                         sumHeight += riverHeight;
+                        // depest surface in the footprint
+                        minReal   = std::min(minReal, riverHeight);
                         ++colCount;
 
                         // Push back proxies into field
@@ -307,7 +310,17 @@ namespace WORLDGEN
                     }
                 };
 
-                field.height[idx] = surfaceY;
+                bool coreFacing = false;
+                if (!rendered)
+                {
+                    // reads bitmap
+                    if (sx == -1     && (_coreEdges & 0x1)) coreFacing = true;
+                    if (sx == nCells && (_coreEdges & 0x2)) coreFacing = true;
+                    if (sz == -1     && (_coreEdges & 0x4)) coreFacing = true;
+                    if (sz == nCells && (_coreEdges & 0x8)) coreFacing = true;
+                }
+
+                field.height[idx] = coreFacing ? minReal : surfaceY;
 
                 if (rendered)
                 {
