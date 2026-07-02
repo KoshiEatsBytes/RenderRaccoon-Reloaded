@@ -1,6 +1,7 @@
 
 #include "CameraComponent.h"
 
+#include "Engine.h"
 #include "glm/ext/matrix_clip_space.hpp"
 #include "Scene/GameObject.h"
 
@@ -39,8 +40,15 @@ namespace RR
 
     mat4 CameraComponent::GetProjectionMatrix(float _aspect) const
     {
-        // calculate projection matrix
-        return glm::perspective(glm::radians(m_fov), _aspect, m_nearPlane, m_farPlane);
+        const float fovY = glm::radians(m_fov);
+
+        if (Engine::GetInstance().GetGraphicsAPI().IsReversedZ())
+        {
+            // if reverse z far and near are swapped
+            return glm::perspectiveRH_ZO(fovY, _aspect, m_farPlane, m_nearPlane);
+        }
+
+        return glm::perspective(fovY, _aspect, m_nearPlane, m_farPlane);
     }
 
     void CameraComponent::SetParameters(const float _fov, const float _nearPlane, const float _farPlane)

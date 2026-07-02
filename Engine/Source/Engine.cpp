@@ -196,12 +196,18 @@ namespace RR
         m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
         Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
 
+        // enable openGL experimental
+        glewExperimental = GL_TRUE;
+
         if (glewInit() != GLEW_OK)
         {
             Error("[INITIALIZATION] Failed to initialize GLEW library.");
             glfwTerminate();
             return false;
         }
+
+        // glew experimental may fail, flush it
+        glGetError();
 
         if (!m_graphicsAPI.Init())
         {
@@ -311,6 +317,18 @@ namespace RR
             else
                 m_graphicsAPI.SetClearColor();
 
+            // if using reversed Z draw scene into float-depth target then blit to screen
+            int fbW = 0, fbH = 0;
+            glfwGetFramebufferSize(m_window, &fbW, &fbH);
+
+            // fb width and height 0 when minimized
+            const bool useSceneRT = m_graphicsAPI.IsReversedZ() && fbW > 0 && fbH > 0;
+
+            if (useSceneRT)
+            {
+                m_graphicsAPI.BeginSceneTarget(fbW, fbH);
+            }
+
             m_graphicsAPI.ClearBuffers();
 
             if (scene)
@@ -340,9 +358,10 @@ namespace RR
                 lights = scene->GetLights();
             }
 
-            if (benchmark) benchmark->BeginGpuTimer();
+            if (benchmark)  benchmark->BeginGpuTimer();
             m_renderQueue.Draw(m_graphicsAPI, camData, lights);
-            if (benchmark) benchmark->EndGpuTimer();
+            if (benchmark)  benchmark->EndGpuTimer();
+            if (useSceneRT) m_graphicsAPI.BlitSceneToDefault(fbW, fbH);
 
             // ImGui draw on top of 3D
             m_appManager.RenderGUI();

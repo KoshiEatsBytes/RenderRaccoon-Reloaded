@@ -19,6 +19,14 @@ namespace RR
 
     bool GraphicsAPI::Init()
     {
+        // Reversed Z needs glClipControl (4.5 feature) detect if present, most modern
+        // hardware should support it, but implement fail safe for dated devices
+        m_reversedZSupported = GLEW_ARB_clip_control != 0 && glClipControl != nullptr;
+        Log("[GRAPHICS] Reversed-Z: ", m_reversedZSupported ? "available (float-depth path)"
+                                                            : "unavailable (standard-depth fallback)");
+
+        SetReversedZEnabled(true);
+
         // Turn off vertical sync
         glfwSwapInterval(0);
 
@@ -255,6 +263,25 @@ namespace RR
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
+    void GraphicsAPI::BeginSceneTarget(int _width, int _height)
+    {
+        // init fb with viewport
+        EnsureRenderTarget(_width, _height);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_sceneFBO);
+        glViewport(0, 0, _width, _height);
+    }
+
+    void GraphicsAPI::BlitSceneToDefault(int _width, int _height)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, m_sceneFBO);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(0, 0, _width, _height, 0, 0, _width, _height,
+                          GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+        // default frame buffer bound for UI
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
     void GraphicsAPI::SetBackfaceCulling(bool _enabled)
     {
         if (_enabled)
@@ -301,8 +328,75 @@ namespace RR
         glClearColor(_color.x, _color.y, _color.z, _color.w);
     }
 
+    void GraphicsAPI::SetReversedZEnabled(bool _enabled)
+    {
+        m_reversedZEnabled = _enabled;
+        if (!m_reversedZSupported) return;
+
+        if (IsReversedZ())
+        {
+            glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
+            glClearDepth(0.0);
+            glDepthFunc(GL_GREATER);
+        }
+        else
+        {
+            glClipControl(GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE);
+            glClearDepth(1.0);
+            glDepthFunc(GL_LESS);
+        }
+    }
+
+    bool GraphicsAPI::IsReversedZ() const
+    {
+        return m_reversedZSupported && m_reversedZEnabled;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
+    void GraphicsAPI::EnsureRenderTarget(int _width, int _height)
+    {
+        // Already sized correctly, discard
+        if (m_sceneFBO != 0 && _width == m_rtWidth && _height == m_rtHeight) return;
+
+        // Init frame and render buffers
+        if (m_sceneFBO == 0)
+        {
+            glGenFramebuffers (1, &m_sceneFBO);
+        }
+        if (m_sceneColorRBO == 0)
+        {
+            glGenRenderbuffers(1, &m_sceneColorRBO);
+        }
+        if (m_sceneDepthRBO == 0)
+        {
+            glGenRenderbuffers(1, &m_sceneDepthRBO);
+        }
+
+        // Bind FBOs and RBOs
+        glBindRenderbuffer(GL_RENDERBUFFER, m_sceneColorRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, _width, _height);
+
+        glBindRenderbuffer(GL_RENDERBUFFER, m_sceneDepthRBO);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT32F, _width, _height);
+        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, m_sceneFBO);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_RENDERBUFFER, m_sceneColorRBO);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
+            GL_RENDERBUFFER, m_sceneDepthRBO);
+
+        // check if the frame target completed
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        {
+            Error("[GRAPHICS] Scene render target incomplete");
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        m_rtWidth  = _width;
+        m_rtHeight = _height;
+    }
 }
 
 

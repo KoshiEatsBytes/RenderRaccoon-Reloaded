@@ -1,5 +1,6 @@
 {
   "BackfaceCull": false,
+  "DepthWrite": false,
   "DepthTest": false,
   "Blend": false,
   "Shaders":

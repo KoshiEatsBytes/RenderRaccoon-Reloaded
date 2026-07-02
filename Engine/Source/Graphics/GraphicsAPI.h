@@ -51,14 +51,32 @@ namespace RR
         void DrawMesh(Mesh* _mesh);
         void ClearBuffers();
 
+        // bind FBO if reverse Z is available on gpu driver
+        void BeginSceneTarget(int _width, int _height);
+        void BlitSceneToDefault(int _width, int _height);
+
         static void SetBackfaceCulling(bool _enabled);
         static void SetDepthTest(bool _enabled);
         static void SetBlend(bool _enabled);
         static void SetDepthWrite(bool _enabled);
         static void SetClearColor(const vec4& _color = {1.0f, 1.0f, 1.0, 1.0f});
+        void SetReversedZEnabled(bool _enabled);
+
+        bool IsReversedZ() const;
 
     private:
+        void EnsureRenderTarget(int _width, int _height);
+
         std::shared_ptr<ShaderProgram> m_defaultShaderProgram;
+        bool m_reversedZSupported = false;
+        bool m_reversedZEnabled   = true;
+
+        // reverse Z data
+        GLuint m_sceneFBO      = 0;
+        GLuint m_sceneColorRBO = 0;
+        GLuint m_sceneDepthRBO = 0;
+        int    m_rtWidth       = 0;
+        int    m_rtHeight      = 0;
     };
 }
 
