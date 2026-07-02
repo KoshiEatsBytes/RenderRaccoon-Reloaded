@@ -176,7 +176,8 @@ void VoxelScene::Update(float _deltaTime)
         const float aspect   = RR::Engine::GetInstance().GetAspectRatio();
         const mat4  viewProj = m_camComp->GetProjectionMatrix(aspect) *
                                m_camComp->GetViewMatrix();
-        const RR::Frustum ft = RR::Frustum::FromViewProj(viewProj);
+        const bool  revZ     = RR::Engine::GetInstance().GetGraphicsAPI().IsReversedZ();
+        const RR::Frustum ft = RR::Frustum::FromViewProj(viewProj, revZ);
 
         // submit chunks for rendering
         m_chunkManager->SubmitDraws(ft);

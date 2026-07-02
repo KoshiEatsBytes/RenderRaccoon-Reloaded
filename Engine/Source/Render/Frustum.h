@@ -22,7 +22,7 @@ namespace RR
             COUNT
         };
 
-        static Frustum FromViewProj(const mat4& _viewProj)
+        static Frustum FromViewProj(const mat4& _viewProj, bool _reversedZ = false)
         {
             Frustum ft;
 
@@ -36,8 +36,18 @@ namespace RR
             ft.planes[RIGHT_PLANE]  = row3 - row0;
             ft.planes[BOTTOM_PLANE] = row3 + row1;
             ft.planes[TOP_PLANE]    = row3 - row1;
-            ft.planes[NEAR_PLANE]   = row3 + row2;
-            ft.planes[FAR_PLANE]    = row3 - row2;
+
+            // Adjust for reverse Z
+            if (_reversedZ)
+            {
+                ft.planes[NEAR_PLANE] = row3 - row2;
+                ft.planes[FAR_PLANE]  = row2;
+            }
+            else
+            {
+                ft.planes[NEAR_PLANE] = row3 + row2;
+                ft.planes[FAR_PLANE]  = row3 - row2;
+            }
 
             // Normalize so distances are metric
             for (vec4& plane : ft.planes)
