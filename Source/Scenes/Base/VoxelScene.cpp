@@ -135,8 +135,7 @@ bool VoxelScene::Init()
     m_skybox->SetCloudFade(0.85f, 0.4f);
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
-
-    RR::ProveNodeSelect();
+    m_skybox->SetCloudsEnabled(false);
 
     OnInit();
     return true;

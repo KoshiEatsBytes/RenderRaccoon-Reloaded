@@ -25,7 +25,8 @@ namespace RR
     struct PendingBuild
     {
         LodNodeKey key;
-        int coreMask;
+        int  coreMask;
+        bool covered;
     };
 
     using LodMesher = std::function<LodMeshResult(LodNodeKey, int)>;
@@ -68,6 +69,7 @@ namespace RR
         RingParams BuildRingParams() const;
         void RebuildRingOffset();
         void NormalizeRanges();
+        void CommitFlips();
 
         void UnloadFar(CHUNK::Coord _centre);
         void GenerateChunk(CHUNK::Coord _coord);
@@ -77,18 +79,30 @@ namespace RR
         int   EnsureMeshed(CHUNK::Coord _centre);
         int   EnsureNodes(CHUNK::Coord _centre);
         bool  NeighboursGenerated(CHUNK::Coord _coord);
-
         float ComputeCoverage(CHUNK::Coord _centre) const;
-        int   ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
 
         void RetireReplaced(CHUNK::Coord _centre);
-        void RetireCovered(const LodNodeKey& _key);
+        void EraseCoveredBy(const LodNodeKey& _key);
 
         bool TileCoveringReady(CHUNK::Coord _coord) const;
+
         void StoreTile(const LodNodeKey& _key, LodTile&& _tile);
+        void StorePending(const LodNodeKey& _key, LodTile&& _tile);
         auto EraseTile(TileMap::iterator _it) -> TileMap::iterator;
-        void BuildTile(const LodNodeKey& _key, int _coreMask);
+        auto ErasePending(TileMap::iterator _it) -> TileMap::iterator;
+        void ActivatePending(const LodNodeKey& _key);
+
+        LodTile MakeTile(const LodNodeKey& _key, int _coreMask);
+        void    BuildTile(const LodNodeKey& _key, int _coreMask);
+        int     ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
+
+        bool ChunkReadyAt(CHUNK::Coord _coord) const;
         bool AnyTileAt(CHUNK::Coord _coord) const;
+        bool ReadyTileAt(CHUNK::Coord _coord) const;
+        bool ReadyNodeAt(CHUNK::Coord _origin, int _level, int _footprint) const;
+        bool HasLiveAncestor(const LodNodeKey& _key) const;
+        bool CoveredByReplacement(CHUNK::Coord _origin, int _level) const;
+        bool AreaCovered(const LodNodeKey& _key) const;
 
         Chunk* GetChunk(CHUNK::Coord _coord);
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
@@ -97,7 +111,6 @@ namespace RR
         // Algorithms
         ChunkGenerator m_generator;
         LodMesher      m_lodMesher;
-        NodeSet        m_liveKeys;
 
         std::vector<LodNodeKey>   m_desiredKeys;
         std::vector<PendingBuild> m_buildQueue;
@@ -105,6 +118,12 @@ namespace RR
         // terrain/visual
         ChunkMap m_chunks;
         TileMap  m_lodTiles;
+
+        // lod ring lifecycle
+        TileMap m_pendingTiles;
+        NodeSet m_desiredSet;
+        NodeSet m_liveKeys;
+        bool    m_desiredFresh = false;
 
         // mats
         std::shared_ptr<Material> m_blockMat;

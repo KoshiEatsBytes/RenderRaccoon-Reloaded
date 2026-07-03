@@ -27,6 +27,35 @@ namespace WORLDGEN
         int waterTop   = 0;
     };
 
+    // per cell blend contribution - for full res and strided paths
+    inline BlendSums SeedCell(BIOME _biome, const WorldGenConfig& _config)
+    {
+        BlendSums sum;
+        if (_biome == BIOME::MOUNTAINS)
+        {
+            sum.mtn = 1;
+        }
+        else if (_biome == BIOME::MESA)
+        {
+            sum.mesa = 1;
+
+            if (!_config.mesaRimCliffs)
+            {
+                sum.base = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
+                sum.amp  = _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
+            }
+        }
+        else
+        {
+            sum.base = _config.biomeBaseHeight[static_cast<int>(_biome)];
+            sum.amp  = _config.biomeAmplitude [static_cast<int>(_biome)];
+
+            if (_biome == BIOME::TAIGA) sum.taiga = 1;
+        }
+
+        return sum;
+    }
+
     inline std::vector<BlendSums> BuildBlendSumsSpan(const BiomeGrid& _grid, int _span, const WorldGenConfig& _config)
     {
         const int radius = _config.biomeBlendRadius;
@@ -45,29 +74,13 @@ namespace WORLDGEN
             for (int gi = 0; gi < gw; ++gi)
             {
                 const int idx = gi + gj * gw;
-                const BIOME biome = _grid.cells[idx];
+                const BlendSums seed = SeedCell(_grid.cells[idx], _config);
 
-                if (biome == BIOME::MOUNTAINS)
-                {
-                    sMtn[idx] = 1;
-                }
-                else if (biome == BIOME::MESA)
-                {
-                    sMesa[idx] = 1;
-
-                    // smooth rim, mesa has lowland blend
-                    if (!_config.mesaRimCliffs)
-                    {
-                        sBase[idx] = _config.biomeBaseHeight[static_cast<int>(BIOME::MESA)];
-                        sAmp[idx]  = _config.biomeAmplitude [static_cast<int>(BIOME::MESA)];
-                    }
-                }
-                else
-                {
-                    sBase[idx] = _config.biomeBaseHeight[static_cast<int>(biome)];
-                    sAmp[idx]  = _config.biomeAmplitude[static_cast<int>(biome)];
-                    if (biome == BIOME::TAIGA) sTaiga[idx] = 1;
-                }
+                sBase [idx] = seed.base;
+                sAmp  [idx] = seed.amp;
+                sMtn  [idx] = seed.mtn;
+                sTaiga[idx] = seed.taiga;
+                sMesa [idx] = seed.mesa;
             }
         }
 

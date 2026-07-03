@@ -12,8 +12,6 @@
 #include "Engine.h"
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "miniaudio.h"
-
 namespace RR
 {
     // LOCAL -----------------------------------------------------------------------------------------------------------
@@ -66,6 +64,7 @@ namespace RR
         const int tiled     = EnsureNodes(centre);
 
         // retire old visual once its replacement is uplaoded
+        CommitFlips();
         RetireReplaced(centre);
 
         if (generated == 0 && meshed == 0 && tiled == 0)
@@ -111,15 +110,46 @@ namespace RR
         {
             if (!tile.mesh) continue;
 
-            // if a real chunk is over this cord it wins, therefore skip
-            const auto cit = m_chunks.find(key.origin);
-            if (cit != m_chunks.end() && cit->second->mesh) continue;
+            int nearest = NearestDist(m_lastCoords, key.origin, key.footprint);
 
+            // chunk wins dedup
+            if (key.footprint == 1)
+            {
+                const auto cit = m_chunks.find(key.origin);
+                if (cit != m_chunks.end() && cit->second->mesh) continue;
+            }
+            // all or nothing for lod nodes
+            else if (nearest <= m_coreRadius + 1)
+            {
+                // only l1 ajacent nodes can overlap real chunks
+                bool fullyMeshed = true;
+                for (int dz = 0; dz < key.footprint && fullyMeshed; ++dz)
+                {
+                    for (int dx = 0; dx < key.footprint && fullyMeshed; ++dx)
+                    {
+                        fullyMeshed = ChunkReadyAt({key.origin.x + dx, key.origin.z + dz});
+                    }
+                }
+                if (fullyMeshed) continue;
+            }
+
+            // calc frustum boundaries
             const vec3 min (key.origin.x * CHUNK::kSizeX, 0.0f,
                             key.origin.z * CHUNK::kSizeZ);
 
             const vec3 max (min.x + key.footprint * CHUNK::kSizeX, CHUNK::kSizeY,
                             min.z + key.footprint * CHUNK::kSizeZ);
+
+            // lifecycle backstop, when l1+ chunks are present at core
+            if (!m_streamingIdle && HasLiveAncestor(key))
+            {
+                if (key.footprint > 1)
+                {
+                    Warn("[ChunkManager] dedup backstop: node under node at ",
+                         key.origin.x, ",", key.origin.z, " L", key.level);
+                }
+                continue;
+            }
 
 
             if (!_frustum.IntersectsAABB(min, max)) continue;
@@ -176,10 +206,13 @@ namespace RR
         // Triggers regeneration from scratch
         m_chunks.clear();
         m_lodTiles.clear();
+        m_pendingTiles.clear();
         m_liveKeys.clear();
         m_desiredKeys.clear();
+        m_desiredSet.clear();
         m_buildQueue.clear();
-        m_firstFrame = true;
+        m_desiredFresh = false;
+        m_firstFrame   = true;
     }
 
     void ChunkManager::SetFancyLeaves(bool _fancyLeaves)
@@ -251,10 +284,80 @@ namespace RR
         m_maxLevel = std::max(level, 1);
     }
 
+    void ChunkManager::CommitFlips()
+    {
+        // discard on fresh
+        if (!m_desiredFresh) return;
+        m_desiredFresh = false;
+
+        // camera re-backed inside request tile, no longer needed, discard
+        // request and dont draw
+        for (auto it = m_pendingTiles.begin(); it != m_pendingTiles.end();)
+        {
+            if (!m_desiredSet.contains(it->first))
+                it = ErasePending(it);
+            else
+                ++it;
+        }
+
+        // activate pending key no blocked by an ancestor
+        std::vector<LodNodeKey> ready;
+        for (const auto& [key, tile] : m_pendingTiles)
+        {
+            if (!HasLiveAncestor(key))
+            {
+                ready.push_back(key);
+            }
+        }
+
+        // activate pending keys
+        for (const LodNodeKey& key : ready)
+        {
+            ActivatePending(key);
+            EraseCoveredBy(key);
+        }
+
+        // Refine flips, a noce whos no longer desired retires only once
+        // its footprint is covered by finer chunks (or core)
+        std::vector<LodNodeKey> stale;
+
+        for (const auto& [key, tile] : m_lodTiles)
+        {
+            if (key.footprint > 1 && !m_desiredSet.contains(key))
+                stale.push_back(key);
+        }
+
+        for (const LodNodeKey& key : stale)
+        {
+            if (!CoveredByReplacement(key.origin, key.level)) continue;
+
+            // collect, activations mutates the mapp
+            std::vector<LodNodeKey> children;
+            for (const auto& [pKey, pTile] : m_pendingTiles)
+            {
+                // bruh
+                const bool inside =
+                    pKey.level < key.level                       &&
+                    pKey.origin.x >= key.origin.x                &&
+                    pKey.origin.x < key.origin.x + key.footprint &&
+                    pKey.origin.z >= key.origin.z                &&
+                    pKey.origin.z < key.origin.z + key.footprint;
+
+                if (inside) children.push_back(pKey);
+            }
+
+            for (const LodNodeKey& child : children)
+                ActivatePending(child);
+
+            if (auto it = m_lodTiles.find(key); it != m_lodTiles.end())
+                EraseTile(it);
+        }
+    }
+
     void ChunkManager::SetRingGrowth(float _growth)
     {
         m_ringGrowth = _growth;
-        NormalizeRanges();   
+        NormalizeRanges();
         Clear();
     }
 
@@ -288,7 +391,6 @@ namespace RR
         assert(m_maxLevel >= 1);
         assert(m_nodingStart >= 2);
 
-
         return {
             m_coreRadius,
             m_ringGrowth,
@@ -304,7 +406,7 @@ namespace RR
     {
         // mesh range
         const int span  = 2 * m_meshRadius + 1;
-        const int total = span* span;
+        const int total = span * span;
 
         if (total <= 0) return 1.0f;
 
@@ -312,24 +414,30 @@ namespace RR
         // coverage of core chunks
         for (const auto& [cords, chunk] : m_chunks)
         {
-            if (std::max(std::abs(cords.x - _centre.x), std::abs(cords.z - _centre.z)) <= m_meshRadius &&
-                chunk->state == CHUNK::STATE::MESHED)
+            int max = std::max(std::abs(cords.x - _centre.x), std::abs(cords.z - _centre.z));
+
+            if (max <= m_meshRadius && chunk->state == CHUNK::STATE::MESHED)
             {
                 ++covered;
             }
         }
-        // Coverage of lod tiles
+        // Coverage of lod tiles, nodes cover area of footprint ^ 2 cells
         for (const auto& [key, tile] : m_lodTiles)
         {
-            int nearest = NearestDist(_centre, key.origin, key.footprint);
+            if (!tile.mesh) continue;
 
-            if (tile.mesh && nearest <= m_meshRadius)
+            const int xMin = std::max(key.origin.x,                 _centre.x - m_meshRadius);
+            const int xMax = std::min(key.origin.x + key.footprint, _centre.x + m_meshRadius + 1);
+            const int zMin = std::max(key.origin.z,                 _centre.z - m_meshRadius);
+            const int zMax = std::min(key.origin.z + key.footprint, _centre.z + m_meshRadius + 1);
+
+            if (xMax > xMin && zMax > zMin)
             {
-                ++covered;
+                covered += (xMax - xMin) * (zMax - zMin);
             }
         }
 
-        return static_cast<float>(covered) / static_cast<float>(total);
+        return std::min(1.0f, static_cast<float>(covered) / static_cast<float>(total));
     }
 
     int ChunkManager::ComputeCoreMask(const LodNodeKey &_key, CHUNK::Coord _centre) const
@@ -353,6 +461,13 @@ namespace RR
         return mask;
     }
 
+    // real chunk meshed at coord
+    bool ChunkManager::ChunkReadyAt(CHUNK::Coord _coord) const
+    {
+        const auto it = m_chunks.find(_coord);
+        return it != m_chunks.end() && it->second->state == CHUNK::STATE::MESHED;
+    }
+
     // check if tile at coord is ready to be rendered
     bool ChunkManager::TileCoveringReady(CHUNK::Coord _coord) const
     {
@@ -371,6 +486,12 @@ namespace RR
         m_liveKeys.insert(_key);
     }
 
+    void ChunkManager::StorePending(const LodNodeKey &_key, LodTile &&_tile)
+    {
+        m_pendingTiles[_key] = std::move(_tile);
+        m_liveKeys.insert(_key);
+    }
+
     // iterator fridnly erase, return next
     auto ChunkManager::EraseTile(TileMap::iterator _it) -> TileMap::iterator
     {
@@ -378,7 +499,24 @@ namespace RR
         return m_lodTiles.erase(_it);
     }
 
-    void ChunkManager::BuildTile(const LodNodeKey& _key, int _coreMask)
+    auto ChunkManager::ErasePending(TileMap::iterator _it) -> TileMap::iterator
+    {
+        m_liveKeys.erase(_it->first);
+        return m_pendingTiles.erase(_it);
+    }
+
+    void ChunkManager::ActivatePending(const LodNodeKey& _key)
+    {
+        auto it = m_pendingTiles.find(_key);
+
+        if (it == m_pendingTiles.end()) return;
+
+        // live unchanghed
+        m_lodTiles[_key] = std::move(it->second);
+        m_pendingTiles.erase(it);
+    }
+
+    LodTile ChunkManager::MakeTile(const LodNodeKey& _key, int _coreMask)
     {
         const LodMeshResult data = m_lodMesher(_key, _coreMask);
 
@@ -392,7 +530,12 @@ namespace RR
             tile.proxyMesh = std::make_unique<Mesh>(data.proxies.layout, data.proxies.vertices, data.proxies.indices);
         }
 
-        StoreTile(_key, std::move(tile));
+        return tile;
+    }
+
+    void ChunkManager:: BuildTile(const LodNodeKey& _key, int _coreMask)
+    {
+        StoreTile(_key, std::move(MakeTile(_key, _coreMask)));
     }
 
     // any per-chunk tile at this cord
@@ -403,6 +546,101 @@ namespace RR
             if (m_liveKeys.contains({_coord, level, 1})) return true;
         }
         return false;
+    }
+
+    // per chunk tile at this cord, any level or pend
+    bool ChunkManager::ReadyTileAt(CHUNK::Coord _coord) const
+    {
+        for (int level = 1; level <= m_maxLevel; ++level)
+        {
+            const LodNodeKey key {_coord, level, 1};
+
+            if (m_lodTiles.contains(key) || m_pendingTiles.contains(key))
+                return true;
+        }
+        return false;
+    }
+
+    // node present in either tiles or pending
+    bool ChunkManager::ReadyNodeAt(CHUNK::Coord _origin, int _level, int _footprint) const
+    {
+        const LodNodeKey key {
+            _origin, _level, _footprint
+        };
+
+        return m_lodTiles.contains(key) || m_pendingTiles.contains(key);
+    }
+
+    // bigger node covering this key origin
+    bool ChunkManager::HasLiveAncestor(const LodNodeKey &_key) const
+    {
+        for (int level = std::max(_key.level + 1, m_nodingStart); level <= m_maxLevel; ++level)
+        {
+            const int footpritn = 1 << (level - m_nodingStart + 1);
+
+            const CHUNK::Coord snapped {
+                SnapDown(_key.origin.x, footpritn),
+                SnapDown(_key.origin.z, footpritn)
+            };
+
+            if (m_lodTiles.contains({snapped, level, footpritn}))
+                return true;
+        }
+        return false;
+    }
+
+    // check if origin + footprint is reaby by finer chunsk
+    bool ChunkManager::CoveredByReplacement(CHUNK::Coord _origin, int _level) const
+    {
+        if (_level < m_nodingStart)
+        {
+            return ChunkReadyAt(_origin) || ReadyTileAt(_origin);
+        }
+
+        int childFootprint = 1;
+
+        if (_level - 1 >= m_nodingStart)
+        {
+            childFootprint = 1 << (_level - 1 - m_nodingStart + 1);
+        }
+
+        for (int dz = 0; dz <= 1; ++dz)
+        {
+            for (int dx = 0; dx <= 1; ++dx)
+            {
+                const CHUNK::Coord oc {
+                    _origin.x + dx * childFootprint,
+                    _origin.z + dz * childFootprint
+                };
+
+                // gnode keys only exist at node levels
+                if (_level - 1 >= m_nodingStart &&
+                    ReadyNodeAt(oc, _level - 1, childFootprint))
+                    continue;
+
+                // otherwise cover deeper
+                if (CoveredByReplacement(oc, _level - 1))
+                    continue;
+
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool ChunkManager::AreaCovered(const LodNodeKey &_key) const
+    {
+        // Parent still drawn
+        if (HasLiveAncestor(_key)) return true;
+
+        // probe floor directly
+        if (_key.footprint == 1)
+        {
+            return ChunkReadyAt(_key.origin) || ReadyTileAt(_key.origin);
+        }
+
+        // finer set to draw
+        return CoveredByReplacement(_key.origin, _key.level);
     }
 
     void ChunkManager::RebuildRingOffset()
@@ -460,6 +698,17 @@ namespace RR
             else
                 ++it;
         }
+
+        // remove far pending builds
+        for (auto it = m_pendingTiles.begin(); it != m_pendingTiles.end();)
+        {
+            const int nearest = NearestDist(_centre, it->first.origin, it->first.footprint);
+
+            if (nearest > tileRange)
+                it = ErasePending(it);
+            else
+                ++it;
+        }
     }
 
     void ChunkManager::RetireReplaced(CHUNK::Coord _centre)
@@ -495,16 +744,70 @@ namespace RR
     }
 
     // after a replacement if built and stores, drop any other level present for this orgin
-    void ChunkManager::RetireCovered(const LodNodeKey& _key)
+    void ChunkManager::EraseCoveredBy(const LodNodeKey& _key)
     {
-        for (int level = 1; level <= m_maxLevel; ++level)
+        const auto eraseBoth = [&](const LodNodeKey& _old)
         {
-            if (level == _key.level) continue;
+            if (_old == _key) return;
 
-            const LodNodeKey old { _key.origin, level, 1 };
+            auto actIt = m_lodTiles.find(_old);
+            if (actIt != m_lodTiles.end())
+            {
+                EraseTile(actIt);
+            }
 
-            if (m_lodTiles.erase(old))
-                m_liveKeys.erase(old);
+            auto pendIt = m_pendingTiles.find(_old);
+            if (pendIt != m_pendingTiles.end())
+            {
+                ErasePending(pendIt);
+            }
+        };
+
+        if (_key.footprint == 1)
+        {
+            // 1 to 1 replacement, same origin, every other levle
+            for (int level = 1; level <= m_maxLevel; ++level)
+            {
+                if (level != _key.level)
+                {
+                    eraseBoth({_key.origin, level, 1});
+                }
+            }
+
+            return;
+        }
+
+        // node - iterate every per chunk key inside footprint, erase
+        for (int dz = 0; dz < _key.footprint; ++dz)
+        {
+            for (int dx = 0; dx < _key.footprint; ++dx)
+            {
+                for (int level = 1; level <= m_maxLevel; ++level)
+                {
+                    eraseBoth({{
+                        _key.origin.x + dx,
+                        _key.origin.z + dz
+                        },
+                        level, 1});
+                }
+            }
+        }
+
+        // Same for every finer node whos grid fall inside footprint
+        for (int level = m_nodingStart; level < _key.level; ++level)
+        {
+            const int footprint = 1 << (level - m_nodingStart + 1);
+
+            for (int dz = 0; dz < _key.footprint; dz += footprint)
+            {
+                for (int dx = 0; dx < _key.footprint; dx += footprint)
+                {
+                    eraseBoth({{
+                            _key.origin.x + dx,
+                            _key.origin.z + dz
+                        }, level, footprint});
+                }
+            }
         }
     }
 
@@ -632,25 +935,42 @@ namespace RR
         m_desiredKeys.clear();
         SelectNodes(_centre, params, &m_liveKeys, m_desiredKeys);
 
+        // clear previous
+        m_desiredSet.clear();
+        m_desiredSet.insert(m_desiredKeys.begin(), m_desiredKeys.end());
+        m_desiredFresh = true;
+
         // desired vs live, stale or missing entry means needs to be built
         m_buildQueue.clear();
-
         for (const LodNodeKey& key : m_desiredKeys)
         {
             const int coreMask = ComputeCoreMask(key, _centre);
 
-            const auto it = m_lodTiles.find(key);
+            // pending and active count as "already built"
+            const auto activeIt  = m_lodTiles.find(key);
+            if (activeIt != m_lodTiles.end() && activeIt->second.coreEdges == coreMask)
+                continue;
 
-            // skip up to date
-            if (it != m_lodTiles.end() && it->second.coreEdges == coreMask) continue;
+            const auto pendIt = m_pendingTiles.find(key);
+            if (pendIt != m_pendingTiles.end() && pendIt->second.coreEdges == coreMask)
+                continue;
 
-            m_buildQueue.push_back({key, coreMask});
+            m_buildQueue.push_back({key, coreMask, AreaCovered(key)});
         }
 
         const auto nearer = [&](const PendingBuild& _a, const PendingBuild& _b)
         {
-            return NearestDist(_centre, _a.key.origin, _a.key.footprint)
-                   < NearestDist(_centre, _b.key.origin, _b.key.footprint);
+            if (_a.covered != _b.covered) return !_a.covered;
+
+            const int distA = NearestDist(_centre, _a.key.origin, _a.key.footprint);
+            const int distB = NearestDist(_centre, _b.key.origin, _b.key.footprint);
+
+            if (distA != distB) return distA < distB;
+
+            if (_a.key.origin.x != _b.key.origin.x)
+                return _a.key.origin.x < _b.key.origin.x;
+
+            return _a.key.origin.z < _b.key.origin.z;
         };
 
         // only build first few per frame - partial sort
@@ -663,8 +983,17 @@ namespace RR
         // build sorted
         for (sizeT i = 0; i < toBuild; i++)
         {
-            BuildTile(m_buildQueue[i].key, m_buildQueue[i].coreMask);
-            RetireCovered(m_buildQueue[i].key);
+            const LodNodeKey& key  = m_buildQueue[i].key;
+            const int         mask = m_buildQueue[i].coreMask;
+
+            LodTile tile = MakeTile(key, mask);
+
+            // in place mask rebuild, no gaps in the process
+            if (m_lodTiles.contains(key))
+                StoreTile(key, std::move(tile));
+            else
+                StorePending(key, std::move(tile));
+
             ++built;
         }
 

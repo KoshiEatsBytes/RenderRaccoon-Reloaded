@@ -93,6 +93,8 @@ namespace RR
 
     void VoxelSkybox::UpdateClouds(const vec3& _cameraPos, float _dt)
     {
+        if (!m_cloudEnable) return;
+
         using namespace CLOUD;
         m_time   += _dt;
         m_windOff = m_windDir * (m_windSpeed * m_time);
@@ -132,6 +134,11 @@ namespace RR
 
         m_skyMat->SetParam("uSunDir", glm::normalize(_direction));
         m_skyMat->SetParam("uSunSize", _size);
+    }
+
+    void VoxelSkybox::SetCloudsEnabled(bool _enable)
+    {
+        m_cloudEnable = _enable;
     }
 
     void VoxelSkybox::SetClouds(uInt32 _seed, int _height, float _scale, float _cov)
@@ -211,6 +218,7 @@ namespace RR
 
     void VoxelSkybox::SubmitCloudsForDraw()
     {
+        if (!m_cloudEnable) return;
         if (!m_cloudMesh || !m_cloudMat) return;
 
         RenderCommand cldCmd;

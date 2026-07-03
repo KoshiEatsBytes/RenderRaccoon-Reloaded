@@ -32,6 +32,7 @@ namespace WORLDGEN
         using namespace RR::CHUNK;
         const bool collectProxies = _level >= 1 && _level <= _cfg.proxyMaxLevel;
         const bool riverCarve     = _level >= 1 && _level <= _cfg.lodRiverCarveMaxLevel;
+        const bool strided        = _level >= _cfg.biomeStrideLevel;
 
         const int stride     = 1 << _level;
         const int spanBlocks = _footprint * kSizeX;
@@ -44,10 +45,72 @@ namespace WORLDGEN
         const int margin  = _cfg.biomeBlendRadius;
         assert(nCells >= 1 && "stride exceeds node span");
 
-        // build biome and blend once per tile
-        const BiomeGrid              grid = BuildBiomeGridSpan(originX - apron, originZ - apron, span, margin, _cfg);
-        const std::vector<BlendSums> sums = BuildBlendSumsSpan(grid, span, _cfg);
-        const int                    total = (2 * margin + 1) * (2 * margin + 1);
+        // Full res
+        BiomeGrid              grid;
+        std::vector<BlendSums> sums;
+        // Strided
+        std::vector<BIOME>     cellBiome;
+        std::vector<BlendSums> cellSums;
+
+        int total = (2 * margin + 1) * (2 * margin + 1);
+
+        if (!strided)
+        {
+            grid = BuildBiomeGridSpan(originX - apron, originZ - apron, span, margin, _cfg);
+            sums = BuildBlendSumsSpan(grid, span, _cfg);
+        }
+        else
+        {
+            // blur radius in cells
+            const int radCell  = std::clamp((margin + stride / 2) / stride, 1, 4);
+            const int latWidth = padG + 2 * radCell;
+
+            // centre sample, biome at lattice cell
+            std::vector<BIOME> lattice(static_cast<sizeT>(latWidth) * latWidth);
+
+            for (int lj = 0; lj < latWidth; ++lj)
+            {
+                for (int li = 0; li < latWidth; ++li)
+                {
+                    const int wx = originX + (li - 1 - radCell) * stride + stride / 2;
+                    const int wz = originZ + (lj - 1 - radCell) * stride + stride / 2;
+
+                    lattice[li + lj * latWidth] = FinalArea(wx, wz, 1, 1, _cfg)[0];
+                }
+            }
+
+            // brute force cell blur
+            cellBiome.resize(padG * padG);
+            cellSums .resize(padG * padG);
+
+            for (int cj = 0; cj < padG; ++cj)
+            {
+                for (int ci = 0; ci < padG; ++ci)
+                {
+                    BlendSums accumulator;
+
+                    for (int kj = -radCell; kj <= radCell; ++kj)
+                    {
+                        for (int ki = -radCell; ki <= radCell; ++ki)
+                        {
+                            const BlendSums cellSum = SeedCell(
+                                lattice[(ci + radCell + ki) + (cj + radCell + kj) * latWidth], _cfg);
+
+                            accumulator.base  += cellSum.base;
+                            accumulator.amp   += cellSum.amp;
+                            accumulator.mtn   += cellSum.mtn;
+                            accumulator.taiga += cellSum.taiga;
+                            accumulator.mesa  += cellSum.mesa;
+                        }
+                    }
+
+                    cellBiome[ci + cj * padG] = lattice[(ci + radCell) + (cj + radCell) * latWidth];
+                    cellSums [ci + cj * padG] = accumulator;
+                }
+            }
+
+            total = (2 * radCell + 1) * (2 * radCell + 1);
+        }
 
         SurfaceField field;
         field.level = _level;
@@ -61,8 +124,9 @@ namespace WORLDGEN
         {
             for (int sx = -1; sx <= nCells; ++sx)
             {
-                const bool rendered = sx >= 0 && sx < nCells && sz >= 0 && sz < nCells;
-                const int  idx      = (sx + 1) + (sz + 1) * padG;
+                const bool rendered  = sx >= 0 && sx < nCells && sz >= 0 && sz < nCells;
+                const bool carveCell = riverCarve || !rendered;
+                const int  idx       = (sx + 1) + (sz + 1) * padG;
 
                 // forward footprint, coll this plateou covers
                 const int lxMin = sx * stride;
@@ -94,9 +158,10 @@ namespace WORLDGEN
                         const int wx = originX + lx;
                         const int wz = originZ + lz;
 
-                        const BlendSums& sum       = sums[(lx + apron) + (lz + apron) * span];
-                        const int        land      = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
-                        const BIOME      currBiome = grid.At(wx, wz);
+                        const BlendSums& sum       = strided ? cellSums [idx] : sums[(lx + apron) + (lz + apron) * span];
+                        const BIOME      currBiome = strided ? cellBiome[idx] : grid.At(wx, wz);
+
+                        const int land = TerrainHeightFromSums(sum, wx, wz, total, _cfg);
 
                         int   riverHeight = land;
                         float valleyTerr  = 0.0f;
@@ -118,7 +183,7 @@ namespace WORLDGEN
                                     // save widest river point
                                     bestProfile = std::max(bestProfile, valleyTerr);
 
-                                    if (riverCarve)
+                                    if (carveCell)
                                     {
                                         // extract river, boring disabled
                                         const RiverCarve rivCarve = OpenRiverCarve(land, valleyTerr, false, currBiome, _cfg);
@@ -197,12 +262,12 @@ namespace WORLDGEN
                 // classify winning column
                 const int   wx          = originX + bestLx;
                 const int   wz          = originZ + bestLz;
-                const BIOME biome       = grid.At(wx, wz);
+                const BIOME biome       = strided ? cellBiome[idx] : grid.At(wx, wz);
                 const int   land        = renderHeight;
                 const int   riverWaterY = std::max(_cfg.waterLevel, _cfg.riverLevel);
-                const bool  riverWater  = riverCarve && bestProfile >= _cfg.lodRiverWetProfile;
+                const bool riverWater   = carveCell && bestProfile >= _cfg.lodRiverWetProfile;
 
-                const BlendSums& sum = sums[(bestLx + apron) + (bestLz + apron) * span];
+                const BlendSums& sum = strided ? cellSums[idx] : sums[(bestLx + apron) + (bestLz + apron) * span];
 
                 int   surfaceY = land;
                 BLOCK block;
@@ -264,7 +329,8 @@ namespace WORLDGEN
                 const BiomeVegTypes& veg = GetVegTypes(biome);
                 int canopyDepth = 0;
 
-                if (!riverPaint && _level > _cfg.proxyMaxLevel)
+                // canopy raise only for rendered cells
+                if (rendered && !riverPaint && _level > _cfg.proxyMaxLevel)
                 {
                     // canopy raise per biome veg
                     if (veg.canopy != BLOCK::AIR && land >= _cfg.waterLevel &&

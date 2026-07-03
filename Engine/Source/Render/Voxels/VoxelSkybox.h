@@ -25,6 +25,7 @@ namespace RR
         void SetSun(const vec3& _direction, float _size);
 
         // cloud sets
+        void SetCloudsEnabled(bool _enable);
         void SetClouds       (uInt32 _seed, int _height, float _scale, float _cov);
         void SetCloudSeed    (uInt32 _seed);
         void SetCloudHeight  (int _height);
@@ -54,6 +55,7 @@ namespace RR
         int m_cloudBuildX = 0;
         int m_cloudBuildZ = 0;
 
+        bool   m_cloudEnable   = true;
         int    m_cloudHeight   = 220;
         float  m_cloudScale    = 1.5f;
         float  m_cloudCoverage = 0.7f;

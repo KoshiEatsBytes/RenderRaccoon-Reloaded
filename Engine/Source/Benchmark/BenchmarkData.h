@@ -93,7 +93,7 @@ namespace RR
 
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
     // Klein et al. 2023: 4–12 ms variation is perceptible
-    constexpr float kStutterDeltaMs = 8.0f;
+    constexpr float kStutterDeltaMs = 6.0f;
 }
 
 
