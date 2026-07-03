@@ -1,5 +1,7 @@
 
 #include <cassert>
+#include <cmath>
+#include <algorithm>
 
 #include "VoxelScene.h"
 
@@ -110,15 +112,14 @@ bool VoxelScene::Init()
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);
     SetSceneClearColor(vec4(skyBoxColor, 1.0f));
 
-    // Set fog end and start parameters
-    const float fogEnd   = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.95f;
-    const float fogStart = fogEnd * 0.90f;
+    // Fog starts at core and expands with generated land
+    m_fogEnd = RR::ChunkManager::kDefaultCoreRadius * RR::CHUNK::kSizeX;
 
     for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
     {
         mat->SetParam("uFogColor", skyBoxColor);
-        mat->SetParam("uFogStart", fogStart);
-        mat->SetParam("uFogEnd",   fogEnd);
+        mat->SetParam("uFogStart", m_fogEnd * 0.90f);
+        mat->SetParam("uFogEnd",   m_fogEnd);
     }
 
     // Skybox
@@ -174,6 +175,20 @@ void VoxelScene::Update(float _deltaTime)
     {
         const vec3 camPos = m_cam->GetWorldPosition();
         m_chunkManager->Update(camPos);
+
+        // area fraction to expand fog
+        const float fullEnd = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.95f;
+        const float minEnd  = RR::ChunkManager::kDefaultCoreRadius * RR::CHUNK::kSizeX;
+        const float target  = std::max(minEnd, fullEnd * std::sqrt(m_chunkManager->GetCoverage()));
+
+        m_fogEnd += (target - m_fogEnd) * std::min(1.0f, _deltaTime * 1.5f);
+
+        // apply fog smoothing
+        for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
+        {
+            mat->SetParam("uFogStart", m_fogEnd * 0.90f);
+            mat->SetParam("uFogEnd",   m_fogEnd);
+        }
 
         // RenderSky
         m_skybox->UpdateClouds(camPos, _deltaTime);

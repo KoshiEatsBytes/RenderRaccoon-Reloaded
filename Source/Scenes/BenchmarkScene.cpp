@@ -6,6 +6,7 @@
 #include "Benchmark/BenchmarkRunPresets.hpp"
 #include "Components/FreeCameraComponent.h"
 #include "Voxels/ChunkManager.h"
+#include "Render/RenderQueue.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -100,6 +101,10 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
             std::chrono::steady_clock::now() - m_warmUpStart).count();
         // save into runinfo
         m_runInfo.warmUpSeconds = m_warmUpSeconds;
+
+        // draw calls at settled point
+        m_runInfo.steadyDraws = static_cast<int>(
+            RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
 
         if (!m_bench)
         {

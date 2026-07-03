@@ -97,6 +97,10 @@ namespace RR
                     {
                         CharsToFloat(val, runData.info.warmUpSeconds);
                     }
+                    else if (key == "steadyDraws")
+                    {
+                        std::from_chars(val.data(), val.data() + val.size(), runData.info.steadyDraws);
+                    }
                     else if (key == "frames")
                     {
                         unsigned long frameNum = 0;

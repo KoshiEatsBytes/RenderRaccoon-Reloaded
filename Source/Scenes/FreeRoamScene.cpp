@@ -4,6 +4,7 @@
 #include "FreeRoamScene.h"
 #include "imgui.h"
 #include "GLFW/glfw3.h"
+#include "Render/RenderQueue.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -115,6 +116,7 @@ void FreeRoamScene::OnGui()
         ImGui::Text("X %.2f", pos.x);
         ImGui::Text("Y %.2f", pos.y);
         ImGui::Text("Z %.2f", pos.z);
+        ImGui::Text("Draws %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
     }
     ImGui::End();
 

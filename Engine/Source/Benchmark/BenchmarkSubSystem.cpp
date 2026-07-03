@@ -332,6 +332,7 @@ namespace RR
             << "# seed="           << m_runInfo.seed           << "\n"
             << "# renderDistance=" << m_runInfo.renderDistance << "\n"
             << "# warmUpSeconds="  << m_runInfo.warmUpSeconds  << "\n"
+            << "# steadyDraws="    << m_runInfo.steadyDraws    << "\n"
             << "# lod="            << m_runInfo.lod            << "\n"
             << "# aggregation="    << m_runInfo.aggregation    << "\n"
             << "# greedy="         << m_runInfo.greedy         << "\n"

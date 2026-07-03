@@ -1101,6 +1101,9 @@ namespace AT
             Gap(); Gap(); Gap();  Label("LATENCY (ms)");
             Metric("CPU", FormatFloat("%.2f", stats.avgCpuMs));
             Metric("GPU", FormatFloat("%.2f", stats.avgGpuMs));
+            Gap(); Gap(); Gap();
+            Metric("DRAWS", info.steadyDraws > 0 ? std::to_string(info.steadyDraws) : "-");
+
 
 
             ImGui::EndTable();

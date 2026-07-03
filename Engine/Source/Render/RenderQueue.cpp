@@ -82,7 +82,8 @@ namespace RR
         _graphicsAPI.SetDepthTest(true);
         _graphicsAPI.SetBlend(false);
         _graphicsAPI.SetDepthWrite(true);
-        
+
+        m_lastFrameDraws = m_commands.size();
         m_commands.clear();
     }
 }

@@ -44,7 +44,11 @@ namespace RR
         void Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData,
             const std::vector<LightData>& _lights);
 
+        // draw-call count of the last frame
+        sizeT GetLastFrameDraws() const { return m_lastFrameDraws; }
+
     private:
         std::vector<RenderCommand> m_commands;
+        sizeT m_lastFrameDraws = 0;
     };
 }
