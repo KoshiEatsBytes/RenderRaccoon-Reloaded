@@ -30,6 +30,8 @@ namespace RR
         void UnBind();
         void Draw();
 
+        sizeT GetIndexCount() const;
+
         static std::shared_ptr<Mesh> CreateBox(const vec3& _extents = vec3(1.0f));
         static std::shared_ptr<Mesh> CreateSphere(float _radius, float _sectors, float _stacks);
 

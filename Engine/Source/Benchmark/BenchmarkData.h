@@ -46,6 +46,7 @@ namespace RR
         int   renderDistance = 16;
         float warmUpSeconds  = 0.0f;
         int   steadyDraws    = 0;   // draw calls after loading complete
+        int   steadyTris     = 0;
 
         // Test platform
         std::string  gpuName   = "unknown";

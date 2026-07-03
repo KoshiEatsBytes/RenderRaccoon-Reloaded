@@ -7,7 +7,17 @@ namespace RR
     using namespace CHUNK;
     using uInt32 = std::uint32_t;
 
-    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel,
+    // one y band of a wall
+    struct WallSlice
+    {
+        int   yMin;
+        int   yMax;
+        float layer;
+
+        bool operator==(const WallSlice&) const = default;
+    };
+
+    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel, bool _greedy,
                      const std::vector<int>& _height,
                      const std::vector<BLOCK>& _block,
                      const std::vector<BLOCK>& _sideColumn)
@@ -97,120 +107,304 @@ namespace RR
             baseIndex += 4;
         };
 
-        // Iterate inner cells in heightmap grid
-        for (int cz = 1; cz < cells; ++cz)
+        if (!_greedy)
         {
-            for (int cx = 1; cx < cells; ++cx)
+            // one quad per cell
+            for (int cz = 1; cz < cells; ++cz)
             {
-                const int   height = _height[cx + cz * _dim];
-                const BLOCK block  = _block [cx + cz * _dim];
-
-                // Lookup texture layers
-                const auto topLayer = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
-
-                // world space of this cell
-                const auto minX = static_cast<float>((cx - 1) * stride);
-                const auto maxX = static_cast<float>(cx * stride);
-                const auto minZ = static_cast<float>((cz - 1) * stride);
-                const auto maxZ = static_cast<float>(cz* stride);
-                const auto yTop = static_cast<float>(height + 1);
-
-                // flat top face
-                pushVertex(minX, yTop, maxZ, 0, 1, 0, minX, maxZ, topLayer);
-                pushVertex(maxX, yTop, maxZ, 0, 1, 0, maxX, maxZ, topLayer);
-                pushVertex(maxX, yTop, minZ, 0, 1, 0, maxX, minZ, topLayer);
-                pushVertex(minX, yTop, minZ, 0, 1, 0, minX, minZ, topLayer);
-                pushQuad();
-
-                // side blocks whos face are shown
-                const int colBase = (cx + cz * _dim) * kLodBandDepth;
-                auto sideLayerAt = [&](int _y) -> float
+                for (int cx = 1; cx < cells; ++cx)
                 {
-                    const int   depth = std::clamp(height - _y, 0, kLodBandDepth - 1);
-                    const BLOCK bLoc = _sideColumn[colBase + depth];
+                    const int   height   = _height[cx + cz * _dim];
+                    const BLOCK block    = _block [cx + cz * _dim];
+                    const auto  topLayer = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
 
-                    return GetBlockInfo(bLoc).faceLayer[sideFace];
-                };
+                    // world space of this cell
+                    const auto minX = static_cast<float>((cx - 1) * stride);
+                    const auto maxX = static_cast<float>(cx * stride);
+                    const auto minZ = static_cast<float>((cz - 1) * stride);
+                    const auto maxZ = static_cast<float>(cz * stride);
+                    const auto yTop = static_cast<float>(height + 1);
 
-                // get height of neighbor cell, if false drop skirt
-                auto neighbour = [&](int _nx, int _nz, int& _outTop)
+                    // flat top face
+                    pushVertex(minX, yTop, maxZ, 0, 1, 0, minX, maxZ, topLayer);
+                    pushVertex(maxX, yTop, maxZ, 0, 1, 0, maxX, maxZ, topLayer);
+                    pushVertex(maxX, yTop, minZ, 0, 1, 0, maxX, minZ, topLayer);
+                    pushVertex(minX, yTop, minZ, 0, 1, 0, minX, minZ, topLayer);
+                    pushQuad();
+                }
+            }
+        }
+        else
+        {
+            // Greedy rectable cover over the rendered grid
+            const int n = cells - 1;
+            std::vector<std::uint8_t> used(static_cast<std::size_t>(n) * n, 0);
+
+            // two cells merge if same surface height and blocc
+            auto sameKey = [&](int _cxA, int _czA, int _cxB, int _czB)
+            {
+                return _height[_cxA + _czA * _dim] == _height[_cxB + _czB * _dim] &&
+                       _block [_cxA + _czA * _dim] == _block [_cxB + _czB * _dim];
+            };
+
+            for (int gz = 0; gz < n; ++gz)
+            {
+                for (int gx = 0; gx < n; ++gx)
                 {
-                    // unconditional apron
-                    _outTop = _height[_nx + _nz * _dim];
-                };
+                    if (used[gx + gz * n]) continue;
 
-                // wall along one edge down to neighbour top height
-                auto pushWall = [&](float _ax, float _az, float _uA,
-                                    float _bx, float _bz, float _uB,
-                                    float _nx, float _ny, float _nz,
-                                    int _neighbourTop) -> void
-                {
-                    const int bottomY = _neighbourTop + 1;
+                    const int cx = gx + 1;
+                    const int cz = gz + 1;
 
-                    // quad spanning a world y range up to this edge
-                    auto pushQuadY = [&](float _lo, float _hi, float _layer)
+                    // grow along X
+                    int rectW = 1;
+
+                    while (gx + rectW < n && !used[(gx + rectW) + gz * n] &&
+                           sameKey(cx, cz, cx + rectW, cz))
                     {
-                        pushVertex(_ax, _lo, _az, _nx,_ny,_nz, _uA, _lo, _layer);
-                        pushVertex(_bx, _lo, _bz, _nx,_ny,_nz, _uB, _lo, _layer);
-                        pushVertex(_bx, _hi, _bz, _nx,_ny,_nz, _uB, _hi, _layer);
-                        pushVertex(_ax, _hi, _az, _nx,_ny,_nz, _uA, _hi, _layer);
-                        pushQuadDouble();
-                    };
+                        rectW++;
+                    }
 
-                    // skirt or far ring
-                    if (!bandFaces)
+                    // grow along Z
+                    int rectH = 1;
+
+                    while (gz + rectH < n)
                     {
-                        const int capBands  = stride;
-                        const int capBottom = std::max(bottomY, height + 1 - capBands);
+                        bool rowMatches = true;
 
-                        if (capBottom > bottomY)
+                        for (int i = 0; i < rectW; ++i)
                         {
-                            pushQuadY(static_cast<float>(bottomY),
-                                      static_cast<float>(capBottom),
-                                         sideLayerAt(height - 1));
+                            // check if they match, if not stop elongating
+                            if (used[(gx + i) + (gz + rectH) * n] ||
+                                !sameKey(cx, cz, cx + i, cz + rectH))
+                            {
+                                rowMatches = false;
+                                break;
+                            }
                         }
 
-                        pushQuadY(static_cast<float>(capBottom), yTop, sideLayerAt(height));
-                        return;
+                        if (!rowMatches) break;
+                        ++rectH;
                     }
 
-                    // banded cliff face
-                    for (int y = bottomY; y <= height; y += bandStep)
+                    // claim the created rect
+                    for (int dz = 0; dz < rectH; ++dz)
                     {
-                        const int   topBlock = std::min(y + bandStep - 1, height);
-                        const float layer    = sideLayerAt(topBlock);
-                        const float y0       = static_cast<float>(y);
-                        const float y1       = static_cast<float>(std::min(y + bandStep, height + 1));
-
-                        pushQuadY(y0, y1, layer);
+                        for (int dx = 0; dx < rectW; ++dx)
+                        {
+                            used[(gx + dx) + (gz + dz) * n] = 1;
+                        }
                     }
-                };
 
-                int  nTop;
+                    // Emit one quad covering the globbed rect
+                    const int   height   = _height[cx + cz * _dim];
+                    const BLOCK block    = _block [cx + cz * _dim];
+                    const auto  topLayer = static_cast<float>(GetBlockInfo(block).faceLayer[upFace]);
 
-                // West
-                neighbour(cx + 1, cz, nTop);
-                if (nTop < height)
-                {
-                    pushWall(maxX, maxZ, maxZ,  maxX, minZ, minZ,   1, 0, 0, nTop);
+                    const auto minX = static_cast<float>((cx - 1) * stride);
+                    const auto maxX = static_cast<float>((cx - 1 + rectW) * stride);
+                    const auto minZ = static_cast<float>((cz - 1) * stride);
+                    const auto maxZ = static_cast<float>((cz - 1 + rectH) * stride);
+                    const auto yTop = static_cast<float>(height + 1);
+
+                    // assemble vertices and push rect
+                    pushVertex(minX, yTop, maxZ, 0, 1, 0, minX, maxZ, topLayer);
+                    pushVertex(maxX, yTop, maxZ, 0, 1, 0, maxX, maxZ, topLayer);
+                    pushVertex(maxX, yTop, minZ, 0, 1, 0, maxX, minZ, topLayer);
+                    pushVertex(minX, yTop, minZ, 0, 1, 0, minX, minZ, topLayer);
+                    pushQuad();
                 }
-                // East
-                neighbour(cx - 1, cz, nTop);
-                if (nTop < height)
+            }
+        }
+
+        // resue per edge
+        std::vector<WallSlice> slices;
+
+        // side strata for cell at height y
+        auto sideLayerAt = [&](int _cx, int _cz, int _y) -> float
+        {
+            const int height  = _height[_cx + _cz * _dim];
+            const int colBase = (_cx + _cz * _dim) * kLodBandDepth;
+            const int depth   = std::clamp(height - _y, 0, kLodBandDepth - 1);
+
+            return GetBlockInfo(_sideColumn[colBase + depth]).faceLayer[sideFace];
+        };
+
+        // slice stack for the wall of cell against neighbour top
+        auto buildSlices = [&](int _cx, int _cz, int _neighbourTop,
+                               std::vector<WallSlice>& _out)
+        {
+            _out.clear();
+            const int buildHeight = _height[_cx + _cz * _dim];
+
+            // no wall on this edge
+            if (_neighbourTop >= buildHeight) return;
+
+            const int bottomY = _neighbourTop + 1;
+
+            // skirt or far ring
+            if (!bandFaces)
+            {
+                const int capBands  = stride;
+                const int capBottom = std::max(bottomY, buildHeight + 1 - capBands);
+
+                if (capBottom > bottomY)
                 {
-                    pushWall(minX, minZ, minZ,  minX, maxZ, maxZ,  -1, 0, 0, nTop);
+                    _out.push_back({
+                        bottomY, capBottom, sideLayerAt(_cx, _cz, buildHeight - 1)
+                    });
                 }
-                // South
-                neighbour(cx, cz + 1, nTop);
-                if (nTop < height)
+
+                _out.push_back({
+                    capBottom, buildHeight + 1, sideLayerAt(_cx, _cz, buildHeight)
+                });
+
+                return;
+            }
+
+            // banded cliff face
+            for (int y = bottomY; y <= buildHeight; y += bandStep)
+            {
+                const int topBlock = std::min(y + bandStep - 1, buildHeight);
+
+                _out.push_back({
+                    y, std::min(y + bandStep, buildHeight + 1),
+                         sideLayerAt(_cx, _cz, topBlock) });
+            }
+        };
+
+        // emit one slice stack along an edge
+        auto emitSlices = [&](const std::vector<WallSlice>& _slices,
+                              float _ax, float _az, float _uA,
+                              float _bx, float _bz, float _uB,
+                              float _nx, float _ny, float _nz)
+        {
+            for (const WallSlice& slice : _slices)
+            {
+                const auto lo = static_cast<float>(slice.yMin);
+                const auto hi = static_cast<float>(slice.yMax);
+
+                // double sided quad
+                pushVertex(_ax, lo, _az, _nx, _ny, _nz, _uA, lo, slice.layer);
+                pushVertex(_bx, lo, _bz, _nx, _ny, _nz, _uB, lo, slice.layer);
+                pushVertex(_bx, hi, _bz, _nx, _ny, _nz, _uB, hi, slice.layer);
+                pushVertex(_ax, hi, _az, _nx, _ny, _nz, _uA, hi, slice.layer);
+                pushQuadDouble();
+            }
+        };
+
+        if (!_greedy)
+        {
+            // wall pass for cells
+            for (int cz = 1; cz < cells; ++cz)
+            {
+                for (int cx = 1; cx < cells; ++cx)
                 {
-                    pushWall(minX, maxZ, minX,  maxX, maxZ, maxX,   0, 0, 1, nTop);
+                    // world space of this cell
+                    const auto minX = static_cast<float>((cx - 1) * stride);
+                    const auto maxX = static_cast<float>(cx * stride);
+                    const auto minZ = static_cast<float>((cz - 1) * stride);
+                    const auto maxZ = static_cast<float>(cz * stride);
+
+                    // West
+                    buildSlices(cx, cz, _height[(cx + 1) + cz * _dim], slices);
+                    emitSlices(slices, maxX, maxZ, maxZ,  maxX, minZ, minZ,   1, 0, 0);
+                    // East
+                    buildSlices(cx, cz, _height[(cx - 1) + cz * _dim], slices);
+                    emitSlices(slices, minX, minZ, minZ,  minX, maxZ, maxZ,  -1, 0, 0);
+                    // South
+                    buildSlices(cx, cz, _height[cx + (cz + 1) * _dim], slices);
+                    emitSlices(slices, minX, maxZ, minX,  maxX, maxZ, maxX,   0, 0, 1);
+                    // North
+                    buildSlices(cx, cz, _height[cx + (cz - 1) * _dim], slices);
+                    emitSlices(slices, maxX, minZ, maxX,  minX, minZ, minX,   0, 0, -1);
                 }
-                // North
-                neighbour(cx, cz - 1, nTop);
-                if (nTop < height)
+            }
+        }
+        else
+        {
+            // per direction run merge
+            // identical slices stack along the tangent
+            constexpr int offX[4] = { 1, -1, 0,  0 };
+            constexpr int offZ[4] = { 0,  0, 1, -1 };
+
+            // stack shared by current run
+            std::vector<WallSlice> run;
+            std::vector<WallSlice> next;
+
+            // emit finished run
+            auto flushRun = [&](int _dir, int _line, int _tMin, int _tMax)
+            {
+                const auto lineMin = static_cast<float>((_line - 1) * stride);
+                const auto lineMax = static_cast<float>(_line * stride);
+                const auto tMin    = static_cast<float>((_tMin - 1) * stride);
+                const auto tMax    = static_cast<float>(_tMax * stride);
+
+                switch (_dir)
                 {
-                    pushWall(maxX, minZ, maxX,  minX, minZ, minX,   0,0,-1, nTop);
+                    // West
+                    case 0:
+                        emitSlices(run, lineMax, tMax, tMax,
+                                        lineMax, tMin, tMin,
+                                        1, 0,  0);
+                        break;
+
+                    // East
+                    case 1:
+                        emitSlices(run, lineMin, tMin, tMin,
+                                        lineMin, tMax, tMax,
+                                        -1, 0,  0);
+                        break;
+
+                    // South
+                    case 2:
+                        emitSlices(run, tMin, lineMax, tMin,
+                                        tMax, lineMax, tMax,
+                                        0, 0,  1);
+                        break;
+
+                    // North
+                    default:
+                        emitSlices(run, tMax, lineMin, tMax,
+                                        tMin, lineMin, tMin,
+                                        0, 0, -1);
+                        break;
+                }
+            };
+
+            for (int dir = 0; dir < 4; ++dir)
+            {
+                for (int line = 1; line < cells; ++line)
+                {
+                    int runStart = -1;
+                    run.clear();
+
+                    for (int t = 1; t < cells; ++t)
+                    {
+                        // adjusted bi direction
+                        const int cx = dir < 2 ? line : t;
+                        const int cz = dir < 2 ? t : line;
+
+                        buildSlices(cx, cz,_height[(cx + offX[dir]) + (cz + offZ[dir]) * _dim], next);
+
+                        // identical stack, run keep growing
+                        if (runStart != -1 && next == run) continue;
+
+                        // stack changed, flush, start new run
+                        if (runStart != -1 && !run.empty())
+                        {
+                            flushRun(dir, line, runStart, t - 1);
+                        }
+
+                        run.swap(next);
+                        runStart = t;
+                    }
+
+                    // tail run of line
+                    if (!run.empty())
+                    {
+                        flushRun(dir, line, runStart, cells - 1);
+                    }
                 }
             }
         }

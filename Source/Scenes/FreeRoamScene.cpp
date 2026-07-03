@@ -101,9 +101,9 @@ void FreeRoamScene::OnGui()
     ImGui::SetNextWindowBgAlpha(0.5f);
 
     constexpr ImGuiWindowFlags flags =
-        ImGuiWindowFlags_NoDecoration   | ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoDecoration    | ImGuiWindowFlags_AlwaysAutoResize |
         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
-        ImGuiWindowFlags_NoNav          | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoNav           | ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoInputs;
 
     if (ImGui::Begin("##fps_overlay", nullptr, flags))
@@ -117,6 +117,7 @@ void FreeRoamScene::OnGui()
         ImGui::Text("Y %.2f", pos.y);
         ImGui::Text("Z %.2f", pos.z);
         ImGui::Text("Draws %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
+        ImGui::Text("Tris %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameTris());
     }
     ImGui::End();
 

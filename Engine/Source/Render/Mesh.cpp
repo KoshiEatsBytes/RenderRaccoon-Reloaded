@@ -125,6 +125,11 @@ namespace RR
         }
     }
 
+    sizeT Mesh::GetIndexCount() const
+    {
+        return m_indexCount;
+    }
+
     std::shared_ptr<Mesh> Mesh::CreateBox(const vec3& _extents)
     {
         const glm::vec3 half = _extents * 0.5f;

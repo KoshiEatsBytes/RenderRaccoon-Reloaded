@@ -101,6 +101,10 @@ namespace RR
                     {
                         std::from_chars(val.data(), val.data() + val.size(), runData.info.steadyDraws);
                     }
+                    else if (key == "steadyTris")
+                    {
+                        std::from_chars(val.data(), val.data() + val.size(), runData.info.steadyTris);
+                    }
                     else if (key == "frames")
                     {
                         unsigned long frameNum = 0;

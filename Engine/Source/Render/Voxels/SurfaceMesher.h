@@ -31,7 +31,7 @@ namespace RR
 
     // Triangulates a dim x dim strided field
     // aka meshes top faces only for lod
-    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel,
+    MeshData MeshSurface(int _dim, int _level, int _bandMaxLevel, bool _greedy,
         const std::vector<int>& _height,
         const std::vector<CHUNK::BLOCK>& _block,
         const std::vector<CHUNK::BLOCK>& _sideColumn);

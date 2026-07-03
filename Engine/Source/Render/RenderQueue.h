@@ -45,10 +45,12 @@ namespace RR
             const std::vector<LightData>& _lights);
 
         // draw-call count of the last frame
-        sizeT GetLastFrameDraws() const { return m_lastFrameDraws; }
+        sizeT GetLastFrameDraws() const;
+        sizeT GetLastFrameTris() const;
 
     private:
         std::vector<RenderCommand> m_commands;
         sizeT m_lastFrameDraws = 0;
+        sizeT m_lastFrameTris  = 0;
     };
 }

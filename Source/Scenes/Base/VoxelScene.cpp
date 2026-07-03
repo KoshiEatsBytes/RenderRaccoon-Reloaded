@@ -6,6 +6,7 @@
 #include "VoxelScene.h"
 
 #include "imgui.h"
+#include "ShowCase.h"
 #include "GLFW/glfw3.h"
 #include "Components/FreeCameraComponent.h"
 #include "Scenes/MainMenuScene.h"
@@ -77,20 +78,21 @@ bool VoxelScene::Init()
     m_voxelBlocksMat->SetParam("uFlatEnd",   flatEnd);
 
     // Chunk generator lambda
-    RR::ChunkGenerator generator = [this](RR::Chunk& _chunk) {
-        WORLDGEN::GenerateColumn(_chunk, m_genConfig);
+    RR::ChunkGenerator generator = [config = m_genConfig](RR::Chunk& _chunk) {
+        WORLDGEN::GenerateColumn(_chunk, config);
     };
 
     // LOD mesher lambda
-    RR::LodMesher lodMesher = [this](RR::LodNodeKey _key, int _coreEdges) -> RR::LodMeshResult
+    RR::LodMesher lodMesher = [config = m_genConfig, greedy = m_runInfo.greedy]
+        (RR::LodNodeKey _key, int _coreEdges) -> RR::LodMeshResult
     {
         const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(
-            _key.origin, _key.level, _key.footprint, _coreEdges, m_genConfig);
+            _key.origin, _key.level, _key.footprint, _coreEdges, config);
 
         // proxies and surface mesh
         RR::LodMeshResult out;
-        out.surface = RR::MeshSurface(field.dim, _key.level, m_genConfig.lodBandMaxLevel,
-            field.height, field.block, field.sideColumn);
+        out.surface = RR::MeshSurface(field.dim, _key.level, config.lodBandMaxLevel,
+            greedy, field.height, field.block, field.sideColumn);
 
         out.proxies = RR::MeshProxies(field.trees, _key.level);
         return out;

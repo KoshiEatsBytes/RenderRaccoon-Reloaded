@@ -103,8 +103,9 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
         m_runInfo.warmUpSeconds = m_warmUpSeconds;
 
         // draw calls at settled point
-        m_runInfo.steadyDraws = static_cast<int>(
-            RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
+        const auto& RQ = RR::Engine::GetInstance().GetRenderQueue();
+        m_runInfo.steadyDraws = static_cast<int>(RQ.GetLastFrameDraws());
+        m_runInfo.steadyTris = static_cast<int>(RQ.GetLastFrameTris());
 
         if (!m_bench)
         {

@@ -1,6 +1,7 @@
 
 #include "RenderQueue.h"
 
+#include "Mesh.h"
 #include "Material.h"
 #include "Graphics/GraphicsAPI.h"
 #include "Graphics/ShaderProgram.h"
@@ -35,6 +36,8 @@ namespace RR
     void RenderQueue::Draw(GraphicsAPI& _graphicsAPI, const CameraData& _camData,
         const std::vector<LightData>& _lights)
     {
+        sizeT indexCount = 0;
+
         // comparison tool for material, dont bind same material twice
         Material* lastMaterial = nullptr;
 
@@ -74,6 +77,9 @@ namespace RR
             // Bind and draw meshes
             _graphicsAPI.BindMesh(command.mesh);
             _graphicsAPI.DrawMesh(command.mesh);
+
+            // Get this count
+            indexCount += command.mesh->GetIndexCount();
         }
 
         // Unbinds last mesh
@@ -83,7 +89,19 @@ namespace RR
         _graphicsAPI.SetBlend(false);
         _graphicsAPI.SetDepthWrite(true);
 
+
         m_lastFrameDraws = m_commands.size();
+        m_lastFrameTris  = indexCount / 3;
         m_commands.clear();
+    }
+
+    sizeT RenderQueue::GetLastFrameDraws() const
+    {
+        return m_lastFrameDraws;
+    }
+
+    sizeT RenderQueue::GetLastFrameTris() const
+    {
+        return m_lastFrameTris;
     }
 }

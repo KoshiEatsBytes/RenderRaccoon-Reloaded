@@ -234,6 +234,26 @@ namespace SHARED
 
         return key;
     }
+
+    std::string shortNum(int _num)
+    {
+        char buffer[16];
+
+        // short million to M
+        if (_num >= 1'000'000)
+        {
+            snprintf(buffer, sizeof(buffer), "%.1fM", _num / 1'000'000.0);
+            return buffer;
+        }
+        if (_num >= 10'000)
+        {
+            snprintf(buffer, sizeof(buffer), "%.0fk", _num / 1'000.0);
+            return buffer;
+        }
+
+        // nothing to short
+        return std::to_string(_num);
+    }
 }
 
 // MENU ----------------------------------------------------------------------------------------------------------------
@@ -1124,6 +1144,7 @@ namespace AT
             Metric("GPU", FormatFloat("%.2f", stats.avgGpuMs));
             Gap(); Gap(); Gap();
             Metric("DRAWS", info.steadyDraws > 0 ? std::to_string(info.steadyDraws) : "-");
+            Metric("TRIS",  info.steadyTris  > 0 ? SHARED::shortNum(info.steadyTris) : "-");
 
             ImGui::EndTable();
         }
