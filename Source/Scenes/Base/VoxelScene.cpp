@@ -11,6 +11,7 @@
 #include "Voxels/ChunkManager.h"
 #include "WorldGen/SurfaceLOD.hpp"
 #include "Render/Voxels/SurfaceMesher.h"
+#include "Voxels/LodNodeSelect.hpp"
 #include "WorldGen/WorldGen.hpp"
 
 namespace SHARED
@@ -79,16 +80,20 @@ bool VoxelScene::Init()
     };
 
     // LOD mesher lambda
-    RR::LodMesher lodMesher = [this](RR::CHUNK::Coord _cords, int _level, int _coreEdges) -> RR::LodMeshResult
+    RR::LodMesher lodMesher = [this](RR::LodNodeKey _key, int _coreEdges) -> RR::LodMeshResult
     {
-        const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(_cords, _level, _coreEdges, m_genConfig);
+        // asserts footprint
+        assert(_key.footprint == 1 && "-");
+
+        const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(
+            _key.origin, _key.level, _key.footprint, _coreEdges, m_genConfig);
 
         // proxies and surface mesh
         RR::LodMeshResult out;
-        out.surface = RR::MeshSurface(field.dim, _level, m_genConfig.lodBandMaxLevel,
+        out.surface = RR::MeshSurface(field.dim, _key.level, m_genConfig.lodBandMaxLevel,
             field.height, field.block, field.sideColumn);
 
-        out.proxies = RR::MeshProxies(field.trees, _level);
+        out.proxies = RR::MeshProxies(field.trees, _key.level);
         return out;
     };
 
@@ -99,6 +104,7 @@ bool VoxelScene::Init()
     // apply run info settings
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
     m_chunkManager->SetLodEnabled(m_runInfo.lod);
+    m_chunkManager->SetAggregationEnabled(m_runInfo.aggregation);
 
     // Set sky box color
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);
@@ -129,6 +135,8 @@ bool VoxelScene::Init()
     m_skybox->SetCloudFade(0.85f, 0.4f);
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
+
+    RR::ProveNodeSelect();
 
     OnInit();
     return true;

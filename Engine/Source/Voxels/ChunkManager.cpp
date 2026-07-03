@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <cassert>
 
 #include "Render/Mesh.h"
 #include "Render/RenderQueue.h"
@@ -62,7 +63,7 @@ namespace RR
         // check budgets, if 0 CM idle
         const int generated = EnsureGenerated(centre);
         const int meshed    = EnsureMeshed(centre);
-        const int tiled     = EnsureTiles(centre);
+        const int tiled     = EnsureNodes(centre);
 
         // retire old visual once its replacement is uplaoded
         RetireReplaced(centre);
@@ -82,21 +83,15 @@ namespace RR
     {
         auto& queue = Engine::GetInstance().GetRenderQueue();
 
-        const auto IntersectsFrustum = [_frustum](const CHUNK::Coord& _coord) -> bool
-        {
-            // compute chunk "hitbox"
-            const vec3 min (_coord.x * CHUNK::kSizeX, 0.0f, _coord.z * CHUNK::kSizeZ);
-            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
-            // Check if inside camera frustum with aabb
-            return _frustum.IntersectsAABB(min, max);
-        };
-
         for (auto& [coord, chunk] : m_chunks)
         {
             if (!chunk->mesh) continue;
 
+            const vec3 min (coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ);
+            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
+
             // if chunk aabbs outside frustum discard render
-            if (!IntersectsFrustum(coord)) continue;
+            if (!_frustum.IntersectsAABB(min, max)) continue;
 
             auto chunkMatrix = glm::translate(mat4(1.0f),
                 vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
@@ -112,18 +107,24 @@ namespace RR
         }
 
         // Distant LOD surface tiles
-        for (auto& [coord, tile] : m_lodTiles)
+        for (auto& [key, tile] : m_lodTiles)
         {
             if (!tile.mesh) continue;
 
             // if a real chunk is over this cord it wins, therefore skip
-            const auto cit = m_chunks.find(coord);
+            const auto cit = m_chunks.find(key.origin);
             if (cit != m_chunks.end() && cit->second->mesh) continue;
 
-            if (!IntersectsFrustum(coord)) continue;
+            const vec3 min (key.origin.x * CHUNK::kSizeX, 0.0f,
+                            key.origin.z * CHUNK::kSizeZ);
 
-            auto model = glm::translate(mat4(1.0f),
-                vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
+            const vec3 max (min.x + key.footprint * CHUNK::kSizeX, CHUNK::kSizeY,
+                            min.z + key.footprint * CHUNK::kSizeZ);
+
+
+            if (!_frustum.IntersectsAABB(min, max)) continue;
+
+            auto model = glm::translate(mat4(1.0f), vec3(min.x, 0.0f, min.z));
 
             RenderCommand command;
             command.material    = m_blockMat.get();
@@ -144,14 +145,17 @@ namespace RR
             }
         }
 
-
         // Render vegetation AFTER opaque blocks
         for (auto& [coord, chunk] : m_chunks)
         {
             if (!chunk->vegMesh) continue;
 
             // if chunk aabbs outside frustum discard render
-            if (!IntersectsFrustum(coord)) continue;
+            const vec3 min (coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ);
+            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
+
+            // if chunk aabbs outside frustum discard render
+            if (!_frustum.IntersectsAABB(min, max)) continue;
 
             auto model = glm::translate(mat4(1.0f),
                 vec3(coord.x*CHUNK::kSizeX, 0.0f, coord.z*CHUNK::kSizeZ));
@@ -172,6 +176,9 @@ namespace RR
         // Triggers regeneration from scratch
         m_chunks.clear();
         m_lodTiles.clear();
+        m_liveKeys.clear();
+        m_desiredKeys.clear();
+        m_buildQueue.clear();
         m_firstFrame = true;
     }
 
@@ -179,11 +186,6 @@ namespace RR
     {
         m_fancyLeaves = _fancyLeaves;
         Clear();
-    }
-
-    bool ChunkManager::GetFancyLeaves() const
-    {
-        return m_fancyLeaves;
     }
 
     void ChunkManager::SetRenderDistance(int _distance)
@@ -204,6 +206,13 @@ namespace RR
         Clear();
     }
 
+    void ChunkManager::SetAggregationEnabled(bool _enabled)
+    {
+        m_aggregationEnabled = _enabled;
+        NormalizeRanges();
+        Clear();
+    }
+
     void ChunkManager::SetCoreRadius(int _radius)
     {
         m_coreRadius = _radius;
@@ -215,18 +224,45 @@ namespace RR
     void ChunkManager::NormalizeRanges()
     {
         if (m_lodEnabled && m_meshRadius <= m_coreRadius)
+        {
             m_meshRadius = m_coreRadius + 1;
+        }
+
+        int   level = 1;
+        float edge  = m_coreRadius * m_ringGrowth;
+
+        // walk edge up to rd
+        while (static_cast<int>(edge) < m_meshRadius && level < 8)
+        {
+            edge *= m_ringGrowth;
+            ++level;
+        }
+
+        if (m_maxLevelClamp > 0)
+        {
+            level = std::min(level, m_maxLevelClamp);
+        }
+        if (!m_aggregationEnabled)
+        {
+            // per chunk subdivision cap
+            level = std::min(level, 4);
+        }
+
+        m_maxLevel = std::max(level, 1);
     }
 
     void ChunkManager::SetRingGrowth(float _growth)
     {
         m_ringGrowth = _growth;
+        NormalizeRanges();   
         Clear();
     }
 
+    // 0 is automatic derived from rd
     void ChunkManager::SetMaxLevel(int _level)
     {
-        m_maxLevel = _level;
+        m_maxLevelClamp = _level;
+        NormalizeRanges();
         Clear();
     }
 
@@ -245,6 +281,22 @@ namespace RR
     float ChunkManager::GetCoverage() const
     {
         return m_coverage;
+    }
+
+    RingParams ChunkManager::BuildRingParams() const
+    {
+        assert(m_maxLevel >= 1);
+        assert(m_nodingStart >= 2);
+
+
+        return {
+            m_coreRadius,
+            m_ringGrowth,
+            m_maxLevel,
+            m_aggregationEnabled ? m_nodingStart : m_maxLevel + 1, // off, disabled aggregation
+            m_meshRadius,
+            m_lodHysteresis
+        };
     }
 
     // scan the loaded chunks and count those meshed within the mesh radius.
@@ -267,10 +319,11 @@ namespace RR
             }
         }
         // Coverage of lod tiles
-        for (const auto& [cords, tile] : m_lodTiles)
+        for (const auto& [key, tile] : m_lodTiles)
         {
-            if (std::max(std::abs(cords.x - _centre.x), std::abs(cords.z - _centre.z)) <= m_meshRadius &&
-                tile.mesh)
+            int nearest = NearestDist(_centre, key.origin, key.footprint);
+
+            if (tile.mesh && nearest <= m_meshRadius)
             {
                 ++covered;
             }
@@ -279,22 +332,77 @@ namespace RR
         return static_cast<float>(covered) / static_cast<float>(total);
     }
 
-    int ChunkManager::LevelForDistance(int _dist) const
+    int ChunkManager::ComputeCoreMask(const LodNodeKey &_key, CHUNK::Coord _centre) const
     {
-        // full detail in the core, or whenever lod is off
-        if (!m_lodEnabled || _dist <= m_coreRadius) return 0;
+        // nodes are never/cant be core adjacent
+        if (_key.footprint > 1) return 0;
 
-        int   level = 1;
-        float edge  = m_coreRadius * m_ringGrowth;   // outer edge of ring 1
-
-        // step outward by the growth factor until the ring contains _dist
-        while (_dist > static_cast<int>(edge) && level < m_maxLevel)
+        const auto inCore = [&](int _dx, int _dz) -> bool
         {
-            edge *= m_ringGrowth;
-            ++level;
+            return std::max(std::abs(_key.origin.x + _dx - _centre.x),
+                            std::abs(_key.origin.z + _dz - _centre.z))
+                              <= m_coreRadius;
+        };
+
+        // builds 4 neighbor mask
+        int mask = 0;
+        if (inCore(-1, 0)) mask |= 0x1;
+        if (inCore( 1, 0)) mask |= 0x2;
+        if (inCore( 0,-1)) mask |= 0x4;
+        if (inCore( 0, 1)) mask |= 0x8;
+        return mask;
+    }
+
+    // check if tile at coord is ready to be rendered
+    bool ChunkManager::TileCoveringReady(CHUNK::Coord _coord) const
+    {
+        for (int lvl = 1; lvl <= m_maxLevel; ++lvl)
+        {
+            const auto it = m_lodTiles.find({_coord, lvl, 1});
+
+            if (it != m_lodTiles.end() && it->second.mesh) return true;
+        }
+        return false;
+    }
+
+    void ChunkManager::StoreTile(const LodNodeKey& _key, LodTile&& _tile)
+    {
+        m_lodTiles[_key] = std::move(_tile);
+        m_liveKeys.insert(_key);
+    }
+
+    // iterator fridnly erase, return next
+    auto ChunkManager::EraseTile(TileMap::iterator _it) -> TileMap::iterator
+    {
+        m_liveKeys.erase(_it->first);
+        return m_lodTiles.erase(_it);
+    }
+
+    void ChunkManager::BuildTile(const LodNodeKey& _key, int _coreMask)
+    {
+        const LodMeshResult data = m_lodMesher(_key, _coreMask);
+
+        LodTile tile;
+        tile.coreEdges = _coreMask;
+        tile.mesh = std::make_unique<Mesh>(data.surface.layout, data.surface.vertices, data.surface.indices);
+
+        // assemble proxies mesh if present
+        if (!data.proxies.indices.empty())
+        {
+            tile.proxyMesh = std::make_unique<Mesh>(data.proxies.layout, data.proxies.vertices, data.proxies.indices);
         }
 
-        return level;
+        StoreTile(_key, std::move(tile));
+    }
+
+    // any per-chunk tile at this cord
+    bool ChunkManager::AnyTileAt(CHUNK::Coord _coord) const
+    {
+        for (int level = 1; level <= m_maxLevel; ++level)
+        {
+            if (m_liveKeys.contains({_coord, level, 1})) return true;
+        }
+        return false;
     }
 
     void ChunkManager::RebuildRingOffset()
@@ -345,11 +453,10 @@ namespace RR
         // remove far lod bands
         for (auto it = m_lodTiles.begin(); it != m_lodTiles.end();)
         {
-            const int dist = std::max(std::abs(it->first.x - _centre.x),
-                                      std::abs(it->first.z - _centre.z));
+            int nearest = NearestDist(_centre, it->first.origin, it->first.footprint);
 
-            if (dist > tileRange)
-                it = m_lodTiles.erase(it);
+            if (nearest > tileRange)
+                it = EraseTile(it);
             else
                 ++it;
         }
@@ -363,13 +470,8 @@ namespace RR
             const int dist = std::max(std::abs(it->first.x - _centre.x),
                                       std::abs(it->first.z - _centre.z));
 
-            const auto tileIt = m_lodTiles.find(it->first);
-
-            // log if tile is ready
-            const bool tileReady = tileIt != m_lodTiles.end() && tileIt->second.mesh;
-
             // +1 to prevent a null ring between 0 and 1
-            if (dist > m_coreRadius + 1 && tileReady)
+            if (dist > m_coreRadius + 1 && TileCoveringReady(it->first))
                 it = m_chunks.erase(it);
             else
                 ++it;
@@ -378,17 +480,31 @@ namespace RR
         // a tile whos inside the core, drop once chunk is meshed
         for (auto it = m_lodTiles.begin(); it != m_lodTiles.end(); )
         {
-            const int  dist  = std::max(std::abs(it->first.x - _centre.x),
-                                        std::abs(it->first.z - _centre.z));
+            const LodNodeKey& key  = it->first;
+            const int         dist = NearestDist(_centre, key.origin, key.footprint);
 
-            const Chunk* chunk = GetChunk(it->first);
+            const Chunk* chunk = GetChunk(key.origin);
             const bool chunkReady = chunk && chunk->state == CHUNK::STATE::MESHED;
 
             // drop current chunk if replacement tile is ready
-            if (dist <= m_coreRadius && chunkReady)
-                it = m_lodTiles.erase(it);
+            if (key.footprint == 1 && dist <= m_coreRadius && chunkReady)
+                it = EraseTile(it);
             else
                 ++it;
+        }
+    }
+
+    // after a replacement if built and stores, drop any other level present for this orgin
+    void ChunkManager::RetireCovered(const LodNodeKey& _key)
+    {
+        for (int level = 1; level <= m_maxLevel; ++level)
+        {
+            if (level == _key.level) continue;
+
+            const LodNodeKey old { _key.origin, level, 1 };
+
+            if (m_lodTiles.erase(old))
+                m_liveKeys.erase(old);
         }
     }
 
@@ -474,91 +590,81 @@ namespace RR
         return meshed;
     }
 
-    int ChunkManager::EnsureTiles(CHUNK::Coord _centre)
+    int ChunkManager::EnsureNodes(CHUNK::Coord _centre)
     {
         using namespace CHUNK;
 
         if (!m_lodEnabled) return 0;
 
         int built = 0;
+
+        // core - fill with l1 when not yet ready
         for (const Coord offset : m_genOffsets)
         {
             // Dont stall on single thread
             if (built >= kTileBudget) break;
 
             const int dist = chessDist(offset);
-            if (dist >  m_meshRadius) break;
+            if (dist >  m_coreRadius) break;
 
             const Coord cords {
                 _centre.x + offset.x,
                 _centre.z + offset.z
             };
 
-            const auto it = m_lodTiles.find(cords);
-            const int current = it != m_lodTiles.end() ? it->second.level : -1;
+            // real chunk meshed, dont fill
+            const Chunk* chunk = GetChunk(cords);
+            if (chunk && chunk->state == STATE::MESHED) continue;
 
-            int lodLevel;
-            int coreMask = 0;
-            if (dist <= m_coreRadius)
-            {
-                // core zone, cheap until main has been rendered
-                const Chunk* chunk = GetChunk(cords);
-                // real chunk is ready
-                if (chunk && chunk->state == STATE::MESHED) continue;
-                if (current >= 0) continue;
+            // existing tiles cover until mesh is ready
+            if (AnyTileAt(cords)) continue;
 
-                // until then use cheap chunks
-                lodLevel = 1;
-            }
-            else
-            {
-                // only change lod level when the distance has cleared the specified threshold
-                lodLevel = LevelForDistance(dist);
-                if (current >= 0)
-                {
-                    if (lodLevel > current)
-                    {
-                        lodLevel = LevelForDistance(dist - m_lodHysteresis);
-                    }
-                    else if (lodLevel < current)
-                    {
-                        lodLevel = LevelForDistance(dist + m_lodHysteresis);
-                    }
-                }
+            BuildTile({cords, 1, 1}, 0);
+            ++built;
+        }
 
-                auto inCore = [&](int _dx, int _dz)
-                {
-                    return chessDist({ offset.x + _dx, offset.z + _dz }) <= m_coreRadius;
-                };
+        // check if any budget left
+        if (built >= kTileBudget) return built;
 
-                // bitmap for each of the 4 edges
-                if (inCore(-1, 0)) coreMask |= 0x1;
-                if (inCore( 1, 0)) coreMask |= 0x2;
-                if (inCore( 0,-1)) coreMask |= 0x4;
-                if (inCore( 0, 1)) coreMask |= 0x8;
-            }
+        // select levels and hysteresis, what exists beyond core
+        const RingParams params = BuildRingParams();
 
-            // skip only if already correct, same level and boundary
-            const bool sameMask = it != m_lodTiles.end() && it->second.coreEdges == coreMask;
-            if (current == lodLevel && sameMask) continue;
+        m_desiredKeys.clear();
+        SelectNodes(_centre, params, &m_liveKeys, m_desiredKeys);
 
-            // extract mesh surface
-            const LodMeshResult data = m_lodMesher(cords, lodLevel, coreMask);
-            LodTile tile;
+        // desired vs live, stale or missing entry means needs to be built
+        m_buildQueue.clear();
 
-            // assemble surface mesh
-            tile.cords     = cords;
-            tile.level     = lodLevel;
-            tile.coreEdges = coreMask;
-            tile.mesh      = std::make_unique<Mesh>(data.surface.layout, data.surface.vertices, data.surface.indices);
+        for (const LodNodeKey& key : m_desiredKeys)
+        {
+            const int coreMask = ComputeCoreMask(key, _centre);
 
-            // assemble proxies mesh (if present)
-            if (!data.proxies.indices.empty())
-            {
-                tile.proxyMesh = std::make_unique<Mesh>(data.proxies.layout, data.proxies.vertices, data.proxies.indices);
-            }
+            const auto it = m_lodTiles.find(key);
 
-            m_lodTiles[cords] = std::move(tile);
+            // skip up to date
+            if (it != m_lodTiles.end() && it->second.coreEdges == coreMask) continue;
+
+            m_buildQueue.push_back({key, coreMask});
+        }
+
+        const auto nearer = [&](const PendingBuild& _a, const PendingBuild& _b)
+        {
+            return NearestDist(_centre, _a.key.origin, _a.key.footprint)
+                   < NearestDist(_centre, _b.key.origin, _b.key.footprint);
+        };
+
+        // only build first few per frame - partial sort
+        const sizeT toBuild = std::min(m_buildQueue.size(),
+            static_cast<std::size_t>(kTileBudget - built));
+
+        std::ranges::partial_sort(m_buildQueue,
+            m_buildQueue.begin() + toBuild, nearer);
+
+        // build sorted
+        for (sizeT i = 0; i < toBuild; i++)
+        {
+            BuildTile(m_buildQueue[i].key, m_buildQueue[i].coreMask);
+            RetireCovered(m_buildQueue[i].key);
             ++built;
         }
 

@@ -11,10 +11,7 @@ namespace RR
     // distant voxel-less surface tile, meshed as a strided surface skin
     struct LodTile
     {
-        CHUNK::Coord cords;
-        int level     = 1;
-        int coreEdges = 0; // edges bordering core chunks
-
+        int coreEdges = 0;
         std::unique_ptr<Mesh> mesh;
         std::unique_ptr<Mesh> proxyMesh;
     };

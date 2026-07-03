@@ -125,6 +125,7 @@ set(PROJECT_SOURCE_FILES
         Source/Voxels/LodTile.h
         Source/Render/Voxels/SurfaceMesher.cpp
         Source/Render/Voxels/SurfaceMesher.h
+        Source/Voxels/LodNodeSelect.h
 )
 
 # Compose application structure

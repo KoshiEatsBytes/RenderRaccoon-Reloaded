@@ -27,20 +27,22 @@ namespace WORLDGEN
     };
 
     // distant surface skin for one chunk only, no fill or rivers/tree or veg
-    inline SurfaceField ExtractSurface(RR::CHUNK::Coord _cords, int _level, int _coreEdges, const WorldGenConfig& _cfg)
+    inline SurfaceField ExtractSurface(RR::CHUNK::Coord _cords, int _level, int _footprint, int _coreEdges, const WorldGenConfig& _cfg)
     {
         using namespace RR::CHUNK;
         const bool collectProxies = _level >= 1 && _level <= _cfg.proxyMaxLevel;
         const bool riverCarve     = _level >= 1 && _level <= _cfg.lodRiverCarveMaxLevel;
 
-        const int stride  = 1 << _level;
-        const int nCells  = kSizeX >> _level;
-        const int padG    = nCells + 2;
-        const int apron   = stride;
-        const int span    = kSizeX + 2 * apron;
-        const int originX = _cords.x * kSizeX;
-        const int originZ = _cords.z * kSizeZ;
+        const int stride     = 1 << _level;
+        const int spanBlocks = _footprint * kSizeX;
+        const int nCells     = spanBlocks >> _level;
+        const int padG       = nCells + 2;
+        const int apron      = stride;
+        const int span       = spanBlocks + 2 * apron;
+        const int originX    = _cords.x * kSizeX;
+        const int originZ    = _cords.z * kSizeZ;
         const int margin  = _cfg.biomeBlendRadius;
+        assert(nCells >= 1 && "stride exceeds node span");
 
         // build biome and blend once per tile
         const BiomeGrid              grid = BuildBiomeGridSpan(originX - apron, originZ - apron, span, margin, _cfg);

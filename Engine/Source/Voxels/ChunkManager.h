@@ -11,6 +11,7 @@
 #include "Voxels/LodTile.h"
 #include "Render/Voxels/ChunkMesher.h"
 #include "Render/Voxels/SurfaceMesher.h"
+#include "Voxels/LodNodeSelect.hpp"
 
 namespace RR
 {
@@ -21,7 +22,15 @@ namespace RR
         MeshData proxies;
     };
 
-    using LodMesher = std::function<LodMeshResult(CHUNK::Coord, int, int)>;
+    struct PendingBuild
+    {
+        LodNodeKey key;
+        int coreMask;
+    };
+
+    using LodMesher = std::function<LodMeshResult(LodNodeKey, int)>;
+    using TileMap   = std::unordered_map<LodNodeKey, LodTile, LodNodeKeyHash>;
+    using ChunkMap  = std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash>;
 
     class Material;
     class ChunkManager
@@ -36,14 +45,14 @@ namespace RR
         void SubmitDraws(const Frustum& _frustum);
         void Clear();
 
-        void SetFancyLeaves(bool _fancyLeaves);
-        bool GetFancyLeaves() const;
-
         void SetRenderDistance(int _distance);
         int  GetRenderDistance() const;
 
+        void SetFancyLeaves(bool _fancyLeaves);
+
         // Lod tuning
         void SetLodEnabled(bool _enabled);
+        void SetAggregationEnabled(bool _enabled);
         void SetCoreRadius(int _radius);
         void SetRingGrowth(float _growth);
         void SetMaxLevel(int _level);
@@ -56,20 +65,30 @@ namespace RR
         float GetCoverage() const;
 
     private:
+        RingParams BuildRingParams() const;
         void RebuildRingOffset();
         void NormalizeRanges();
+
         void UnloadFar(CHUNK::Coord _centre);
-        void RetireReplaced(CHUNK::Coord _centre);
         void GenerateChunk(CHUNK::Coord _coord);
         void BuildChunkMesh(Chunk& _chunk);
 
         int   EnsureGenerated(CHUNK::Coord _centre);
         int   EnsureMeshed(CHUNK::Coord _centre);
-        int   EnsureTiles(CHUNK::Coord _centre);
+        int   EnsureNodes(CHUNK::Coord _centre);
         bool  NeighboursGenerated(CHUNK::Coord _coord);
-        float ComputeCoverage(CHUNK::Coord _centre) const;
 
-        int LevelForDistance(int _dist) const;
+        float ComputeCoverage(CHUNK::Coord _centre) const;
+        int   ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
+
+        void RetireReplaced(CHUNK::Coord _centre);
+        void RetireCovered(const LodNodeKey& _key);
+
+        bool TileCoveringReady(CHUNK::Coord _coord) const;
+        void StoreTile(const LodNodeKey& _key, LodTile&& _tile);
+        auto EraseTile(TileMap::iterator _it) -> TileMap::iterator;
+        void BuildTile(const LodNodeKey& _key, int _coreMask);
+        bool AnyTileAt(CHUNK::Coord _coord) const;
 
         Chunk* GetChunk(CHUNK::Coord _coord);
         ChunkBorders GatherBorders(CHUNK::Coord _coord);
@@ -78,10 +97,14 @@ namespace RR
         // Algorithms
         ChunkGenerator m_generator;
         LodMesher      m_lodMesher;
+        NodeSet        m_liveKeys;
+
+        std::vector<LodNodeKey>   m_desiredKeys;
+        std::vector<PendingBuild> m_buildQueue;
 
         // terrain/visual
-        std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash> m_chunks;
-        std::unordered_map<CHUNK::Coord, LodTile, CHUNK::CoordHash>                m_lodTiles;
+        ChunkMap m_chunks;
+        TileMap  m_lodTiles;
 
         // mats
         std::shared_ptr<Material> m_blockMat;
@@ -96,8 +119,9 @@ namespace RR
         float m_coverage      = 1.0f;
 
         // Quality settings
-        bool m_fancyLeaves = true;
-        bool m_lodEnabled  = false;
+        bool m_fancyLeaves        = true;
+        bool m_lodEnabled         = false;
+        bool m_aggregationEnabled = false;
 
         // RD settings
         int m_meshRadius = 16; // total RD
@@ -107,6 +131,10 @@ namespace RR
         float m_ringGrowth    = 2.f;
         int   m_maxLevel      = 4;
         int   m_lodHysteresis = 2; // chunks of deadband around each ring
+
+        // Aggregation
+        int m_nodingStart   = 2;
+        int m_maxLevelClamp = 0;
 
         // Per frame budget
         static constexpr int kGenBudget  = 1;
