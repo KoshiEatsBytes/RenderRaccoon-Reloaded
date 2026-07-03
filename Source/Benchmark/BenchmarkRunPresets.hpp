@@ -14,7 +14,7 @@ namespace NAMING
         if (_runInfo.aggregation) _str.append("-LA");
         if (_runInfo.greedy)      _str.append("-GM");
         if (_runInfo.async)       _str.append("-MT");
-        if (_runInfo.scheduling)  _str.append("-SM");
+        if (_runInfo.scheduling)  _str.append("-AB");
 
         // and render dist
         _str.append("-R" + std::to_string(_runInfo.renderDistance));
@@ -43,7 +43,7 @@ namespace DETERMINISTIC
 
         // Scheduling
         MT_ONLY,
-        SS_ONLY,
+        MT_AB,
 
         ALL_BASE,
         ALL_HORIZON,
@@ -120,11 +120,11 @@ namespace DETERMINISTIC
             }
             break;
 
-            case SCENE::SS_ONLY:
+            case SCENE::MT_AB:
             {
-                // SS only
+                // MT + adaptive budgeting 
                 runInfo.lod         = false;
-                runInfo.async       = false;
+                runInfo.async       = true;
                 runInfo.scheduling  = true;
                 runInfo.aggregation = false;
                 runInfo.greedy      = false;

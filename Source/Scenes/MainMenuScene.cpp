@@ -836,19 +836,27 @@ void MainMenuScene::DrawOptimizationToggles()
             m_runInfo.greedy = false;
         }
 
+        // adaptive budgeting chnages how threads work, mt required
+        if (!m_runInfo.async)
+        {
+            m_runInfo.scheduling = false;
+        }
+
         ImGui::TableNextColumn();
-        ImGui::Checkbox("Smart Scheduling", &m_runInfo.scheduling);
+        ImGui::Checkbox("Multi-Threading", &m_runInfo.async);
         ImGui::BeginDisabled(!m_runInfo.lod);
         ImGui::TableNextColumn();
-        ImGui::Checkbox("Greedy Meshing",   &m_runInfo.greedy);
+        ImGui::Checkbox("LOD Aggregation",  &m_runInfo.aggregation);
         ImGui::EndDisabled();
 
         // Scheduling optimizations
         ImGui::TableNextColumn();
-        ImGui::Checkbox("Multi-Threading",  &m_runInfo.async);
+        ImGui::BeginDisabled(!m_runInfo.async);
+        ImGui::Checkbox("Adaptive Budgeting",  &m_runInfo.scheduling);
+        ImGui::EndDisabled();
         ImGui::BeginDisabled(!m_runInfo.lod);
         ImGui::TableNextColumn();
-        ImGui::Checkbox("LOD Aggregation",  &m_runInfo.aggregation);
+        ImGui::Checkbox("Greedy Meshing",   &m_runInfo.greedy);
         ImGui::EndDisabled();
         ImGui::EndTable();
     }
@@ -895,7 +903,20 @@ void MainMenuScene::DrawRenderDistance()
     ImGui::Separator();
     ImGui::Spacing();
     
-    const int maxRD = m_runInfo.lod ? 384 : 32;
+    // baseline full voxel
+    int maxRD = 32;   
+    if (m_runInfo.lod)
+    {
+        if (m_runInfo.aggregation)
+        {
+            maxRD = m_runInfo.async ? 384 : 256;
+        }
+        else
+        {
+            maxRD = m_runInfo.async ? 128 : 64;
+        }
+    }
+
     const int minRD = m_runInfo.lod ? 2 * RR::ChunkManager::kDefaultCoreRadius : 2;
     m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, minRD, maxRD);
 
@@ -1104,8 +1125,6 @@ namespace AT
             Gap(); Gap(); Gap();
             Metric("DRAWS", info.steadyDraws > 0 ? std::to_string(info.steadyDraws) : "-");
 
-
-
             ImGui::EndTable();
         }
         ImGui::PopFont();
@@ -1179,11 +1198,11 @@ namespace AT
             ImGui::TextColored(color, "%s %s", _on ? "[x]" : "[ ]", _label);
         };
 
-        tag("LOD", info.lod);                 ImGui::SameLine();
-        tag("LOD-Aggregation", info.aggregation); ImGui::SameLine();
-        tag("Greedy-Meshing", info.greedy);           ImGui::SameLine();
-        tag("Multi-Threading", info.async);   ImGui::SameLine();
-        tag("Smart-Scheduling", info.scheduling);
+        tag("LOD", info.lod);                      ImGui::SameLine();
+        tag("LOD-Aggregation", info.aggregation);  ImGui::SameLine();
+        tag("Greedy-Meshing", info.greedy);        ImGui::SameLine();
+        tag("Multi-Threading", info.async);        ImGui::SameLine();
+        tag("Adaptive-Budgeting", info.scheduling);
         ImGui::PopFont();
     }
 }

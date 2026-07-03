@@ -84,9 +84,6 @@ bool VoxelScene::Init()
     // LOD mesher lambda
     RR::LodMesher lodMesher = [this](RR::LodNodeKey _key, int _coreEdges) -> RR::LodMeshResult
     {
-        // asserts footprint
-        assert(_key.footprint == 1 && "-");
-
         const WORLDGEN::SurfaceField field = WORLDGEN::ExtractSurface(
             _key.origin, _key.level, _key.footprint, _coreEdges, m_genConfig);
 
@@ -118,7 +115,7 @@ bool VoxelScene::Init()
     for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
     {
         mat->SetParam("uFogColor", skyBoxColor);
-        mat->SetParam("uFogStart", m_fogEnd * 0.90f);
+        mat->SetParam("uFogStart", m_fogEnd * 0.95f);
         mat->SetParam("uFogEnd",   m_fogEnd);
     }
 
@@ -181,7 +178,7 @@ void VoxelScene::Update(float _deltaTime)
         const float minEnd  = RR::ChunkManager::kDefaultCoreRadius * RR::CHUNK::kSizeX;
         const float target  = std::max(minEnd, fullEnd * std::sqrt(m_chunkManager->GetCoverage()));
 
-        m_fogEnd += (target - m_fogEnd) * std::min(1.0f, _deltaTime * 1.5f);
+        m_fogEnd += (target - m_fogEnd) * std::min(1.0f, _deltaTime * 2.f);
 
         // apply fog smoothing
         for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })
