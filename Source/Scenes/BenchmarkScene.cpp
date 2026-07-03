@@ -5,7 +5,7 @@
 #include "MainMenuScene.h"
 #include "Benchmark/BenchmarkRunPresets.hpp"
 #include "Components/FreeCameraComponent.h"
-#include "Voxels/ChunkManager.h"
+#include "../../Engine/Source/Voxels/ChunkManager/ChunkManager.h"
 #include "Render/RenderQueue.h"
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------

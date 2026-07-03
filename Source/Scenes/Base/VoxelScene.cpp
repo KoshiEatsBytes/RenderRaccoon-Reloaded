@@ -11,7 +11,7 @@
 #include "Components/FreeCameraComponent.h"
 #include "Scenes/MainMenuScene.h"
 #include "Voxels/Chunk.h"
-#include "Voxels/ChunkManager.h"
+#include "../../../Engine/Source/Voxels/ChunkManager/ChunkManager.h"
 #include "WorldGen/SurfaceLOD.hpp"
 #include "Render/Voxels/SurfaceMesher.h"
 #include "Voxels/LodNodeSelect.hpp"

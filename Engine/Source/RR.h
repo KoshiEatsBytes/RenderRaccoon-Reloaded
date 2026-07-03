@@ -58,7 +58,7 @@
 // Voxels
 #include "Render/Voxels/ChunkMesher.h"
 #include "Voxels/Chunk.h"
-#include "Voxels/ChunkManager.h"
+#include "Voxels/ChunkManager/ChunkManager.h"
 #include "Voxels/ChunkData.h"
 
 // Benchmark

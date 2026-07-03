@@ -8,7 +8,7 @@
 
 #include "Scenes/MainMenuScene.h"
 
-#include "Voxels/ChunkManager.h"
+#include "../../Engine/Source/Voxels/ChunkManager/ChunkManager.h"
 #include "BenchmarkScene.h"
 #include "FreeRoamScene.h"
 #include "imgui.h"

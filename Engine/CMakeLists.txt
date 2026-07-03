@@ -115,8 +115,8 @@ set(PROJECT_SOURCE_FILES
         Source/Voxels/Chunk.cpp
         Source/Voxels/Chunk.h
         Source/Voxels/ChunkData.h
-        Source/Voxels/ChunkManager.cpp
-        Source/Voxels/ChunkManager.h
+        Source/Voxels/ChunkManager/ChunkManager.cpp
+        Source/Voxels/ChunkManager/ChunkManager.h
         Source/Graphics/TextureArray.cpp
         Source/Graphics/TextureArray.h
         Source/Render/Frustum.h
@@ -125,7 +125,9 @@ set(PROJECT_SOURCE_FILES
         Source/Voxels/LodTile.h
         Source/Render/Voxels/SurfaceMesher.cpp
         Source/Render/Voxels/SurfaceMesher.h
-        Source/Voxels/LodNodeSelect.h
+        Source/Voxels/LodNodeSelect.hpp
+        Source/Voxels/ChunkManager/ChunkManagerChunks.cpp
+        Source/Voxels/ChunkManager/ChunkManagerTiles.cpp
 )
 
 # Compose application structure
