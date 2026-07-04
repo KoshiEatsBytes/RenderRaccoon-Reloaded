@@ -60,7 +60,7 @@ protected:
 
     // fog
     float m_fogEnd       = 0.0f;
-    float m_fogMoveSpeed = 3.0f;
+    float m_fogMoveSpeed = 5.0f;
 
     // Menu data
     bool m_escWasDown  = false;

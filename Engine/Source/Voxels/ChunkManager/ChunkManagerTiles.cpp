@@ -16,13 +16,21 @@ namespace RR
 
         if (!m_lodEnabled) return 0;
 
+        int budget = kTileBudget;
+        if (m_asyncEnabled)
+        {
+            // fill pool to outstanding gap
+            budget = static_cast<int>(m_pool->GetThreadCount()) * kInFlightWorkerMultiplier -
+                     static_cast<int>(m_tileInFlight.size());
+        }
+
         int built = 0;
 
         // core - fill with l1 when not yet ready
         for (const Coord offset : m_genOffsets)
         {
             // Dont stall on single thread
-            if (built >= kTileBudget) break;
+            if (built >= budget) break;
 
             const int dist = chessDist(offset);
             if (dist >  m_coreRadius) break;
@@ -39,12 +47,32 @@ namespace RR
             // existing tiles cover until mesh is ready
             if (AnyTileAt(cords)) continue;
 
-            BuildTile({cords, 1, 1}, 0);
+            const LodNodeKey key {cords, 1, 1};
+
+            if (m_asyncEnabled)
+            {
+                // AnyTileAt cant see wip tiles, so guard aganist it
+                if (m_tileInFlight.contains(key)) continue;
+                SubmitTileJob(key, 0, true);
+            }
+            else
+            {
+                BuildTile({cords, 1, 1}, 0);
+            }
+
             ++built;
         }
 
         // check if any budget left
-        if (built >= kTileBudget) return built;
+        if (built >= budget)
+        {
+            if (m_asyncEnabled)
+            {
+                return static_cast<int>(m_tileInFlight.size());
+            }
+
+            return built;
+        }
 
         // select levels and hysteresis, what exists beyond core
         const RingParams params = BuildRingParams();
@@ -62,6 +90,9 @@ namespace RR
         for (const LodNodeKey& key : m_desiredKeys)
         {
             const int coreMask = ComputeCoreMask(key, _centre);
+
+            // wip also counts as "already built"
+            if (m_asyncEnabled && m_tileInFlight.contains(key)) continue;
 
             // pending and active count as "already built"
             const auto activeIt  = m_lodTiles.find(key);
@@ -92,7 +123,7 @@ namespace RR
 
         // only build first few per frame - partial sort
         const sizeT toBuild = std::min(m_buildQueue.size(),
-            static_cast<std::size_t>(kTileBudget - built));
+            static_cast<std::size_t>(budget - built));
 
         std::ranges::partial_sort(m_buildQueue,
             m_buildQueue.begin() + toBuild, nearer);
@@ -103,18 +134,25 @@ namespace RR
             const LodNodeKey& key  = m_buildQueue[i].key;
             const int         mask = m_buildQueue[i].coreMask;
 
-            LodTile tile = MakeTile(key, mask);
-
-            // in place mask rebuild, no gaps in the process
-            if (m_lodTiles.contains(key))
-                StoreTile(key, std::move(tile));
+            if (m_asyncEnabled)
+            {
+                SubmitTileJob(key, mask, false);
+            }
             else
-                StorePending(key, std::move(tile));
+            {
+                LodTile tile = MakeTile(key, mask);
+
+                // in place mask rebuild, no gaps in the process
+                if (m_lodTiles.contains(key))
+                    StoreTile(key, std::move(tile));
+                else
+                    StorePending(key, std::move(tile));
+            }
 
             ++built;
         }
 
-        return built;
+        return m_asyncEnabled ? static_cast<int>(m_tileInFlight.size()) : built;
     }
 
     void ChunkManager::CommitFlips()

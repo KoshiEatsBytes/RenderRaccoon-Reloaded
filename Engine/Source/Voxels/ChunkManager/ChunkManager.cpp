@@ -52,6 +52,7 @@ namespace RR
 
         DrainGenResults();
         DrainMeshResults();
+        DrainTileResults();
 
         // check budgets, if 0 CM idle
         const int generated = EnsureGenerated(centre);
