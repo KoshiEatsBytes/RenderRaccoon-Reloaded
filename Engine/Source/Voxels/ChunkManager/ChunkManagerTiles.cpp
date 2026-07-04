@@ -106,14 +106,19 @@ namespace RR
             m_buildQueue.push_back({key, coreMask, AreaCovered(key)});
         }
 
+        // weighted perceptual priority, generate close first
+        const auto priority = [&](const PendingBuild& _p)
+        {
+            const int dist = NearestDist(_centre, _p.key.origin, _p.key.footprint);
+            return dist + (_p.covered ? kCoveredPenalty : 0);
+        };
+
         const auto nearer = [&](const PendingBuild& _a, const PendingBuild& _b)
         {
-            if (_a.covered != _b.covered) return !_a.covered;
+            const int prioA = priority(_a);
+            const int prioB = priority(_b);
 
-            const int distA = NearestDist(_centre, _a.key.origin, _a.key.footprint);
-            const int distB = NearestDist(_centre, _b.key.origin, _b.key.footprint);
-
-            if (distA != distB) return distA < distB;
+            if (prioA != prioB) return prioA < prioB;
 
             if (_a.key.origin.x != _b.key.origin.x)
                 return _a.key.origin.x < _b.key.origin.x;

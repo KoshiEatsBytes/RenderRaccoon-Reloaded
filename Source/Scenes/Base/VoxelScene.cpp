@@ -6,7 +6,6 @@
 #include "VoxelScene.h"
 
 #include "imgui.h"
-#include "ShowCase.h"
 #include "GLFW/glfw3.h"
 #include "Components/FreeCameraComponent.h"
 #include "Scenes/MainMenuScene.h"
@@ -174,7 +173,7 @@ void VoxelScene::Update(float _deltaTime)
     if (m_chunkManager && m_cam && m_camComp)
     {
         const vec3 camPos = m_cam->GetWorldPosition();
-        m_chunkManager->Update(camPos);
+        m_chunkManager->Update(_deltaTime, camPos);
 
         // area fraction to expand fog
         const float fullEnd = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX * 0.95f;

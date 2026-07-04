@@ -72,7 +72,7 @@ namespace RR
         ~ChunkManager();
 
         // Frame loop
-        void Update(const vec3& _cameraPos);
+        void Update(float _deltaTime, const vec3& _cameraPos);
         void SubmitDraws(const Frustum& _frustum);
         void Clear();
 
@@ -80,7 +80,7 @@ namespace RR
         int  GetRenderDistance() const;
         void SetFancyLeaves(bool _fancyLeaves);
 
-        // toggles
+        // technique toggles
         void SetLodEnabled(bool _enabled);
         void SetAggregationEnabled(bool _enabled);
         void SetAsyncEnabled(bool _enabled);
@@ -210,8 +210,8 @@ namespace RR
         int m_maxLevelClamp = 0;
 
         // async MT
-        bool   m_asyncEnabled = false;
-        uInt64 m_epoch = 0; // time stamp for workers
+        bool   m_asyncEnabled  = false;
+        uInt64 m_epoch         = 0; // time stamp for workers
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation
@@ -235,5 +235,8 @@ namespace RR
         static constexpr float kInFlightWorkerMultiplier = 2.0f;
         // GL uploads per frame
         static constexpr int kUploadBudget = 4;
+
+        // distance of chunks on priority
+        static constexpr int kCoveredPenalty = 0;
     };
 }

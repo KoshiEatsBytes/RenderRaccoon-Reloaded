@@ -27,7 +27,7 @@ namespace RR
     ChunkManager::~ChunkManager()
     = default;
 
-    void ChunkManager::Update(const vec3& _cameraPos)
+    void ChunkManager::Update(float _deltaTime, const vec3& _cameraPos)
     {
         const bool radiusChanged = m_offsetsBuiltForRadius != m_meshRadius;
 
@@ -470,6 +470,16 @@ namespace RR
             std::lock_guard lock(m_resultMutex);
 
             const auto take = std::min<sizeT>(kUploadBudget, m_tileResults.size());
+
+            // nearest results first, closer tiles swap first
+            const auto nearerResult = [&](const TileResult& _a, const TileResult& _b)
+            {
+                return NearestDist(m_lastCoords, _a.key.origin, _a.key.footprint) <
+                       NearestDist(m_lastCoords, _b.key.origin, _b.key.footprint);
+            };
+
+            std::ranges::partial_sort(m_tileResults,
+                m_tileResults.begin() + take, nearerResult);
 
             // move only budgeted amount into the actual batch
             batch.assign(std::make_move_iterator(m_tileResults.begin()),
