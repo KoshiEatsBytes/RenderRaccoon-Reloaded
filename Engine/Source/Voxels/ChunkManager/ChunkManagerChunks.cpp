@@ -65,7 +65,7 @@ namespace RR
 
     void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
     {
-        auto chunk = std::make_unique<Chunk>(_coord);
+        auto chunk = std::make_shared<Chunk>(_coord);
         // Inject world gen
         m_generator(*chunk);
         chunk->state = CHUNK::STATE::GENERATED;

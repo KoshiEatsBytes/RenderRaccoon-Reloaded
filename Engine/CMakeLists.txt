@@ -128,6 +128,8 @@ set(PROJECT_SOURCE_FILES
         Source/Voxels/LodNodeSelect.hpp
         Source/Voxels/ChunkManager/ChunkManagerChunks.cpp
         Source/Voxels/ChunkManager/ChunkManagerTiles.cpp
+        Source/Threading/WorkerPool.cpp
+        Source/Threading/WorkerPool.h
 )
 
 # Compose application structure

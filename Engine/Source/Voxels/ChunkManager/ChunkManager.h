@@ -31,7 +31,7 @@ namespace RR
 
     using LodMesher = std::function<LodMeshResult(LodNodeKey, int)>;
     using TileMap   = std::unordered_map<LodNodeKey, LodTile, LodNodeKeyHash>;
-    using ChunkMap  = std::unordered_map<CHUNK::Coord, std::unique_ptr<Chunk>, CHUNK::CoordHash>;
+    using ChunkMap  = std::unordered_map<CHUNK::Coord, std::shared_ptr<Chunk>, CHUNK::CoordHash>;
 
     class Material;
 
