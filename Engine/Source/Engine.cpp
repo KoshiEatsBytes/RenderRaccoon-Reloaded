@@ -15,6 +15,11 @@
     #endif
 #endif
 
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #define NOMINMAX
+    #include <windows.h>
+#endif
 
 #include "Engine.h"
 #include "ApplicationManager.h"
@@ -160,6 +165,11 @@ namespace RR
 
     bool Engine::Init(int _width, int _height, const std::string& _name, uInt _audioChannels, uInt _fallbackChannel)
     {
+#ifdef _WIN32
+        // set console to utf8
+        SetConsoleOutputCP(CP_UTF8);
+#endif
+
         // Initializes window
         if (!glfwInit())
         {

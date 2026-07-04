@@ -78,7 +78,7 @@ namespace RR
 
                 // parked until a job arrives or stop requested
                 if (!m_signal.wait(lock, _stop, [this] {
-                        return !m_jobs.emplace_back();
+                        return !m_jobs.empty();
                     }))
                 {
                     // stop while idle
