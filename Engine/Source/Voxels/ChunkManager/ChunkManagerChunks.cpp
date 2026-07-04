@@ -10,66 +10,157 @@
 
 namespace RR
 {
-    int ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
-    {
-        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
-        int generated = 0;
-
-        for (const CHUNK::Coord offset : m_genOffsets)
-        {
-            // discard if budget cap is overrun
-            if (generated >= kGenBudget) break;
-
-            // check if in range
-            if (chessDist(offset) > chunkRange + 1) break;
-
-            const int cx = _centre.x + offset.x;
-            const int cz = _centre.z + offset.z;
-            const CHUNK::Coord cords {cx, cz};
-
-            if (!GetChunk(cords))
-            {
-                GenerateChunk(cords);
-                ++generated;
-            }
-        }
-        return generated;
-    }
-
-    int ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
-    {
-        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
-        int meshed = 0;
-
-        for (const CHUNK::Coord offset : m_genOffsets)
-        {
-            // discard if budget is overrun
-            if (meshed >= kMeshBudget) break;
-
-            // check if the chunk is in range
-            if (chessDist(offset) > chunkRange) break;
-
-            const int cx = _centre.x + offset.x;
-            const int cz = _centre.z + offset.z;
-            const CHUNK::Coord cords {cx, cz};
-            Chunk* chunk = GetChunk(cords);
-
-            if (!chunk || chunk->state != CHUNK::STATE::GENERATED) continue;
-            if (!NeighboursGenerated(cords)) continue;
-
-            BuildChunkMesh(*chunk);
-            ++meshed;
-        }
-        return meshed;
-    }
-
-    void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
+    std::shared_ptr<Chunk> ChunkManager::MakeChunk(CHUNK::Coord _coord) const
     {
         auto chunk = std::make_shared<Chunk>(_coord);
         // Inject world gen
         m_generator(*chunk);
         chunk->state = CHUNK::STATE::GENERATED;
-        m_chunks[_coord] = std::move(chunk);
+        return chunk;
+    }
+
+    void ChunkManager::GenerateChunk(CHUNK::Coord _coord)
+    {
+        m_chunks[_coord] = MakeChunk(_coord);
+    }
+
+    int ChunkManager::EnsureGenerated(CHUNK::Coord _centre)
+    {
+        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
+
+        if (m_asyncEnabled)
+        {
+            const int cap = static_cast<int>(m_pool->GetThreadCount() * kInFlightWorkerMultiplier);
+
+            for (const CHUNK::Coord offset : m_genOffsets)
+            {
+                // shallow queue, re evaluate priprities every frame
+                if (static_cast<int>(m_genInFlight.size()) >= cap) break;
+                if (chessDist(offset) > chunkRange + 1) break;
+
+                const CHUNK::Coord cords {
+                    _centre.x + offset.x,
+                    _centre.z + offset.z
+                };
+
+                // if already generated/in generation
+                if (GetChunk(cords) || m_genInFlight.contains(cords)) continue;
+
+                m_genInFlight.insert(cords);
+
+                m_pool->Submit([this, cords, epoch = m_epoch]
+                {
+                    // off-thread chunk creation
+                    auto chunk = MakeChunk(cords);
+
+                    std::lock_guard lock(m_resultMutex);
+                    m_genResults.push_back({
+                        std::move(chunk), epoch
+                    });
+                });
+            }
+
+            // pending work still counts as progress
+            return static_cast<int>(m_genInFlight.size());
+        }
+        else
+        {
+            // sync arm, no threads in use
+            int generated = 0;
+            for (const CHUNK::Coord offset : m_genOffsets)
+            {
+                // discard if budget cap is overrun
+                if (generated >= kGenBudget) break;
+
+                // check if in range
+                if (chessDist(offset) > chunkRange + 1) break;
+
+                const int cx = _centre.x + offset.x;
+                const int cz = _centre.z + offset.z;
+                const CHUNK::Coord cords {cx, cz};
+
+                if (!GetChunk(cords))
+                {
+                    GenerateChunk(cords);
+                    ++generated;
+                }
+            }
+            return generated;
+        }
+    }
+
+    int ChunkManager::EnsureMeshed(CHUNK::Coord _centre)
+    {
+        const int chunkRange = m_lodEnabled ? m_coreRadius : m_meshRadius;
+
+        if (m_asyncEnabled)
+        {
+            const int cap = static_cast<int>(m_pool->GetThreadCount() * kInFlightWorkerMultiplier);
+
+            for (const CHUNK::Coord offset : m_genOffsets)
+            {
+                // limit on primitivers to refresh
+                if (static_cast<int>(m_meshInFlight.size()) >= cap) break;
+                if (chessDist(offset) > chunkRange) break;
+
+                const CHUNK::Coord cords {
+                    _centre.x + offset.x,
+                    _centre.z + offset.z
+                };
+
+                const auto it = m_chunks.find(cords);
+
+                // stop if meshing is not valid yet
+                if (it == m_chunks.end() || it->second->state != CHUNK::STATE::GENERATED) continue;
+                if (m_meshInFlight.contains(cords)) continue;
+                if (!NeighboursGenerated(cords)) continue;
+
+                m_meshInFlight.insert(cords);
+                m_pool->Submit([this,
+                    chunk   = std::shared_ptr<const Chunk>(it->second),
+                    borders = GatherBorders(cords),
+                    fancy   = m_fancyLeaves,
+                    epoch   = m_epoch]
+                    () mutable
+                    {
+                        ChunkMeshes meshes = MeshChunk(*chunk, borders, fancy);
+
+                        std::lock_guard lock(m_resultMutex);
+                        m_meshResults.push_back({
+                            std::move(chunk),
+                            std::move(meshes),
+                            epoch
+                        });
+                    });
+            }
+
+            return static_cast<int>(m_meshInFlight.size());
+        }
+        else
+        {
+            int meshed = 0;
+
+            for (const CHUNK::Coord offset : m_genOffsets)
+            {
+                // discard if budget is overrun
+                if (meshed >= kMeshBudget) break;
+
+                // check if the chunk is in range
+                if (chessDist(offset) > chunkRange) break;
+
+                const int cx = _centre.x + offset.x;
+                const int cz = _centre.z + offset.z;
+                const CHUNK::Coord cords {cx, cz};
+                Chunk* chunk = GetChunk(cords);
+
+                if (!chunk || chunk->state != CHUNK::STATE::GENERATED) continue;
+                if (!NeighboursGenerated(cords)) continue;
+
+                BuildChunkMesh(*chunk);
+                ++meshed;
+            }
+            return meshed;
+        }
     }
 
     void ChunkManager::BuildChunkMesh(Chunk& _chunk)

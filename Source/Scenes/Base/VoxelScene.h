@@ -59,7 +59,8 @@ protected:
     RR::FreeCameraComponent* m_camComp = nullptr;
 
     // fog
-    float m_fogEnd = 0.0f;
+    float m_fogEnd       = 0.0f;
+    float m_fogMoveSpeed = 3.0f;
 
     // Menu data
     bool m_escWasDown  = false;

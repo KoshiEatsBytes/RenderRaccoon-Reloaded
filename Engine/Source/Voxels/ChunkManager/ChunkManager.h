@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <mutex>
+#include <unordered_set>
 
 #include "Helpers/Types.h"
 #include "Render/Frustum.h"
@@ -11,6 +13,7 @@
 #include "Voxels/LodTile.h"
 #include "Render/Voxels/ChunkMesher.h"
 #include "Render/Voxels/SurfaceMesher.h"
+#include "Threading/WorkerPool.h"
 #include "Voxels/LodNodeSelect.hpp"
 
 namespace RR
@@ -27,6 +30,21 @@ namespace RR
         LodNodeKey key;
         int  coreMask;
         bool covered;
+    };
+
+    // generation result for workers
+    struct GenResult
+    {
+        std::shared_ptr<Chunk> chunk;
+        uInt64 epoch;
+    };
+
+    // meshing result for workers
+    struct MeshResult
+    {
+        std::shared_ptr<const Chunk> chunk;
+        ChunkMeshes meshes;
+        uInt64      epoch;
     };
 
     using LodMesher = std::function<LodMeshResult(LodNodeKey, int)>;
@@ -53,9 +71,12 @@ namespace RR
         int  GetRenderDistance() const;
         void SetFancyLeaves(bool _fancyLeaves);
 
-        // Lod tuning
+        // toggles
         void SetLodEnabled(bool _enabled);
         void SetAggregationEnabled(bool _enabled);
+        void SetAsyncEnabled(bool _enabled);
+
+        // Lod tuning
         void SetCoreRadius(int _radius);
         void SetRingGrowth(float _growth);
         void SetMaxLevel(int _level);
@@ -77,14 +98,19 @@ namespace RR
         void  UnloadFar(CHUNK::Coord _centre);
         float ComputeCoverage(CHUNK::Coord _centre) const;
 
+        void DrainGenResults();
+        void DrainMeshResults();
+
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
         static int chessDist(CHUNK::Coord _chunk);
 
         // ChunkManagerChunks.cpp - chunk streaming --------------------------------------------------------------------
 
+        std::shared_ptr<Chunk> MakeChunk(CHUNK::Coord _coord) const;
+        void GenerateChunk(CHUNK::Coord _coord);
+
         int  EnsureGenerated(CHUNK::Coord _centre);
         int  EnsureMeshed(CHUNK::Coord _centre);
-        void GenerateChunk(CHUNK::Coord _coord);
         void BuildChunkMesh(Chunk& _chunk);
         void UploadChunkMesh(Chunk& _chunk, ChunkMeshes&& _meshes);
 
@@ -172,9 +198,28 @@ namespace RR
         int m_nodingStart   = 2;
         int m_maxLevelClamp = 0;
 
+        // async MT
+        bool   m_asyncEnabled = false;
+        uInt64 m_epoch = 0; // time stamp for workers
+
+        // Chunk off thread generation
+        std::unordered_set<CHUNK::Coord, CHUNK::CoordHash> m_genInFlight;
+        std::mutex                                         m_resultMutex;
+        std::vector<GenResult>                             m_genResults;
+        // Chunk of thread meshing
+        std::unordered_set<CHUNK::Coord, CHUNK::CoordHash> m_meshInFlight;
+        std::vector<MeshResult>                            m_meshResults;
+
+        std::unique_ptr<WorkerPool> m_pool;
+
         // Per frame budgets
         static constexpr int kGenBudget  = 1;
         static constexpr int kMeshBudget = 1;
         static constexpr int kTileBudget = 4;
+
+        // Per frame thread budgets
+        static constexpr float kInFlightWorkerMultiplier = 2.0f;
+        // GL uploads per frame
+        static constexpr int kUploadBudget = 4;
     };
 }

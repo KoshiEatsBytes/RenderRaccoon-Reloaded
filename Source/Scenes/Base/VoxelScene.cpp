@@ -106,6 +106,7 @@ bool VoxelScene::Init()
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);
     m_chunkManager->SetLodEnabled(m_runInfo.lod);
     m_chunkManager->SetAggregationEnabled(m_runInfo.aggregation);
+    m_chunkManager->SetAsyncEnabled(m_runInfo.async);
 
     // Set sky box color
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);
@@ -180,7 +181,7 @@ void VoxelScene::Update(float _deltaTime)
         const float minEnd  = RR::ChunkManager::kDefaultCoreRadius * RR::CHUNK::kSizeX;
         const float target  = std::max(minEnd, fullEnd * std::sqrt(m_chunkManager->GetCoverage()));
 
-        m_fogEnd += (target - m_fogEnd) * std::min(1.0f, _deltaTime * 2.f);
+        m_fogEnd += (target - m_fogEnd) * std::min(1.0f, _deltaTime * m_fogMoveSpeed);
 
         // apply fog smoothing
         for (const auto& mat : { m_voxelBlocksMat, m_voxelVegMat })

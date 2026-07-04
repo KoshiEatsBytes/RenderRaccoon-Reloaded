@@ -50,6 +50,9 @@ namespace RR
         // Nothing to do if camera station and the ring is fully generated
         if (m_streamingIdle) return;
 
+        DrainGenResults();
+        DrainMeshResults();
+
         // check budgets, if 0 CM idle
         const int generated = EnsureGenerated(centre);
         const int meshed    = EnsureMeshed(centre);
@@ -205,6 +208,16 @@ namespace RR
         m_buildQueue.clear();
         m_desiredFresh = false;
         m_firstFrame   = true;
+
+        // clear mt, result with old epoch are discarded
+        ++m_epoch;
+        m_genInFlight.clear();
+        m_meshInFlight.clear();
+        {
+            std::lock_guard lock(m_resultMutex);
+            m_genResults.clear();
+            m_meshResults.clear();
+        }
     }
 
     void ChunkManager::SetFancyLeaves(bool _fancyLeaves)
@@ -236,6 +249,31 @@ namespace RR
         m_aggregationEnabled = _enabled;
         NormalizeRanges();
         Clear();
+    }
+
+    void ChunkManager::SetAsyncEnabled(bool _enabled)
+    {
+        if (m_asyncEnabled == _enabled) return;
+        m_asyncEnabled = _enabled;
+
+        if (_enabled)
+        {
+            m_pool = std::make_unique<WorkerPool>();
+        }
+        else
+        {
+            // join workers, queue discarded
+            m_pool.reset();
+
+            // isolate computer, discard in-flight processes
+            ++m_epoch;
+            m_genInFlight.clear();
+            std::lock_guard lock(m_resultMutex);
+            m_genResults.clear();
+        }
+
+        // restart regen
+        m_streamingIdle = false;
     }
 
     void ChunkManager::SetCoreRadius(int _radius)
@@ -358,6 +396,64 @@ namespace RR
         return std::min(1.0f, static_cast<float>(covered) / static_cast<float>(total));
     }
 
+    void ChunkManager::DrainGenResults()
+    {
+        if (!m_asyncEnabled) return;
+
+        // moves what has been generated to this vec
+        std::vector<GenResult> arrived;
+        {
+            std::lock_guard lock(m_resultMutex);
+            arrived.swap(m_genResults);
+        }
+
+        for (GenResult& result : arrived)
+        {
+            // if stale, (sub before clear) discard
+            // if out of cords discard also
+            if (result.epoch != m_epoch) continue;
+
+            m_genInFlight.erase(result.chunk->coord);
+            m_chunks[result.chunk->coord] = std::move(result.chunk);
+        }
+    }
+
+    void ChunkManager::DrainMeshResults()
+    {
+        if (!m_asyncEnabled) return;
+
+        // take as mesh batch result
+        std::vector<MeshResult> batch;
+        {
+            std::lock_guard lock(m_resultMutex);
+
+            const auto take = std::min<sizeT>(kUploadBudget, m_meshResults.size());
+
+            // move only budgeted amount into the actual batch
+            batch.assign(std::make_move_iterator(m_meshResults.begin()),
+                         std::make_move_iterator(m_meshResults.begin() + take));
+
+            m_meshResults.erase(m_meshResults.begin(), m_meshResults.begin() + take);
+        }
+
+        // iterate over batch, drain meshes
+        for (MeshResult& result : batch)
+        {
+            const CHUNK::Coord cords = result.chunk->coord;
+
+            // check if its current
+            if (result.epoch != m_epoch) continue;
+            m_meshInFlight.erase(cords);
+
+            // check if the chunk might have unloaded or regenerated since submit
+            const auto it = m_chunks.find(cords);
+            if (it == m_chunks.end() || it->second.get() != result.chunk.get())
+                continue;
+
+            UploadChunkMesh(*it->second, std::move(result.meshes));
+        }
+    }
+
     void ChunkManager::RebuildRingOffset()
     {
         m_genOffsets.clear();
@@ -439,3 +535,4 @@ namespace RR
         return std::max(std::abs(_chunk.x), std::abs(_chunk.z));
     }
 }
+
