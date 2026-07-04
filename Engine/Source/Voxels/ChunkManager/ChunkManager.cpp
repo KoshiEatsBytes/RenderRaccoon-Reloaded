@@ -68,9 +68,11 @@ namespace RR
                 ScopedMs tFar(m_timings.unloadMs);
                 UnloadFar(centre);
             }
-            m_lastCoords    = centre;
-            m_streamingIdle = false;
-            m_firstFrame    = false;
+            m_lastCoords     = centre;
+            m_streamingIdle  = false;
+            m_firstFrame     = false;
+            m_selectDirty    = true;
+            m_lifecycleDirty = true;
         }
 
         // Nothing to do if camera station and the ring is fully generated
@@ -106,7 +108,12 @@ namespace RR
         {
             ScopedMs tFlip(m_timings.flipsMs);
             CommitFlips();
-            RetireReplaced(centre);
+
+            if (m_lifecycleDirty)
+            {
+                m_lifecycleDirty = false;
+                RetireReplaced(centre);
+            }
         }
 
         if (generated == 0 && meshed == 0 && tiled == 0)
@@ -256,6 +263,8 @@ namespace RR
         m_buildQueue.clear();
         m_desiredFresh = false;
         m_firstFrame   = true;
+        m_selectDirty  = true;
+        m_buildCursor  = 0;
 
         // clear mt, result with old epoch are discarded
         ++m_epoch;
@@ -305,6 +314,8 @@ namespace RR
     {
         if (m_asyncEnabled == _enabled) return;
         m_asyncEnabled = _enabled;
+        m_selectDirty  = true;
+        m_buildCursor  = 0;
 
         if (_enabled)
         {
@@ -328,6 +339,10 @@ namespace RR
 
         // restart regen
         m_streamingIdle = false;
+    }
+
+    void ChunkManager::SetAdaptiveBudgetingEnabled(bool _enabled)
+    {
     }
 
     void ChunkManager::SetCoreRadius(int _radius)

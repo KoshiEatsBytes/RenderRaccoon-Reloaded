@@ -100,6 +100,7 @@ namespace RR
         void SetLodEnabled(bool _enabled);
         void SetAggregationEnabled(bool _enabled);
         void SetAsyncEnabled(bool _enabled);
+        void SetAdaptiveBudgetingEnabled(bool _enabled);
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -152,7 +153,9 @@ namespace RR
         LodTile MakeTile(const LodNodeKey& _key, int _coreMask);
         void    BuildTile(const LodNodeKey& _key, int _coreMask);
         LodTile UploadTile(int _coreMask, LodMeshResult&& _data);
-        int     ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
+
+        sizeT RebuildTileQueue(CHUNK::Coord _centre);
+        int   ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
 
         // flip/retire pass
         void CommitFlips();
@@ -204,9 +207,12 @@ namespace RR
 
         // streaming status
         CHUNK::Coord m_lastCoords;
-        bool  m_streamingIdle = false;
-        bool  m_firstFrame    = true;
-        float m_coverage      = 1.0f;
+        bool  m_streamingIdle  = false;
+        bool  m_firstFrame     = true;
+        float m_coverage       = 1.0f;
+        bool  m_selectDirty    = false;
+        bool  m_lifecycleDirty = false;
+        sizeT m_buildCursor    = 0;
 
         // Quality settings
         bool m_fancyLeaves        = true;
@@ -226,12 +232,12 @@ namespace RR
         int m_nodingStart   = 2;
         int m_maxLevelClamp = 0;
 
+        // Adaptive budgeting
+        UpdateTimings m_timings;
+
         // async MT
         bool   m_asyncEnabled  = false;
         uInt64 m_epoch         = 0; // time stamp for workers
-
-        // Diagnostic, per frame
-        UpdateTimings m_timings;
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation
@@ -241,9 +247,8 @@ namespace RR
         std::unordered_set<CHUNK::Coord, CHUNK::CoordHash> m_meshInFlight;
         std::vector<MeshResult>                            m_meshResults;
         // off thread LOD tiling
-        NodeSet                 m_tileInFlight;
-        std::vector<TileResult> m_tileResults;
-
+        NodeSet                     m_tileInFlight;
+        std::vector<TileResult>     m_tileResults;
         std::unique_ptr<WorkerPool> m_pool;
 
         // Per frame budgets
@@ -258,5 +263,8 @@ namespace RR
 
         // distance of chunks on priority
         static constexpr int kCoveredPenalty = 0;
+
+        // soreted head per rebuild
+        static constexpr sizeT kQueueWindow = 128;
     };
 }

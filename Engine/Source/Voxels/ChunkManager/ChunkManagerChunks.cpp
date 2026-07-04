@@ -183,6 +183,7 @@ namespace RR
         }
 
         _chunk.state = CHUNK::STATE::MESHED;
+        m_lifecycleDirty = true;
     }
 
     // Check neighboring chunks, if all generated return true

@@ -74,78 +74,44 @@ namespace RR
             return built;
         }
 
-        // select levels and hysteresis, what exists beyond core
-        const RingParams params = BuildRingParams();
-
-        m_desiredKeys.clear();
-        SelectNodes(_centre, params, &m_liveKeys, m_desiredKeys);
-
-        // clear previous
-        m_desiredSet.clear();
-        m_desiredSet.insert(m_desiredKeys.begin(), m_desiredKeys.end());
-        m_desiredFresh = true;
-
-        // desired vs live, stale or missing entry means needs to be built
-        m_buildQueue.clear();
-        for (const LodNodeKey& key : m_desiredKeys)
+        sizeT window = 0;
+        if (m_selectDirty)
         {
-            const int coreMask = ComputeCoreMask(key, _centre);
+            window = RebuildTileQueue(_centre);
+            m_selectDirty = false;
+            m_buildCursor = 0;
+        }
+        else
+        {
+            window = std::min(m_buildQueue.size(), kQueueWindow);
+        }
 
-            // wip also counts as "already built"
+        // build sorted
+        while (m_buildCursor < window && built < budget)
+        {
+            const PendingBuild& entry = m_buildQueue[m_buildCursor++];
+            const LodNodeKey&   key   = entry.key;
+
+            // world moved since rebuild?
             if (m_asyncEnabled && m_tileInFlight.contains(key)) continue;
 
-            // pending and active count as "already built"
-            const auto activeIt  = m_lodTiles.find(key);
-            if (activeIt != m_lodTiles.end() && activeIt->second.coreEdges == coreMask)
+            const auto activeIt = m_lodTiles.find(key);
+            if (activeIt != m_lodTiles.end() &&
+                activeIt->second.coreEdges == entry.coreMask)
                 continue;
 
             const auto pendIt = m_pendingTiles.find(key);
-            if (pendIt != m_pendingTiles.end() && pendIt->second.coreEdges == coreMask)
+            if (pendIt != m_pendingTiles.end() &&
+                pendIt->second.coreEdges == entry.coreMask)
                 continue;
-
-            m_buildQueue.push_back({key, coreMask, AreaCovered(key)});
-        }
-
-        // weighted perceptual priority, generate close first
-        const auto priority = [&](const PendingBuild& _p)
-        {
-            const int dist = NearestDist(_centre, _p.key.origin, _p.key.footprint);
-            return dist + (_p.covered ? kCoveredPenalty : 0);
-        };
-
-        const auto nearer = [&](const PendingBuild& _a, const PendingBuild& _b)
-        {
-            const int prioA = priority(_a);
-            const int prioB = priority(_b);
-
-            if (prioA != prioB) return prioA < prioB;
-
-            if (_a.key.origin.x != _b.key.origin.x)
-                return _a.key.origin.x < _b.key.origin.x;
-
-            return _a.key.origin.z < _b.key.origin.z;
-        };
-
-        // only build first few per frame - partial sort
-        const sizeT toBuild = std::min(m_buildQueue.size(),
-            static_cast<std::size_t>(budget - built));
-
-        std::ranges::partial_sort(m_buildQueue,
-            m_buildQueue.begin() + toBuild, nearer);
-
-        // build sorted
-        for (sizeT i = 0; i < toBuild; i++)
-        {
-            const LodNodeKey& key  = m_buildQueue[i].key;
-            const int         mask = m_buildQueue[i].coreMask;
 
             if (m_asyncEnabled)
             {
-                SubmitTileJob(key, mask, false);
+                SubmitTileJob(key, entry.coreMask, false);
             }
             else
             {
-                LodTile tile = MakeTile(key, mask);
+                LodTile tile = MakeTile(key, entry.coreMask);
 
                 // in place mask rebuild, no gaps in the process
                 if (m_lodTiles.contains(key))
@@ -157,7 +123,15 @@ namespace RR
             ++built;
         }
 
-        return m_asyncEnabled ? static_cast<int>(m_tileInFlight.size()) : built;
+        // consumed but more work present
+        if (m_buildCursor >= window && m_buildQueue.size() > window)
+        {
+            m_selectDirty = true;
+        }
+
+        const int remaining = static_cast<int>(m_buildQueue.size() - m_buildCursor);
+
+        return (m_asyncEnabled ? static_cast<int>(m_tileInFlight.size()) : built) + remaining;
     }
 
     void ChunkManager::CommitFlips()
@@ -351,7 +325,67 @@ namespace RR
         return tile;
     }
 
-     void ChunkManager::BuildTile(const LodNodeKey& _key, int _coreMask)
+    sizeT ChunkManager::RebuildTileQueue(CHUNK::Coord _centre)
+    {
+        // select levels and hysteresis, what exists beyond core
+        const RingParams params = BuildRingParams();
+
+        m_desiredKeys.clear();
+        SelectNodes(_centre, params, &m_liveKeys, m_desiredKeys);
+
+        // clear previous
+        m_desiredSet.clear();
+        m_desiredSet.insert(m_desiredKeys.begin(), m_desiredKeys.end());
+        m_desiredFresh = true;
+
+        // desired vs live, stale or missing entry means needs to be built
+        m_buildQueue.clear();
+        for (const LodNodeKey& key : m_desiredKeys)
+        {
+            const int coreMask = ComputeCoreMask(key, _centre);
+
+            // wip also counts as "already built"
+            if (m_asyncEnabled && m_tileInFlight.contains(key)) continue;
+
+            // pending and active count as "already built"
+            const auto activeIt  = m_lodTiles.find(key);
+            if (activeIt != m_lodTiles.end() && activeIt->second.coreEdges == coreMask)
+                continue;
+
+            const auto pendIt = m_pendingTiles.find(key);
+            if (pendIt != m_pendingTiles.end() && pendIt->second.coreEdges == coreMask)
+                continue;
+
+            m_buildQueue.push_back({key, coreMask, AreaCovered(key)});
+        }
+
+        // weighted perceptual priority, generate close first
+        const auto priority = [&](const PendingBuild& _p)
+        {
+            const int dist = NearestDist(_centre, _p.key.origin, _p.key.footprint);
+            return dist + (_p.covered ? kCoveredPenalty : 0);
+        };
+
+        const auto nearer = [&](const PendingBuild& _a, const PendingBuild& _b)
+        {
+            const int prioA = priority(_a);
+            const int prioB = priority(_b);
+
+            if (prioA != prioB) return prioA < prioB;
+
+            if (_a.key.origin.x != _b.key.origin.x)
+                return _a.key.origin.x < _b.key.origin.x;
+
+            return _a.key.origin.z < _b.key.origin.z;
+        };
+
+        const sizeT window = std::min(m_buildQueue.size(), kQueueWindow);
+        std::ranges::partial_sort(m_buildQueue, m_buildQueue.begin() + window, nearer);
+
+        return window;
+    }
+
+    void ChunkManager::BuildTile(const LodNodeKey& _key, int _coreMask)
     {
         StoreTile(_key, std::move(MakeTile(_key, _coreMask)));
     }
@@ -360,12 +394,16 @@ namespace RR
     {
         m_lodTiles[_key] = std::move(_tile);
         m_liveKeys.insert(_key);
+        m_desiredFresh   = true;
+        m_lifecycleDirty = true;
     }
 
     void ChunkManager::StorePending(const LodNodeKey &_key, LodTile &&_tile)
     {
         m_pendingTiles[_key] = std::move(_tile);
         m_liveKeys.insert(_key);
+        m_desiredFresh = true;
+        m_lifecycleDirty = true;
     }
 
     // iterator fridnly erase, return next
