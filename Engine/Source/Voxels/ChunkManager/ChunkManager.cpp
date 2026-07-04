@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 
 #include "Render/Mesh.h"
 #include "Render/RenderQueue.h"
@@ -14,6 +15,25 @@
 
 namespace RR
 {
+    // LOCAL -----------------------------------------------------------------------------------------------------------
+
+    // Diagnostic phase timer to measure processes latency
+    // uses class scope to time a specific timeframe, put in {}
+    struct ScopedMs
+    {
+        explicit ScopedMs(float& _out)
+            : out(_out), start(std::chrono::steady_clock::now()) {}
+
+        ~ScopedMs()
+        {
+            out += std::chrono::duration<float, std::milli>(
+                std::chrono::steady_clock::now() - start).count();
+        }
+
+        float& out;
+        std::chrono::steady_clock::time_point start;
+    };
+
     // PUBLIC ----------------------------------------------------------------------------------------------------------
 
     // Inject generator and mesher as lambdas, thread safe
@@ -29,6 +49,9 @@ namespace RR
 
     void ChunkManager::Update(float _deltaTime, const vec3& _cameraPos)
     {
+        m_timings         = {};
+        m_timings.frameMs = _deltaTime * 1000.0f;
+
         const bool radiusChanged = m_offsetsBuiltForRadius != m_meshRadius;
 
         // Regen if reloaded or changed RD
@@ -41,7 +64,10 @@ namespace RR
         // fire if camera crossed a boundary
         if (moved || radiusChanged)
         {
-            UnloadFar(centre);
+            {
+                ScopedMs tFar(m_timings.unloadMs);
+                UnloadFar(centre);
+            }
             m_lastCoords    = centre;
             m_streamingIdle = false;
             m_firstFrame    = false;
@@ -50,18 +76,38 @@ namespace RR
         // Nothing to do if camera station and the ring is fully generated
         if (m_streamingIdle) return;
 
-        DrainGenResults();
-        DrainMeshResults();
-        DrainTileResults();
+        {
+            ScopedMs tDrain(m_timings.drainMs);
+            DrainGenResults();
+            DrainMeshResults();
+            DrainTileResults();
+        }
 
         // check budgets, if 0 CM idle
-        const int generated = EnsureGenerated(centre);
-        const int meshed    = EnsureMeshed(centre);
-        const int tiled     = EnsureNodes(centre);
+        int generated = 0;
+        int meshed    = 0;
+        int tiled     = 0;
+
+        // scopes are to measure each latency
+        {
+            ScopedMs tGen(m_timings.genMs);
+            generated = EnsureGenerated(centre);
+        }
+        {
+            ScopedMs tMesh(m_timings.meshMs);
+            meshed = EnsureMeshed(centre);
+        }
+        {
+            ScopedMs tNode(m_timings.nodesMs);
+            tiled = EnsureNodes(centre);
+        }
 
         // retire old visual once its replacement is uplaoded
-        CommitFlips();
-        RetireReplaced(centre);
+        {
+            ScopedMs tFlip(m_timings.flipsMs);
+            CommitFlips();
+            RetireReplaced(centre);
+        }
 
         if (generated == 0 && meshed == 0 && tiled == 0)
         {
@@ -70,6 +116,7 @@ namespace RR
         }
         else
         {
+            ScopedMs tCov(m_timings.coverageMs);
             m_coverage = ComputeCoverage(centre);
         }
     }
@@ -316,6 +363,12 @@ namespace RR
         return m_coverage;
     }
 
+    // Last frame streaming cost
+    const UpdateTimings& ChunkManager::GetTimings() const
+    {
+        return m_timings;
+    }
+
     // PRIVATE ---------------------------------------------------------------------------------------------------------
 
     // LOD needs at least one ringn RD must exceed the pure-voxel core, else the tile band
@@ -457,7 +510,11 @@ namespace RR
             if (it == m_chunks.end() || it->second.get() != result.chunk.get())
                 continue;
 
-            UploadChunkMesh(*it->second, std::move(result.meshes));
+            {
+                ScopedMs t(m_timings.uploadMs);
+                UploadChunkMesh(*it->second, std::move(result.meshes));
+            }
+            ++m_timings.uploads;
         }
     }
 
@@ -507,7 +564,12 @@ namespace RR
                 if (!m_desiredSet.contains(result.key)) continue;
             }
 
-            LodTile tile = UploadTile(result.coreMask, std::move(result.data));
+            LodTile tile;
+            {
+                ScopedMs tTile(m_timings.uploadMs);
+                tile = UploadTile(result.coreMask, std::move(result.data));
+            }
+            ++m_timings.uploads;
 
             // core fills live asap, rings follow sync lifecycle
             if (result.coreFill || m_lodTiles.contains(result.key))

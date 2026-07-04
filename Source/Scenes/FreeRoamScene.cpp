@@ -79,6 +79,14 @@ void FreeRoamScene::PreUpdate(float _deltaTime)
         ApplyInputMode();
     }
     m_tabWasDown = tabDown;
+
+    // toggles diagnostics
+    const bool f3Down = input.IsKeyPressed(GLFW_KEY_F3);
+    if (f3Down && !m_f3WasDown)
+    {
+        m_diagnostics = !m_diagnostics;
+    }
+    m_f3WasDown = f3Down;
 }
 
 void FreeRoamScene::OnUpdate(float _deltaTime)
@@ -110,14 +118,33 @@ void FreeRoamScene::OnGui()
     {
         const vec3 pos = m_cam->GetWorldPosition();
 
+        ImGui::Text("F3 For Diagnostics");
+        ImGui::Separator();
         const ImGuiIO& io = ImGui::GetIO();
         ImGui::Text("FPS  %.1f", io.Framerate);
         ImGui::Text("%.3f ms/frame", 1000.0f / io.Framerate);
         ImGui::Text("X %.2f", pos.x);
         ImGui::Text("Y %.2f", pos.y);
         ImGui::Text("Z %.2f", pos.z);
-        ImGui::Text("Draws %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
-        ImGui::Text("Tris %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameTris());
+
+        if (m_diagnostics)
+        {
+            // Streaming main thread cost
+            const RR::UpdateTimings& timings = m_chunkManager->GetTimings();
+            ImGui::Separator();
+            ImGui::Text("Draws %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
+            ImGui::Text("Tris %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameTris());
+            ImGui::Separator();
+            ImGui::Text("Chunk Unload %2.f", timings.unloadMs);
+            ImGui::Text("Chunk Upload %2.f", timings.uploadMs);
+            ImGui::Text("Thread Drain %2.f", timings.drainMs);
+            ImGui::Text("Upload Count %d", timings.uploads);
+            ImGui::Text("Generation %.2f", timings.genMs);
+            ImGui::Text("Meshing %.2f", timings.meshMs);
+            ImGui::Text("Noding %.2f", timings.nodesMs);
+            ImGui::Text("Fillping %.2f", timings.flipsMs);
+            ImGui::Text("Coverage %.2f", timings.coverageMs);
+        }
     }
     ImGui::End();
 

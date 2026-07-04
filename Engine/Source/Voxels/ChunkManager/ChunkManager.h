@@ -56,6 +56,22 @@ namespace RR
         uInt64      epoch;
     };
 
+    // per frame streaming cost, both diagnostics and
+    // used for adaptive budgeting
+    struct UpdateTimings
+    {
+        float frameMs    = 0.f;
+        float unloadMs   = 0.f;
+        float drainMs    = 0.f;
+        float uploadMs   = 0.f;
+        float genMs      = 0.f;
+        float meshMs     = 0.f;
+        float nodesMs    = 0.f;
+        float flipsMs    = 0.f;
+        float coverageMs = 0.f;
+        int   uploads    = 0;
+    };
+
     using LodMesher = std::function<LodMeshResult(LodNodeKey, int)>;
     using TileMap   = std::unordered_map<LodNodeKey, LodTile, LodNodeKeyHash>;
     using ChunkMap  = std::unordered_map<CHUNK::Coord, std::shared_ptr<Chunk>, CHUNK::CoordHash>;
@@ -94,6 +110,7 @@ namespace RR
         bool  IsChunkMeshedAt(const vec3& _pos);
         bool  IsStreamingIdle() const;
         float GetCoverage() const;
+        const UpdateTimings& GetTimings() const;
 
         // Pure-voxel core radius, lod needs higher
         static constexpr int kDefaultCoreRadius = 16;
@@ -212,6 +229,9 @@ namespace RR
         // async MT
         bool   m_asyncEnabled  = false;
         uInt64 m_epoch         = 0; // time stamp for workers
+
+        // Diagnostic, per frame
+        UpdateTimings m_timings;
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation

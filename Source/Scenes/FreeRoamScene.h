@@ -25,6 +25,8 @@ private:
     // Editable world gen config
     WORLDGEN::WorldGenConfig m_draftConfig;
 
+    bool m_diagnostics = false;
+    bool m_f3WasDown   = false;
     bool m_uiMode      = false;
     bool m_tabWasDown  = false;
     bool m_fancyLeaves = true;
