@@ -122,16 +122,16 @@ namespace RR
                     fancy   = m_fancyLeaves,
                     epoch   = m_epoch]
                     () mutable
-                    {
-                        ChunkMeshes meshes = MeshChunk(*chunk, borders, fancy);
+                {
+                    ChunkMeshes meshes = MeshChunk(*chunk, borders, fancy);
 
-                        std::lock_guard lock(m_resultMutex);
-                        m_meshResults.push_back({
-                            std::move(chunk),
-                            std::move(meshes),
-                            epoch
-                        });
+                    std::lock_guard lock(m_resultMutex);
+                    m_meshResults.push_back({
+                        std::move(chunk),
+                        std::move(meshes),
+                        epoch
                     });
+                });
             }
 
             return static_cast<int>(m_meshInFlight.size());

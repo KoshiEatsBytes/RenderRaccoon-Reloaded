@@ -39,6 +39,15 @@ namespace RR
         uInt64 epoch;
     };
 
+    struct TileResult
+    {
+        LodNodeKey    key;
+        LodMeshResult data;
+        int           coreMask;
+        bool          coreFill;
+        uInt64        epoch;
+    };
+
     // meshing result for workers
     struct MeshResult
     {
@@ -100,6 +109,7 @@ namespace RR
 
         void DrainGenResults();
         void DrainMeshResults();
+        void DrainTileResults();
 
         static CHUNK::Coord WorldToChunk(const vec3& _pos);
         static int chessDist(CHUNK::Coord _chunk);
@@ -138,6 +148,7 @@ namespace RR
         auto EraseTile(TileMap::iterator _it) -> TileMap::iterator;
         auto ErasePending(TileMap::iterator _it) -> TileMap::iterator;
         void ActivatePending(const LodNodeKey& _key);
+        void SubmitTileJob(const LodNodeKey& _key, int _coreMask, bool _coreFill);
 
         // tile & node queries
         bool TileCoveringReady(CHUNK::Coord _coord) const;
@@ -202,13 +213,16 @@ namespace RR
         bool   m_asyncEnabled = false;
         uInt64 m_epoch = 0; // time stamp for workers
 
+        std::mutex                                         m_resultMutex;
         // Chunk off thread generation
         std::unordered_set<CHUNK::Coord, CHUNK::CoordHash> m_genInFlight;
-        std::mutex                                         m_resultMutex;
         std::vector<GenResult>                             m_genResults;
-        // Chunk of thread meshing
+        // off thread meshing
         std::unordered_set<CHUNK::Coord, CHUNK::CoordHash> m_meshInFlight;
         std::vector<MeshResult>                            m_meshResults;
+        // off thread LOD tiling
+        NodeSet                 m_tileInFlight;
+        std::vector<TileResult> m_tileResults;
 
         std::unique_ptr<WorkerPool> m_pool;
 

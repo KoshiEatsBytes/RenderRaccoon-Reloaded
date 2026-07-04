@@ -213,10 +213,12 @@ namespace RR
         ++m_epoch;
         m_genInFlight.clear();
         m_meshInFlight.clear();
+        m_tileInFlight.clear();
         {
             std::lock_guard lock(m_resultMutex);
             m_genResults.clear();
             m_meshResults.clear();
+            m_tileResults.clear();
         }
     }
 
@@ -268,8 +270,12 @@ namespace RR
             // isolate computer, discard in-flight processes
             ++m_epoch;
             m_genInFlight.clear();
+            m_meshInFlight.clear();
+            m_tileInFlight.clear();
             std::lock_guard lock(m_resultMutex);
             m_genResults.clear();
+            m_meshResults.clear();
+            m_tileResults.clear();
         }
 
         // restart regen
@@ -451,6 +457,56 @@ namespace RR
                 continue;
 
             UploadChunkMesh(*it->second, std::move(result.meshes));
+        }
+    }
+
+    void ChunkManager::DrainTileResults()
+    {
+        if (!m_asyncEnabled) return;
+
+        std::vector<TileResult> batch;
+        {
+            std::lock_guard lock(m_resultMutex);
+
+            const auto take = std::min<sizeT>(kUploadBudget, m_tileResults.size());
+
+            // move only budgeted amount into the actual batch
+            batch.assign(std::make_move_iterator(m_tileResults.begin()),
+                         std::make_move_iterator(m_tileResults.begin() + take));
+
+            m_tileResults.erase(m_tileResults.begin(), m_tileResults.begin() + take);
+        }
+
+        for (TileResult& result : batch)
+        {
+            // if wrong epoch discard
+            if (result.epoch != m_epoch) continue;
+            m_tileInFlight.erase(result.key);
+
+            if (result.coreFill)
+            {
+                // obsolete if real chunk has meshed or another cover appeared
+                const Chunk* chunk = GetChunk(result.key.origin);
+                if (chunk && chunk->state == CHUNK::STATE::MESHED) continue;
+                if (AnyTileAt(result.key.origin)) continue;
+            }
+            else
+            {
+                // check if ring tile is still needed
+                if (!m_desiredSet.contains(result.key)) continue;
+            }
+
+            LodTile tile = UploadTile(result.coreMask, std::move(result.data));
+
+            // core fills live asap, rings follow sync lifecycle
+            if (result.coreFill || m_lodTiles.contains(result.key))
+            {
+                StoreTile(result.key, std::move(tile));
+            }
+            else
+            {
+                StorePending(result.key, std::move(tile));
+            }
         }
     }
 

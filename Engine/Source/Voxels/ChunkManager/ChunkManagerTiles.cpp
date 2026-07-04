@@ -349,6 +349,30 @@ namespace RR
         m_pendingTiles.erase(it);
     }
 
+    void ChunkManager::SubmitTileJob(const LodNodeKey &_key, int _coreMask, bool _coreFill)
+    {
+        m_tileInFlight.insert(_key);
+
+        m_pool->Submit([this,
+            key   = _key,
+            mask  = _coreMask,
+            fill  = _coreFill,
+            epoch = m_epoch]
+        {
+            // extract surface, mesh, and proxies all at once, off thread
+            LodMeshResult data = m_lodMesher(key, mask);
+
+            std::lock_guard lock(m_resultMutex);
+            m_tileResults.push_back({
+                key,
+                std::move(data),
+                mask,
+                fill,
+                epoch
+            });
+        });
+    }
+
     int ChunkManager::ComputeCoreMask(const LodNodeKey &_key, CHUNK::Coord _centre) const
     {
         // nodes are never/cant be core adjacent
