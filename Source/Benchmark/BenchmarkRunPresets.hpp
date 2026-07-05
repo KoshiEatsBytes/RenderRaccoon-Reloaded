@@ -28,190 +28,109 @@ namespace DETERMINISTIC
 
     constexpr uInt32 kDeterministicSeed = 3053828723;
 
-    // Benchmark data
-    constexpr int    kBaselineRenderDistance = 16;
-    constexpr int    kLodRenderDistance      = 24; // Bump up once LOD sets in
-
+    // Benchmark run matrix - 16 for now trying to test everything without overwhelming of runs
     enum class SCENE : uInt8
     {
         BASELINE,
-
-        // Rendering
-        LOD_ONLY,
-        LOD_AGG,
-        LOD_GM,
-
-        // Scheduling
-        MT_ONLY,
-        MT_AB,
-
-        ALL_BASE,
-        ALL_HORIZON,
+        BASE_MT_16,
+        BASE_32,
+        BASE_MT_32,
+        BASE_MT_AB_32,
+        LOD_64,
+        LOD_LA_64,
+        LOD_GM_64,
+        LOD_MT_64,
+        LOD_LA_256,
+        LOD_LA_MT_256,
+        LOD_LA_GM_MT_256,
+        FULL_256,
+        LOD_LA_MT_384,
+        LOD_LA_GM_MT_384,
+        FULL_384,
 
         COUNT
     };
+
+    // Matrix row, easier readable
+    struct RowSpec
+    {
+        bool lod;
+        bool la;
+        bool gm;
+        bool mt;
+        bool ab;
+        int  rd;
+    };
+
+    // benchmark matrix, as the counter goes up next one is selected
+    constexpr RowSpec kMatrix[] = {
+        { false, false, false, false, false,  16 }, // BASELINE
+        { false, false, false, true,  false,  16 }, // BASE MT 16
+        { false, false, false, false, false,  32 }, // BASE 32
+        { false, false, false, true,  false,  32 }, // BASE MT 32
+        { false, false, false, true,  true,   32 }, // BASE MT AB 32
+        { true,  false, false, false, false,  64 }, // LOD 64
+        { true,  true,  false, false, false,  64 }, // LOD LA 64
+        { true,  false, true,  false, false,  64 }, // LOD GM 64
+        { true,  false, false, true,  false,  64 }, // LOD MT 64
+        { true,  true,  false, false, false, 256 }, // LOD LA 256
+        { true,  true,  false, true,  false, 256 }, // LOD LA MT 256
+        { true,  true,  true,  true,  false, 256 }, // LOD LA GM MT 256
+        { true,  true,  true,  true,  true,  256 }, // ALL 256
+        { true,  true,  false, true,  false, 384 }, // LOD LA MT 384
+        { true,  true,  true,  true,  false, 384 }, // LOD LA GM MT 384
+        { true,  true,  true,  true,  true,  384 }, // ALL 384
+    };
+
+    static_assert(std::size(kMatrix) == static_cast<std::size_t>(SCENE::COUNT),
+        "Benchmark matrix table out of sync with scene enum");
 
     //  Deterministic sequence
     constexpr uInt8 kSceneCount            = static_cast<uInt8>(SCENE::COUNT);
     inline    uInt8 gCurrentSceneStep      = static_cast<uInt8>(SCENE::BASELINE);
     inline    uInt8 gDeterministicFailures = 0;
 
-    // Helper to return the deterministic scene pre-set for the requested scene
+    // Helper to return the deterministic scene per set for the requested scene
     inline RR::RunInfo GetRunPreset(SCENE _scene)
     {
         RR::RunInfo runInfo;
-        std::string name  = "DETERMINISTIC";
-        std::string scene = "D";
 
         // true for every deterministic run
         runInfo.deterministic = true;
         runInfo.seed = kDeterministicSeed;
 
-        switch (_scene)
+        // invalid run requested if somehow you mamaged??
+        if (_scene >= SCENE::COUNT)
         {
-            case SCENE::BASELINE:
-            {
-                // Baseline no techniques
-                runInfo.lod         = false;
-                runInfo.async       = false;
-                runInfo.scheduling  = false;
-                runInfo.aggregation = false;
-                runInfo.greedy      = false;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
+            runInfo.deterministic = false;
+            runInfo.name  = "INVALID SCENE REQUEST";
+            runInfo.scene = "INVALID SCENE REQUEST";
+            RR::Error("REQUEST INVALID RUN PRESET FOR DETERMINISTIC BENCHMARK");
+            return runInfo;
+        }
 
-                // name and scene
-                name.append ("-BASELINE-R" + std::to_string(runInfo.renderDistance));
-                scene.append("-BASE-R" + std::to_string(runInfo.renderDistance));
-            }
-            break;
+        // table tied
+        const RowSpec& runRow = kMatrix[static_cast<uInt8>(_scene)];
+        runInfo.lod            = runRow.lod;
+        runInfo.aggregation    = runRow.la;
+        runInfo.greedy         = runRow.gm;
+        runInfo.async          = runRow.mt;
+        runInfo.scheduling     = runRow.ab;
+        runInfo.renderDistance = runRow.rd;
 
-            case SCENE::LOD_ONLY:
-            {
-                // LOD only
-                runInfo.lod         = true;
-                runInfo.async       = false;
-                runInfo.scheduling  = false;
-                runInfo.aggregation = false;
-                runInfo.greedy      = false;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
+        std::string name  = "DETERMINISTIC";
+        std::string scene = "D";
 
-                // name and scene
-                NAMING::AppendDetails(runInfo, name);
-                NAMING::AppendDetails(runInfo, scene);
-            }
-            break;
-
-            case SCENE::MT_ONLY:
-            {
-                // MT only
-                runInfo.lod         = false;
-                runInfo.async       = true;
-                runInfo.scheduling  = false;
-                runInfo.aggregation = false;
-                runInfo.greedy      = false;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
-
-                // name and scene
-                NAMING::AppendDetails(runInfo, name);
-                NAMING::AppendDetails(runInfo, scene);
-            }
-            break;
-
-            case SCENE::MT_AB:
-            {
-                // MT + adaptive budgeting 
-                runInfo.lod         = false;
-                runInfo.async       = true;
-                runInfo.scheduling  = true;
-                runInfo.aggregation = false;
-                runInfo.greedy      = false;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
-
-                // name and scene
-                NAMING::AppendDetails(runInfo, name);
-                NAMING::AppendDetails(runInfo, scene);
-            }
-            break;
-
-            case SCENE::LOD_AGG:
-            {
-                // LOD + aggregation
-                runInfo.lod         = true;
-                runInfo.async       = false;
-                runInfo.scheduling  = false;
-                runInfo.aggregation = true;
-                runInfo.greedy      = false;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
-
-                // name and scene
-                NAMING::AppendDetails(runInfo, name);
-                NAMING::AppendDetails(runInfo, scene);
-            }
-                break;
-            case SCENE::LOD_GM:
-            {
-                // LOD + greedy
-                runInfo.lod         = true;
-                runInfo.async       = false;
-                runInfo.scheduling  = false;
-                runInfo.aggregation = false;
-                runInfo.greedy      = true;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
-
-                // name and scene
-                NAMING::AppendDetails(runInfo, name);
-                NAMING::AppendDetails(runInfo, scene);
-            }
-            break;
-
-            case SCENE::ALL_BASE:
-            {
-                // All techniques
-                runInfo.lod         = true;
-                runInfo.async       = true;
-                runInfo.scheduling  = true;
-                runInfo.aggregation = true;
-                runInfo.greedy      = true;
-                // Render dist
-                runInfo.renderDistance = kBaselineRenderDistance;
-
-                // name and scene
-                name.append ("-ALL-R" + std::to_string(runInfo.renderDistance));
-                scene.append("-ALL-R" + std::to_string(runInfo.renderDistance));
-            }
-            break;
-
-            case SCENE::ALL_HORIZON:
-            {
-                // All techniques + extreme RD
-                runInfo.lod         = true;
-                runInfo.async       = true;
-                runInfo.scheduling  = true;
-                runInfo.aggregation = true;
-                runInfo.greedy      = true;
-                // Render dist
-                runInfo.renderDistance = kLodRenderDistance;
-
-                // name and scene
-                name.append ("-ALL-R" + std::to_string(runInfo.renderDistance));
-                scene.append("-ALL-R" + std::to_string(runInfo.renderDistance));
-            }
-            break;
-
-            case SCENE::COUNT:
-            {
-                runInfo.deterministic = false;
-                name  = "INVALID SCENE REQUEST";
-                scene = "INVALID SCENE REQUEST";
-                RR::Error("REQUEST INVALID RUN PRESET FOR DETERMINISTIC BENCHMARK");
-            }
-            break;
+        // baseline specific have to be named speratale coz they have no technique enabled
+        if (!runRow.lod && !runRow.la && !runRow.gm && !runRow.mt && !runRow.ab)
+        {
+            name.append ("-BASELINE-R" + std::to_string(runRow.rd));
+            scene.append("-BASE-R"     + std::to_string(runRow.rd));
+        }
+        else
+        {
+            NAMING::AppendDetails(runInfo, name);
+            NAMING::AppendDetails(runInfo, scene);
         }
 
         runInfo.name  = name;

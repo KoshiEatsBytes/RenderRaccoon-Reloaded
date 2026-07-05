@@ -51,6 +51,12 @@ void MainMenuScene::OnGui()
 {
     Scene::OnGui();
 
+    // turns on dev mode, aka render distacne is text field
+    if (ImGui::IsKeyPressed(ImGuiKey_F8, false))
+    {
+        m_devMode = !m_devMode;
+    }
+
     DrawTopBar();
 
     // Only show before anything has been opened
@@ -944,6 +950,19 @@ void MainMenuScene::DrawRenderDistance()
     }
 
     const int minRD = m_runInfo.lod ? 2 * RR::ChunkManager::kDefaultCoreRadius : 2;
+
+    // if devmode, make it uncapped hehehe
+    if (m_devMode)
+    {
+        ImGui::SetNextItemWidth(-FLT_MIN);
+        ImGui::InputInt("##render_distance_dev", &m_runInfo.renderDistance, 16, 64);
+        m_runInfo.renderDistance = std::max(m_runInfo.renderDistance, minRD);
+
+        ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.35f, 1.0f),
+                           "(!) DEV MODE (F8) - uncapped, may exhaust memory");
+        return;
+    }
+
     m_runInfo.renderDistance = std::clamp(m_runInfo.renderDistance, minRD, maxRD);
 
     //ImGui::TextUnformatted("Custom Render Distance:");
