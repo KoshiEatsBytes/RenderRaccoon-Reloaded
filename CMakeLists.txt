@@ -51,6 +51,27 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # Distribution, copies assets and needed folders
 set(DIST_DIR "${CMAKE_BINARY_DIR}/dist" CACHE PATH "Folder the builds moves packages into")
 
+# guard folder creation so it doesnt wipe everything in its path
+if(NOT DIST_DIR)
+    message(FATAL_ERROR "DIST_DIR is empty, directory is invalid!")
+endif()
+
+get_filename_component(_distAbs "${DIST_DIR}"         ABSOLUTE)
+get_filename_component(_binAbs  "${CMAKE_BINARY_DIR}" ABSOLUTE)
+get_filename_component(_srcAbs  "${CMAKE_SOURCE_DIR}" ABSOLUTE)
+string(TOLOWER "${_distAbs}/" _distLow)
+string(TOLOWER "${_binAbs}/"  _binLow)
+string(TOLOWER "${_srcAbs}/"  _srcLow)
+
+string(FIND "${_binLow}" "${_distLow}" _binHit)
+string(FIND "${_srcLow}" "${_distLow}" _srcHit)
+if(_binHit EQUAL 0)
+    message(FATAL_ERROR "DIST_DIR ('${DIST_DIR}') is the build directory, select a different directory")
+endif()
+if(_srcHit EQUAL 0)
+    message(FATAL_ERROR "DIST_DIR ('${DIST_DIR}') is the build directory, select a different directory")
+endif()
+
 add_custom_target(dist
         COMMAND ${CMAKE_COMMAND} -E rm -rf "${DIST_DIR}"
         COMMAND ${CMAKE_COMMAND} -E make_directory "${DIST_DIR}"
