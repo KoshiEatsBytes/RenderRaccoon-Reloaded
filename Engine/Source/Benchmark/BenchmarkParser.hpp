@@ -267,6 +267,17 @@ namespace RR
                     contents << "," << median3(_a, _b, _c) << "," << spread3(_a, _b, _c);
                 };
 
+                // turn result to fps
+                const auto pairFps = [&](float _a, float _b, float _c)
+                {
+                    const auto fps = [](float _ms)
+                    {
+                        return _ms > 0.0f ? 1000.0f / _ms : 0.0f;
+                    };
+
+                    pair(fps(_a), fps(_b), fps(_c));
+                };
+
                 const RunInfo& info = runs[0].info;
 
                 contents << "\"" << info.name  << "\","  << info.renderDistance << ","
@@ -276,10 +287,10 @@ namespace RR
 
                 // pair runs and stream back to contents
                 pair(runs[0].stats.avgFps,         runs[1].stats.avgFps,         runs[2].stats.avgFps);
-                pair(runs[0].stats.low10Pc,        runs[1].stats.low10Pc,        runs[2].stats.low10Pc);
-                pair(runs[0].stats.low5Pc,         runs[1].stats.low5Pc,         runs[2].stats.low5Pc);
-                pair(runs[0].stats.low1Pc,         runs[1].stats.low1Pc,         runs[2].stats.low1Pc);
-                pair(runs[0].stats.low01Pc,        runs[1].stats.low01Pc,        runs[2].stats.low01Pc);
+                pairFps(runs[0].stats.low10Pc,     runs[1].stats.low10Pc,        runs[2].stats.low10Pc);
+                pairFps(runs[0].stats.low5Pc,      runs[1].stats.low5Pc,         runs[2].stats.low5Pc);
+                pairFps(runs[0].stats.low1Pc,      runs[1].stats.low1Pc,         runs[2].stats.low1Pc);
+                pairFps(runs[0].stats.low01Pc,     runs[1].stats.low01Pc,        runs[2].stats.low01Pc);
                 pair(runs[0].stats.avgFrameTimeMs, runs[1].stats.avgFrameTimeMs, runs[2].stats.avgFrameTimeMs);
                 pair(runs[0].stats.maxFrameTimeMs, runs[1].stats.maxFrameTimeMs, runs[2].stats.maxFrameTimeMs);
                 pair(runs[0].stats.stdDeviationMs, runs[1].stats.stdDeviationMs, runs[2].stats.stdDeviationMs);
@@ -300,9 +311,9 @@ namespace RR
             if (outcome.written == 0) return outcome;
 
             outcome.csvText =
-                "# Artefact benchmark summary, average of 3 last deterministic benchmarks, sp = spread\n"
+                "# Artefact benchmark summary, MEDIAN of the 3 latest matching runs, sp = max-min spread, lows in fps\n"
                 "name,rd,lod,la,gm,mt,ab,seed,cpu,gpu,"
-                "avgFps,avgFps_sp,low10,low10_sp,low5,low5_sp,low1,low1_sp,low01,low01_sp,"
+                "avgFps,avgFps_sp,low10Fps,low10Fps_sp,low5Fps,low5Fps_sp,low1Fps,low1Fps_sp,low01Fps,low01Fps_sp,"
                 "avgMs,avgMs_sp,maxMs,maxMs_sp,stdMs,stdMs_sp,stutters,stutters_sp,"
                 "cpuMs,cpuMs_sp,gpuMs,gpuMs_sp,loadS,loadS_sp,covMin,covMin_sp,"
                 "steadyDraws,steadyTris,frames\n"
