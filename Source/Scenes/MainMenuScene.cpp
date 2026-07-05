@@ -924,12 +924,18 @@ void MainMenuScene::DrawRenderDistance()
     ImGui::Spacing();
     
     // baseline full voxel
-    int maxRD = 32;   
+    int maxRD = 32;
     if (m_runInfo.lod)
     {
         if (m_runInfo.aggregation)
         {
             maxRD = m_runInfo.async ? 384 : 256;
+
+            // ceiling up to 512 (woah!!!) if all techniques on
+            if (m_runInfo.async && m_runInfo.greedy && m_runInfo.scheduling)
+            {
+                maxRD = 512;
+            }
         }
         else
         {
@@ -944,6 +950,13 @@ void MainMenuScene::DrawRenderDistance()
     ImGui::SetNextItemWidth(-FLT_MIN);
     ImGui::SliderInt("##render_distance", &m_runInfo.renderDistance, minRD, maxRD,
         "%d chunks", ImGuiSliderFlags_AlwaysClamp);
+
+    // warn if rd too high for low end
+    if (m_runInfo.renderDistance > 256)
+    {
+        ImGui::TextColored(ImVec4(0.95f, 0.55f, 0.35f, 1.0f),
+                           "(!) Weak hardware might fail");
+    }
 }
 
 // ANALYZER TAB --------------------------------------------------------------------------------------------------------

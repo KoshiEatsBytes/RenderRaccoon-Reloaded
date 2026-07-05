@@ -423,13 +423,17 @@ namespace RR
             m_meshRadius = m_coreRadius + 1;
         }
 
-        int   level = 1;
-        float edge  = m_coreRadius * m_ringGrowth;
-
-        // walk edge up to rd
-        while (static_cast<int>(edge) < m_meshRadius && level < 8)
+        // walk edges up to rd through RingEdge itself, normalized,
+        // so all rings are always 16 * coreRad
+        const RingParams edgeParams
         {
-            edge *= m_ringGrowth;
+            m_coreRadius,
+            m_ringGrowth
+        };
+
+        int level = 1;
+        while (RingEdge(level, edgeParams) < m_meshRadius && level < 8)
+        {
             ++level;
         }
 

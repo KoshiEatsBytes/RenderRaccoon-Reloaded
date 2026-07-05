@@ -70,16 +70,20 @@ namespace RR
         return _c & ~(_sizePow2 - 1);
     }
 
+    // Ring widths ralated to this base regardless of core radius
+    inline constexpr int kRingBaseRadius = 16;
+
+    // core - base * rignt growth
     inline int RingEdge(int _level, const RingParams& _params)
     {
-        float edge = static_cast<float>(_params.coreRadius);
+        float edge = static_cast<float>(kRingBaseRadius);
 
         for (int l = 0; l < _level; ++l)
         {
             edge *= _params.ringGrowth;
         }
 
-        return static_cast<int>(edge);
+        return _params.coreRadius - kRingBaseRadius + static_cast<int>(edge);
     }
 
     // return lod level per distance
