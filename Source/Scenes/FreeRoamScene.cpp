@@ -135,10 +135,11 @@ void FreeRoamScene::OnGui()
             ImGui::Text("Draws %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameDraws());
             ImGui::Text("Tris %zu", RR::Engine::GetInstance().GetRenderQueue().GetLastFrameTris());
             ImGui::Separator();
-            ImGui::Text("Chunk Unload %2.f", timings.unloadMs);
-            ImGui::Text("Chunk Upload %2.f", timings.uploadMs);
-            ImGui::Text("Thread Drain %2.f", timings.drainMs);
+            ImGui::Text("Chunk Unload %.2f", timings.unloadMs);
+            ImGui::Text("Chunk Upload %.2f", timings.uploadMs);
+            ImGui::Text("Thread Drain %.2f", timings.drainMs);
             ImGui::Text("Upload Count %d", timings.uploads);
+            ImGui::Text("Upload Budget %.2f", timings.budgetMs);
             ImGui::Text("Generation %.2f", timings.genMs);
             ImGui::Text("Meshing %.2f", timings.meshMs);
             ImGui::Text("Noding %.2f", timings.nodesMs);

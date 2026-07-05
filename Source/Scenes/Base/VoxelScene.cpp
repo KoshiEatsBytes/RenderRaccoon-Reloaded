@@ -106,6 +106,7 @@ bool VoxelScene::Init()
     m_chunkManager->SetLodEnabled(m_runInfo.lod);
     m_chunkManager->SetAggregationEnabled(m_runInfo.aggregation);
     m_chunkManager->SetAsyncEnabled(m_runInfo.async);
+    m_chunkManager->SetAdaptiveBudgetingEnabled(m_runInfo.scheduling);
 
     // Set sky box color
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);

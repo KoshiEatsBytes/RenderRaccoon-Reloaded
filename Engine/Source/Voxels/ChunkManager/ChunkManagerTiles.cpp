@@ -1,4 +1,7 @@
 
+#include <chrono>
+#include <limits>
+
 #include "ChunkManager.h"
 #include "Helpers/Types.h"
 #include "Voxels/Chunk.h"
@@ -140,6 +143,25 @@ namespace RR
         if (!m_desiredFresh) return;
         m_desiredFresh = false;
 
+        // spend what the uploads left over
+        // if budgeting opff is unlimited
+        const auto tMin = std::chrono::steady_clock::now();
+        float budgetLeft = std::numeric_limits<float>::max();
+
+        if (m_adaptiveEnabled)
+        {
+            // lifecycle gets uploads leftovers but never less than working floor
+            budgetLeft = std::max(m_uploadBudgetMs - m_timings.uploadMs, kLifecycleFloorMs);
+        }
+
+        // return time elapsed from tMin creation
+        const auto msSpent = [&] {
+            return std::chrono::duration<float, std::milli>(
+                 std::chrono::steady_clock::now() - tMin).count();
+        };
+
+        int done = 0;
+
         // camera re-backed inside request tile, no longer needed, discard
         // request and dont draw
         for (auto it = m_pendingTiles.begin(); it != m_pendingTiles.end();)
@@ -160,26 +182,61 @@ namespace RR
             }
         }
 
+        // harvest stale, only when needed
+        if (m_desiredChanged)
+        {
+            m_desiredChanged = false;
+            m_staleList.clear();
+
+            for (const auto& [key, tile] : m_lodTiles)
+            {
+                if (key.footprint > 1 && !m_desiredSet.contains(key))
+                {
+                    m_staleList.push_back(key);
+                }
+            }
+        }
+
         // activate pending keys
         for (const LodNodeKey& key : ready)
         {
+            if (done > 0 && msSpent() >= budgetLeft)
+            {
+                // backlog, run next frame
+                m_desiredFresh = true;
+                break;
+            }
+
             ActivatePending(key);
             EraseCoveredBy(key);
+            ++done;
         }
 
-        // Refine flips, a noce whos no longer desired retires only once
-        // its footprint is covered by finer chunks (or core)
-        std::vector<LodNodeKey> stale;
-
-        for (const auto& [key, tile] : m_lodTiles)
+        for (sizeT i = 0; i < m_staleList.size(); )
         {
-            if (key.footprint > 1 && !m_desiredSet.contains(key))
-                stale.push_back(key);
-        }
+            if (done > 0 && msSpent() >= budgetLeft)
+            {
+                // backlog, run next frame
+                m_desiredFresh = true;
+                break;
+            }
 
-        for (const LodNodeKey& key : stale)
-        {
-            if (!CoveredByReplacement(key.origin, key.level)) continue;
+            const LodNodeKey key = m_staleList[i];
+
+            // gone or redesired since harvest, drop
+            if (!m_lodTiles.contains(key) || m_desiredSet.contains(key))
+            {
+                m_staleList[i] = m_staleList.back();
+                m_staleList.pop_back();
+                continue;
+            }
+
+            // Children not ready yet, keep for later pass
+            if (!CoveredByReplacement(key.origin, key.level))
+            {
+                ++i;
+                continue;
+            }
 
             // collect, activations mutates the mapp
             std::vector<LodNodeKey> children;
@@ -201,6 +258,10 @@ namespace RR
 
             if (auto it = m_lodTiles.find(key); it != m_lodTiles.end())
                 EraseTile(it);
+
+            ++done;
+            m_staleList[i] = m_staleList.back();
+            m_staleList.pop_back();
         }
     }
 
@@ -336,7 +397,8 @@ namespace RR
         // clear previous
         m_desiredSet.clear();
         m_desiredSet.insert(m_desiredKeys.begin(), m_desiredKeys.end());
-        m_desiredFresh = true;
+        m_desiredFresh   = true;
+        m_desiredChanged = true;
 
         // desired vs live, stale or missing entry means needs to be built
         m_buildQueue.clear();

@@ -69,6 +69,7 @@ namespace RR
         float nodesMs    = 0.f;
         float flipsMs    = 0.f;
         float coverageMs = 0.f;
+        float budgetMs   = 0.f;
         int   uploads    = 0;
     };
 
@@ -201,6 +202,7 @@ namespace RR
         TileMap m_pendingTiles;
         NodeSet m_desiredSet;
         NodeSet m_liveKeys;
+        std::vector<LodNodeKey>   m_staleList;
         std::vector<LodNodeKey>   m_desiredKeys;
         std::vector<PendingBuild> m_buildQueue;
         bool m_desiredFresh = false;
@@ -234,6 +236,10 @@ namespace RR
 
         // Adaptive budgeting
         UpdateTimings m_timings;
+        bool  m_adaptiveEnabled = false;
+        bool  m_desiredChanged  = false;
+        float m_baseMsCost      = 0.0f;
+        float m_uploadBudgetMs  = 0.0f;
 
         // async MT
         bool   m_asyncEnabled  = false;
@@ -255,15 +261,19 @@ namespace RR
         static constexpr int kGenBudget  = 1;
         static constexpr int kMeshBudget = 1;
         static constexpr int kTileBudget = 4;
+        // adaptive budget constants
+        static constexpr float kUploadFraction   = 0.15f; // limit base overlay
+        static constexpr float kFloorMs          = 16.6f; // 60 guarded
+        static constexpr float kMaxUploadMs      = 4.0f;  // ceiling ms
+        static constexpr float kBaseCostAlpha    = 0.05f;
+        static constexpr float kLifecycleFloorMs = 0.25f;
 
         // Per frame thread budgets
-        static constexpr float kInFlightWorkerMultiplier = 2.0f;
+        static constexpr int kInFlightWorkerMultiplier = 2;
         // GL uploads per frame
         static constexpr int kUploadBudget = 4;
-
         // distance of chunks on priority
         static constexpr int kCoveredPenalty = 0;
-
         // soreted head per rebuild
         static constexpr sizeT kQueueWindow = 128;
     };

@@ -49,8 +49,32 @@ namespace RR
 
     void ChunkManager::Update(float _deltaTime, const vec3& _cameraPos)
     {
-        m_timings         = {};
-        m_timings.frameMs = _deltaTime * 1000.0f;
+        // eat timings before they are reset
+        if (m_adaptiveEnabled)
+        {
+            const float base = std::max(0.0f, m_timings.frameMs - m_timings.uploadMs);
+
+            // enstablish base
+            if (m_baseMsCost <= 0.0f)
+            {
+                m_baseMsCost = base;
+            }
+            else
+            {
+                m_baseMsCost = m_baseMsCost + kBaseCostAlpha * (base - m_baseMsCost);
+            }
+
+            // calculate budgets
+            // upload only gets up to 15% of a frame
+            // if takes longer than that, reduce dubget to keep 60fps
+            m_uploadBudgetMs = std::clamp(std::min(kUploadFraction * m_baseMsCost,
+                kFloorMs - m_baseMsCost), 0.0f, kMaxUploadMs);
+        }
+
+        // Reset this frame timings
+        m_timings        = {};
+        m_timings.frameMs  = _deltaTime * 1000.0f;
+        m_timings.budgetMs = m_uploadBudgetMs;
 
         const bool radiusChanged = m_offsetsBuiltForRadius != m_meshRadius;
 
@@ -116,7 +140,7 @@ namespace RR
             }
         }
 
-        if (generated == 0 && meshed == 0 && tiled == 0)
+        if (generated == 0 && meshed == 0 && tiled == 0 && !m_desiredFresh)
         {
             m_streamingIdle = true;
             m_coverage      = 1.0f;
@@ -261,10 +285,12 @@ namespace RR
         m_desiredKeys.clear();
         m_desiredSet.clear();
         m_buildQueue.clear();
-        m_desiredFresh = false;
-        m_firstFrame   = true;
-        m_selectDirty  = true;
-        m_buildCursor  = 0;
+        m_staleList.clear();
+        m_desiredChanged = false;
+        m_desiredFresh   = false;
+        m_firstFrame     = true;
+        m_selectDirty    = true;
+        m_buildCursor    = 0;
 
         // clear mt, result with old epoch are discarded
         ++m_epoch;
@@ -343,6 +369,9 @@ namespace RR
 
     void ChunkManager::SetAdaptiveBudgetingEnabled(bool _enabled)
     {
+        m_adaptiveEnabled = _enabled;
+        m_baseMsCost      = 0.0f;
+        m_uploadBudgetMs  = 0.0f;
     }
 
     void ChunkManager::SetCoreRadius(int _radius)
@@ -497,23 +526,28 @@ namespace RR
     {
         if (!m_asyncEnabled) return;
 
-        // take as mesh batch result
-        std::vector<MeshResult> batch;
+        int processed = 0;
+        while (true)
         {
-            std::lock_guard lock(m_resultMutex);
+            // Adapt to dynamic budget or use predefined fix
+            if (m_adaptiveEnabled)
+            {
+                if (m_timings.uploads > 0 && m_timings.uploadMs >= m_uploadBudgetMs)
+                    break;
+            }
+            else if (processed >= kUploadBudget) break;
 
-            const auto take = std::min<sizeT>(kUploadBudget, m_meshResults.size());
+            MeshResult result;
+            {
+                std::lock_guard lock(m_resultMutex);
+                if (m_meshResults.empty()) break;
 
-            // move only budgeted amount into the actual batch
-            batch.assign(std::make_move_iterator(m_meshResults.begin()),
-                         std::make_move_iterator(m_meshResults.begin() + take));
+                // first in first out, do closer chunks first
+                result = std::move(m_meshResults.front());
+                m_meshResults.erase(m_meshResults.begin());
+            }
+            ++processed;
 
-            m_meshResults.erase(m_meshResults.begin(), m_meshResults.begin() + take);
-        }
-
-        // iterate over batch, drain meshes
-        for (MeshResult& result : batch)
-        {
             const CHUNK::Coord cords = result.chunk->coord;
 
             // check if its current
@@ -537,31 +571,36 @@ namespace RR
     {
         if (!m_asyncEnabled) return;
 
-        std::vector<TileResult> batch;
+        const auto nearerResult = [&](const TileResult& _a, const TileResult& _b)
         {
-            std::lock_guard lock(m_resultMutex);
+            return NearestDist(m_lastCoords, _a.key.origin, _a.key.footprint) <
+                   NearestDist(m_lastCoords, _b.key.origin, _b.key.footprint);
+        };
 
-            const auto take = std::min<sizeT>(kUploadBudget, m_tileResults.size());
-
-            // nearest results first, closer tiles swap first
-            const auto nearerResult = [&](const TileResult& _a, const TileResult& _b)
+        int processed = 0;
+        while (true)
+        {
+            // stop point with budget is max budget
+            // without is predefined fixed
+            if (m_adaptiveEnabled)
             {
-                return NearestDist(m_lastCoords, _a.key.origin, _a.key.footprint) <
-                       NearestDist(m_lastCoords, _b.key.origin, _b.key.footprint);
-            };
+                if (m_timings.uploads > 0 && m_timings.uploadMs >= m_uploadBudgetMs)
+                    break;
+            }
+            else if (processed >= kUploadBudget) break;
 
-            std::ranges::partial_sort(m_tileResults,
-                m_tileResults.begin() + take, nearerResult);
+            TileResult result;
+            {
+                std::lock_guard lock(m_resultMutex);
+                if (m_tileResults.empty()) break;
 
-            // move only budgeted amount into the actual batch
-            batch.assign(std::make_move_iterator(m_tileResults.begin()),
-                         std::make_move_iterator(m_tileResults.begin() + take));
+                // nearest swaps first
+                const auto it = std::ranges::min_element(m_tileResults, nearerResult);
+                result = std::move(*it);
+                m_tileResults.erase(it);
+            }
+            ++processed;
 
-            m_tileResults.erase(m_tileResults.begin(), m_tileResults.begin() + take);
-        }
-
-        for (TileResult& result : batch)
-        {
             // if wrong epoch discard
             if (result.epoch != m_epoch) continue;
             m_tileInFlight.erase(result.key);
