@@ -2,6 +2,10 @@
 #pragma once
 #include <charconv>
 #include <string_view>
+#include <functional>
+#include <sstream>
+#include <algorithm>
+#include <vector>
 
 #include "Benchmark/BenchmarkData.h"
 #include "Helpers/Printer.hpp"
@@ -36,6 +40,21 @@ namespace RR
         }
 
     public:
+        // candidate run for summary
+        struct SummaryInput
+        {
+            std::string orderKey;
+            RunInfo     info;
+        };
+
+        // outcome of 3 summed runs
+        struct SummaryOutcome
+        {
+            int written = 0;
+            int skipped = 0;
+            std::string csvText;
+        };
+
         // _headerOnly = stop at the first data row. Cheap metadata-only parse for building run
         static BenchmarkRun ParseBenchmarkCsv(const std::string& _text, bool _headerOnly = false)
         {
@@ -150,6 +169,146 @@ namespace RR
             // return populated run
             runData.stats = ComputeStats(runData.samples);
             return runData;
+        }
+
+        // Groups completed runs by config identity, takes the last 3 and summarizes them
+        // they cant be viewed by graphs but can be usefull for data
+        static SummaryOutcome BuildSummaryCsv(std::vector<SummaryInput> _runs,
+            const std::function<std::string(const std::string&)>& _loadText)
+        {
+            SummaryOutcome outcome;
+
+            // group by config identity
+            struct Group
+            {
+                std::string key;
+                std::vector<const SummaryInput*> entries;
+            };
+            std::vector<Group> groups;
+
+            for (const SummaryInput& run : _runs)
+            {
+                // not completed, skip
+                if (!run.info.completed) continue;
+
+                const std::string key = run.info.name + "|" + run.info.cpuName + "|" +
+                                        run.info.gpuName + "|" + std::to_string(run.info.seed);
+
+                // match group
+                auto it = std::ranges::find_if(groups,
+                    [&](const Group& _group)
+                    {
+                        return _group.key == key;
+                    });
+
+                if (it == groups.end())
+                {
+                    groups.push_back({ key, {}});
+                    it = groups.end() - 1;
+                }
+                it->entries.push_back(&run);
+            }
+
+            // median of 3 floats
+            const auto median3 = [](float _a, float _b, float _c)
+            {
+                return std::max(std::min(_a, _b), std::min(std::max(_a, _b), _c));
+            };
+            // spread out of 3 flaots
+            const auto spread3 = [](float _a, float _b, float _c)
+            {
+                return std::max({ _a, _b, _c }) - std::min({ _a, _b, _c });
+            };
+
+            // prepare for file stream
+            std::ostringstream contents;
+
+            for (auto&[key, entries] : groups)
+            {
+                if (entries.size() < 3)
+                {
+                    ++outcome.skipped;
+                    continue;
+                }
+
+                // latest 3 first
+                std::ranges::sort(entries,
+                    [](const SummaryInput* _a, const SummaryInput* _b)
+                    {
+                        return _a->orderKey > _b->orderKey;
+                    });
+
+
+                BenchmarkRun runs[3];
+                bool parsed = true;
+
+                // parse last 3 runs
+                for (int i = 0; i < 3; ++i)
+                {
+                    runs[i] = ParseBenchmarkCsv(_loadText(entries[i]->orderKey));
+
+                    if (runs[i].samples.empty())
+                    {
+                        parsed = false;
+                        break;
+                    }
+                }
+
+                // if fail
+                if (!parsed)
+                {
+                    ++outcome.skipped;
+                    continue;
+                }
+
+                // median and spread per float fiedl
+                const auto pair = [&](float _a, float _b, float _c)
+                {
+                    contents << "," << median3(_a, _b, _c) << "," << spread3(_a, _b, _c);
+                };
+
+                const RunInfo& info = runs[0].info;
+
+                contents << "\"" << info.name  << "\","  << info.renderDistance << ","
+                                 << info.lod   << ","    << info.aggregation    << "," << info.greedy << ","
+                                 << info.async << ","    << info.scheduling     << ","
+                                 << info.seed  << ",\""  << info.cpuName        << "\",\"" << info.gpuName << "\"";
+
+                // pair runs and stream back to contents
+                pair(runs[0].stats.avgFps,         runs[1].stats.avgFps,         runs[2].stats.avgFps);
+                pair(runs[0].stats.low10Pc,        runs[1].stats.low10Pc,        runs[2].stats.low10Pc);
+                pair(runs[0].stats.low5Pc,         runs[1].stats.low5Pc,         runs[2].stats.low5Pc);
+                pair(runs[0].stats.low1Pc,         runs[1].stats.low1Pc,         runs[2].stats.low1Pc);
+                pair(runs[0].stats.low01Pc,        runs[1].stats.low01Pc,        runs[2].stats.low01Pc);
+                pair(runs[0].stats.avgFrameTimeMs, runs[1].stats.avgFrameTimeMs, runs[2].stats.avgFrameTimeMs);
+                pair(runs[0].stats.maxFrameTimeMs, runs[1].stats.maxFrameTimeMs, runs[2].stats.maxFrameTimeMs);
+                pair(runs[0].stats.stdDeviationMs, runs[1].stats.stdDeviationMs, runs[2].stats.stdDeviationMs);
+                pair(static_cast<float>(runs[0].stats.stutterCount),
+                     static_cast<float>(runs[1].stats.stutterCount),
+                     static_cast<float>(runs[2].stats.stutterCount));
+                pair(runs[0].stats.avgCpuMs,       runs[1].stats.avgCpuMs,       runs[2].stats.avgCpuMs);
+                pair(runs[0].stats.avgGpuMs,       runs[1].stats.avgGpuMs,       runs[2].stats.avgGpuMs);
+                pair(runs[0].info.warmUpSeconds,   runs[1].info.warmUpSeconds,   runs[2].info.warmUpSeconds);
+                pair(runs[0].stats.coverageMin,    runs[1].stats.coverageMin,    runs[2].stats.coverageMin);
+
+                contents << "," << info.steadyDraws << "," << info.steadyTris << ","
+                         << runs[0].stats.frameCount << "\n";
+
+                ++outcome.written;
+            }
+
+            if (outcome.written == 0) return outcome;
+
+            outcome.csvText =
+                "# Artefact benchmark summary, average of 3 last deterministic benchmarks, sp = spread\n"
+                "name,rd,lod,la,gm,mt,ab,seed,cpu,gpu,"
+                "avgFps,avgFps_sp,low10,low10_sp,low5,low5_sp,low1,low1_sp,low01,low01_sp,"
+                "avgMs,avgMs_sp,maxMs,maxMs_sp,stdMs,stdMs_sp,stutters,stutters_sp,"
+                "cpuMs,cpuMs_sp,gpuMs,gpuMs_sp,loadS,loadS_sp,covMin,covMin_sp,"
+                "steadyDraws,steadyTris,frames\n"
+                + contents.str();
+
+            return outcome;
         }
     };
 }

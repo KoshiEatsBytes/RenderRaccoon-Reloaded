@@ -48,6 +48,7 @@ private:
     // Analyzer tab
     void DrawAnalyzerPanel();
     void DrawResultWindows();
+    void ExportSummary();
 
     // Compare tab
     void DrawComparePanel();
@@ -150,10 +151,11 @@ private:
 
     // ANALYZER TAB VIEW -----------------------------------------------------------------------------------------------
     std::vector<RunEntry> m_runFiles;
+    std::string m_summaryStatus;
     bool m_filterDeterministicOnly = false;
     bool m_filterValidOnly         = true;
     bool m_runListDirty            = true;
-    bool m_sortAscending           = true;
+    bool m_sortAscending           = false;
     int  m_selectedRunIndex        = -1;
 
     // result panel docking

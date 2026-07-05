@@ -1455,11 +1455,19 @@ void MainMenuScene::DrawAnalyzerPanel()
         ImGui::Checkbox("Valid Only",         &m_filterValidOnly);
         ImGui::Checkbox("Deterministic Only", &m_filterDeterministicOnly);
 
-        // Sort list
-        if (SHARED::TabButton("ASCENDING",  m_sortAscending,  ImVec2(-FLT_MIN, 0.0f)))
-            m_sortAscending = true;
-        if (SHARED::TabButton("DESCENDING", !m_sortAscending, ImVec2(-FLT_MIN, 0.0f)))
-            m_sortAscending = false;
+        // sort list, swaps order when clicked
+        if (ImGui::Button(m_sortAscending ? "SORT: ASCENDING" : "SORT: DESCENDING",
+                          ImVec2(-FLT_MIN, 0.0f)))
+        {
+            m_sortAscending = !m_sortAscending;
+        }
+
+        // Export avergae of last 3 deterministic benchmarks
+        if (ImGui::Button("EXPORT SUMMARY", ImVec2(-FLT_MIN, 0.0f)))
+        {
+            ExportSummary();
+            ImGui::OpenPopup("Summary##analyzeSummary");
+        }
 
         // Delete the selected run
         const bool hasSelection = m_selectedRunIndex >= 0 &&
@@ -1575,6 +1583,21 @@ void MainMenuScene::DrawAnalyzerPanel()
             ImGui::SameLine();
 
             if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        // summary export popup
+        if (ImGui::BeginPopupModal("Summary##analyzeSummary", nullptr,
+                                   ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted(m_summaryStatus.c_str());
+            ImGui::Separator();
+
+            if (ImGui::Button("OK"))
             {
                 ImGui::CloseCurrentPopup();
             }
@@ -2202,6 +2225,9 @@ void MainMenuScene::RefreshRunList()
     {
         const std::string relPath = path.string();
 
+        // sumamries are in the same folder but not runs, exclude
+        if (path.filename().string().rfind("summary_", 0) == 0) continue;
+
         // header-only parse: the list needs metadata
         RR::BenchmarkRun runInfo = RR::BenchmarkParser::ParseBenchmarkCsv(
             fileSys.LoadOutputFileText(relPath), true);
@@ -2210,6 +2236,53 @@ void MainMenuScene::RefreshRunList()
         m_runFiles.push_back({ relPath, path.filename().string(), runInfo.info });
     }
     m_runListDirty = false;
+}
+
+void MainMenuScene::ExportSummary()
+{
+    auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+
+    // refresh before export for recent data
+    RefreshRunList();
+
+    // hand the parser the 3 last determoinistic benchmarks
+    std::vector<RR::BenchmarkParser::SummaryInput> inputs;
+    inputs.reserve(m_runFiles.size());
+
+    for (const RunEntry& entry : m_runFiles)
+    {
+        inputs.push_back({
+            entry.relPath,
+            entry.info
+        });
+    }
+
+    const auto outcome = RR::BenchmarkParser::BuildSummaryCsv(std::move(inputs),
+        [&fileSys](const std::string& _relPath)
+        {
+            return fileSys.LoadOutputFileText(_relPath);
+        });
+
+    // nothing is summaria-ble, output error
+    if (outcome.written == 0)
+    {
+        m_summaryStatus = "Nothing to summarize.\n"
+                          "A summary needs the data from 3 runs of the deterministic benchmark!";
+        return;
+    }
+
+    const std::string relPath = "Benchmarks/summary_" + RR::FileSystem::MakeTimestamp() + ".csv";
+
+    // try to write to disk
+    if (!fileSys.WriteOutputTextFile(relPath, outcome.csvText))
+    {
+        m_summaryStatus = "Could not write " + relPath + ".";
+        return;
+    }
+
+    m_summaryStatus = "Wrote " + relPath + "\n" +
+                      std::to_string(outcome.written) + " runs summarized " +
+                      std::to_string(outcome.skipped) + " groups skipped (less than 3 match or are unreadable).";
 }
 
 void MainMenuScene::LoadRunIntoSlot(CompareSlot& _slot, const RunEntry& _entry)
@@ -2235,33 +2308,3 @@ void MainMenuScene::LoadRunIntoSlot(CompareSlot& _slot, const RunEntry& _entry)
     }
     _slot.loaded = true;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

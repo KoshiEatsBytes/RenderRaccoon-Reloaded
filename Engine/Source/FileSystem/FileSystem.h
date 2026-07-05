@@ -36,6 +36,9 @@ namespace RR
 
         std::string LoadOutputFileText(const std::string& _relativePath);
         bool DeleteOutputFile(const std::string& _relativePath) const;
+        bool WriteOutputTextFile(const std::string& _relativePath, const std::string& _text) const;
+
+        static std::string MakeTimestamp();
 
         fSysPath GetExecutableFolder() const;
         fSysPath GetAssetFolder() const;

@@ -1,6 +1,7 @@
 
 #include <fstream>
 #include <algorithm>
+#include <ctime>
 
 #include "FileSystem.h"
 #include "config.h"
@@ -115,6 +116,34 @@ namespace RR
 
         // flase w/o error means was already gone
         return removed;
+    }
+
+    bool FileSystem::WriteOutputTextFile(const std::string& _relativePath, const std::string& _text) const
+    {
+        std::ofstream out = OpenOutputFile(_relativePath, false);
+
+        if (!out)
+        {
+            Warn("[FILESYSTEM - WRITE] Could not open '", _relativePath, "' for writing");
+            return false;
+        }
+
+        out << _text;
+        return out.good();
+    }
+
+    std::string FileSystem::MakeTimestamp()
+    {
+        const std::time_t time = std::time(nullptr);
+        std::tm tm{};
+#if defined(_WIN32)
+        localtime_s(&tm, &time);
+#else
+        localtime_r(&time, &tm);
+#endif
+        char buf[32];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d_%H-%M-%S", &tm);
+        return buf;
     }
 
     fSysPath FileSystem::GetExecutableFolder() const
