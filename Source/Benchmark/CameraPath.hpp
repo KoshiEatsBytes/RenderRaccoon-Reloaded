@@ -160,6 +160,14 @@ namespace BENCH
             return sample;
         }
 
+        // yaw to face travel direction 
+        static float FaceTravelYaw(const vec3& _from, const vec3& _to, float _fallback)
+        {
+            const vec3 distance = _to - _from;
+            if (distance.x * distance.x + distance.z * distance.z < 1e-8f) return _fallback;
+            return glm::degrees(std::atan2(-distance.x, -distance.z));
+        }
+
     private:
         // one saved camera step
         struct Baked
@@ -174,14 +182,6 @@ namespace BENCH
             float duration {};
             float tStart   {};
         };
-
-        // yaw to face travel direction
-        static float FaceTravelYaw(const vec3& _from, const vec3& _to, float _fallback)
-        {
-            const vec3 distance = _to - _from;
-            if (glm::dot(distance, distance) < 1e-8f) return _fallback;
-            return glm::degrees(std::atan2(-distance.x, -distance.z));
-        }
 
         // interpolation between two degree angles
         static float LerpAngleDeg(float _a, float _b, float _t)
@@ -252,29 +252,62 @@ namespace BENCH
         {
             case CAMERA_PATH_ID::DETERMINISTIC:
             {
-                const vec3 spawn(0.f, 170.f, 0.f);
-                path.Begin(spawn, 0.f, -20.f);
+                constexpr float kSpeed     = 70.f;
+                constexpr float kRiseSpeed = 200.f;
 
-                PathSegment l1;
-                l1.move = PathSegment::MOVE::GOTO;
-                l1.target = vec3(600.f, 160.f, -600.f);
-                l1.speed = 70.f;
-                l1.look  = PathSegment::LOOK::FACE_TRAVEL;
-                path.Add(l1);
+                const vec3 spawn(170.f, 130.f, 20.f);
+                const vec3 farEnd(-350.f, 150.f, -780.f);
+                const vec3 highPoint(-350.f, 300.f, -780.f);
+                const vec3 homeEnd(100.f, 130.f, 60.f);
 
-                PathSegment look1;
-                look1.move = PathSegment::MOVE::HOLD;
-                look1.holdSeconds = 3.f;
-                look1.look = PathSegment::LOOK::ROTATE_YAW;
-                look1.yawSweepDeg = 180.f;
-                path.Add(look1);
+                const float outYaw  = CameraPath::FaceTravelYaw(spawn, farEnd, 0.f);
+                const float homeYaw = CameraPath::FaceTravelYaw(farEnd, homeEnd, outYaw);
 
-                PathSegment back;
-                back.move = PathSegment::MOVE::GOTO;
-                back.target = spawn;
-                back.speed = 70.f;
-                back.look  = PathSegment::LOOK::FACE_TRAVEL;
-                path.Add(back);
+                // 180 sweep that lands facing same way
+                float surveySweep = std::fmod(homeYaw - outYaw, 360.f);
+                if (surveySweep < 0.f) surveySweep += 360.f;
+
+                path.Begin(spawn, outYaw, -5.f);
+
+                // fly diagonally for a bit
+                PathSegment out;
+                out.move = PathSegment::MOVE::GOTO;
+                out.target = farEnd;
+                out.speed = kSpeed;
+                out.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(out);
+
+                // rise fast on air
+                PathSegment rise;
+                rise.move = PathSegment::MOVE::GOTO;
+                rise.target = highPoint;
+                rise.speed = kRiseSpeed;
+                rise.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(rise);
+
+                // do a 180 degree spin
+                PathSegment survey;
+                survey.move = PathSegment::MOVE::HOLD;
+                survey.holdSeconds = 4.f;
+                survey.look = PathSegment::LOOK::ROTATE_YAW;
+                survey.yawSweepDeg = surveySweep;
+                path.Add(survey);
+
+                // drop fast from air
+                PathSegment descend;
+                descend.move = PathSegment::MOVE::GOTO;
+                descend.target = farEnd;
+                descend.speed = kRiseSpeed;
+                descend.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(descend);
+
+                // go back to spawn-ish
+                PathSegment home;
+                home.move = PathSegment::MOVE::GOTO;
+                home.target = homeEnd;
+                home.speed = kSpeed;
+                home.look  = PathSegment::LOOK::FACE_TRAVEL;
+                path.Add(home);
             }
             break;
 
