@@ -17,6 +17,7 @@ public:
 protected:
     void OnInit() override;
     void OnUpdate(float _deltaTime) override;
+    void OnGui() override;
 
     void OnPauseEnter() override;
     void OnPausePrimary() override;

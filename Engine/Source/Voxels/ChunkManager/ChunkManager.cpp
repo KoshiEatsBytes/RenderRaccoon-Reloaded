@@ -147,7 +147,7 @@ namespace RR
         }
         else if (++m_covCounter >= kCoverageStride)
         {
-            // full map walk strided 
+            // full map walk strided
             m_covCounter = 0;
             ScopedMs tCov(m_timings.coverageMs);
             m_coverage = ComputeCoverage(centre);

@@ -7,6 +7,15 @@
 #include "Components/FreeCameraComponent.h"
 #include "../../Engine/Source/Voxels/ChunkManager/ChunkManager.h"
 #include "Render/RenderQueue.h"
+#include "imgui.h"
+
+// LOCAL ---------------------------------------------------------------------------------------------------------------
+
+struct TechniqueStatus
+{
+    const char* label;
+    bool enabled;
+};
 
 // PUBLIC --------------------------------------------------------------------------------------------------------------
 
@@ -158,6 +167,157 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
         m_pathComplete = true;
         LoadNextScene();
     }
+}
+
+void BenchmarkScene::OnGui()
+{
+    VoxelScene::OnGui();
+
+    // Discard overlay not in warm up phase
+    if (m_warmedUp || m_paused) return;
+
+    const ImGuiViewport* viewPort = ImGui::GetMainViewport();
+
+    // dim scene when displaying
+    ImGui::GetBackgroundDrawList()->AddRectFilled(
+        viewPort->Pos,
+        ImVec2(viewPort->Pos.x + viewPort->Size.x, viewPort->Pos.y + viewPort->Size.y),
+        IM_COL32(0, 0, 0, 140));
+
+    ImGui::SetNextWindowPos(viewPort->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(viewPort->WorkSize.x * 0.6f, 0.0f));
+    ImGui::SetNextWindowBgAlpha(0.85f);
+
+    constexpr ImGuiWindowFlags flags =
+        ImGuiWindowFlags_NoDecoration    | ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs;
+
+    ImGui::Begin("##benchmark_loading", nullptr, flags);
+
+    // normalize font with scale
+    const ImGuiStyle& style = ImGui::GetStyle();
+    float baseFont = ImGui::GetFontSize();
+    const float uiScale = style.FontScaleMain * style.FontScaleDpi;
+    if (uiScale > 0.0f) baseFont /= uiScale;
+
+    // centred line helper
+    const auto centered = [](const std::string& _text)
+    {
+        const float width = ImGui::CalcTextSize(_text.c_str()).x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - width) * 0.5f);
+        ImGui::TextUnformatted(_text.c_str());
+    };
+
+    // title
+    ImGui::PushFont(ImGui::GetFont(), baseFont * titleFontScale);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.75f, 0.25f, 1.0f));
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.5f));
+    centered("LOADING BENCHMARK");
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
+
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.75f));
+
+    ImGui::PushFont(ImGui::GetFont(), baseFont * buttonsTextSize);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.65f, 0.65f, 0.65f, 1.0f));
+
+    // Mark sequence step or just custom
+    ImGui::PushFont(ImGui::GetFont(), baseFont * buttonsTextSize * 1.15f);
+    if (m_runInfo.deterministic)
+    {
+        centered("DETERMINISTIC " + std::to_string(DETERMINISTIC::gCurrentSceneStep + 1) +
+                 " / "            + std::to_string(static_cast<int>(DETERMINISTIC::kSceneCount)));
+    }
+    else
+    {
+        centered("CUSTOM");
+    }
+    ImGui::PopFont();
+
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.85f));
+
+    // Show which techniques are on
+    const TechniqueStatus statuses[] =
+    {
+        { "LEVEL OF DETAIL", m_runInfo.lod },
+        { "LOD-AGGREGATION", m_runInfo.aggregation },
+        { "GREEDY-MESHING", m_runInfo.greedy },
+        { "MULTI-THREADING", m_runInfo.async },
+        { "ADAPTIVE-BUDGETING",m_runInfo.scheduling },
+    };
+
+    const char* renderDistanceLabel = "RENDER DISTANCE";
+    const std::string renderDistance = std::to_string(m_runInfo.renderDistance);
+
+    float labelColumnWidth = 0.0f;
+    for (const TechniqueStatus& status : statuses)
+    {
+        labelColumnWidth = std::max(labelColumnWidth, ImGui::CalcTextSize(status.label).x);
+    }
+    labelColumnWidth = std::max(labelColumnWidth, ImGui::CalcTextSize(renderDistanceLabel).x);
+
+    // normalize table
+    const float separatorWidth = ImGui::CalcTextSize(" : ").x;
+    const float valueColumnWidth = std::max(ImGui::CalcTextSize("OFF").x,
+                                            ImGui::CalcTextSize(renderDistance.c_str()).x);
+
+    const float tableWidth = labelColumnWidth + separatorWidth + valueColumnWidth;
+    const float tableStart = (ImGui::GetWindowWidth() - tableWidth) * 0.5f;
+    const float valueStart = tableStart + labelColumnWidth + separatorWidth;
+
+    // display each technique
+    for (const TechniqueStatus& status : statuses)
+    {
+        ImGui::SetCursorPosX(tableStart);
+        ImGui::TextUnformatted(status.label);
+
+        ImGui::SameLine(tableStart + labelColumnWidth);
+        ImGui::TextUnformatted(" : ");
+
+        ImGui::SameLine(valueStart);
+        const ImVec4 color = status.enabled ? ImVec4(0.47f, 0.78f, 1.0f, 1.0f)
+                                            : ImVec4(0.45f, 0.45f, 0.45f, 1.0f);
+        ImGui::TextColored(color, "%s", status.enabled ? "ON" : "OFF");
+    }
+
+    ImGui::SetCursorPosX(tableStart);
+    ImGui::TextUnformatted(renderDistanceLabel);
+
+    ImGui::SameLine(tableStart + labelColumnWidth);
+    ImGui::TextUnformatted(" : ");
+
+    ImGui::SameLine(valueStart);
+    ImGui::TextUnformatted(renderDistance.c_str());
+
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.75f));
+    centered("This might take a while...");
+
+    // Use coverage to calculate amount of chunks rendered, not precise but gives feedback
+    const int span   = 2 * m_runInfo.renderDistance + 1;
+    const int total  = span * span;
+    const int loaded = std::min(total,static_cast<int>(m_chunkManager->GetCoverage() * static_cast<float>(total)));
+
+    const int percentage = total > 0 ? (100 * loaded) / total : 100;
+
+    centered("Loaded " + std::to_string(loaded) + " / " + std::to_string(total) +
+             " chunks (" + std::to_string(percentage) + "%)");
+
+    // abort cooldown
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.75f));
+
+    float remaining = kMaxWarmUpSeconds;
+    if (m_warmUpTimerStarted)
+    {
+        const float elapsed = std::chrono::duration<float>(
+            std::chrono::steady_clock::now() - m_warmUpStart).count();
+        remaining = std::max(0.0f, kMaxWarmUpSeconds - elapsed);
+    }
+    centered("Timeout in: " + std::to_string(static_cast<int>(remaining)) + "s");
+
+    ImGui::PopStyleColor();
+    ImGui::PopFont();
+    ImGui::Dummy(ImVec2(0.0f, baseFont * 0.5f));
+    ImGui::End();
 }
 
 void BenchmarkScene::OnPauseEnter()
