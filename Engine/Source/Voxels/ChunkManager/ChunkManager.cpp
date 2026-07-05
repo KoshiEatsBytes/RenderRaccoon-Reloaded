@@ -145,8 +145,10 @@ namespace RR
             m_streamingIdle = true;
             m_coverage      = 1.0f;
         }
-        else
+        else if (++m_covCounter >= kCoverageStride)
         {
+            // full map walk strided 
+            m_covCounter = 0;
             ScopedMs tCov(m_timings.coverageMs);
             m_coverage = ComputeCoverage(centre);
         }

@@ -139,6 +139,14 @@ bool VoxelScene::Init()
     m_skybox->SetCloudsEnabled(false);
 
     OnInit();
+
+    // Far plane must be extended for extreme RD, otherwise camera clips
+    if (m_camComp)
+    {
+        const float worldEdge = static_cast<float>(m_runInfo.renderDistance) * RR::CHUNK::kSizeX;
+        m_camComp->SetFarPlane(std::max(15000.0f, worldEdge * 1.5f));
+    }
+
     return true;
 }
 

@@ -215,6 +215,7 @@ namespace RR
         bool  m_selectDirty    = false;
         bool  m_lifecycleDirty = false;
         sizeT m_buildCursor    = 0;
+        int   m_covCounter     = kCoverageStride;
 
         // Quality settings
         bool m_fancyLeaves        = true;
@@ -267,6 +268,9 @@ namespace RR
         static constexpr float kMaxUploadMs      = 4.0f;  // ceiling ms
         static constexpr float kBaseCostAlpha    = 0.05f;
         static constexpr float kLifecycleFloorMs = 0.25f;
+
+        // strided walk froim fog
+        static constexpr int kCoverageStride = 10;
 
         // Per frame thread budgets
         static constexpr int kInFlightWorkerMultiplier = 2;

@@ -959,7 +959,7 @@ void MainMenuScene::DrawRenderDistance()
         m_runInfo.renderDistance = std::max(m_runInfo.renderDistance, minRD);
 
         ImGui::TextColored(ImVec4(0.95f, 0.35f, 0.35f, 1.0f),
-                           "(!) DEV MODE (F8) - uncapped, may exhaust memory");
+                           "(!) DEV MODE ENABLED");
         return;
     }
 
