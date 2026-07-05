@@ -2271,7 +2271,7 @@ void MainMenuScene::ExportSummary()
         return;
     }
 
-    const std::string relPath = "Benchmarks/summary_" + RR::FileSystem::MakeTimestamp() + ".csv";
+    const std::string relPath = "Benchmarks/Summaries/summary_" + RR::FileSystem::MakeTimestamp() + ".csv";
 
     // try to write to disk
     if (!fileSys.WriteOutputTextFile(relPath, outcome.csvText))
