@@ -51,7 +51,8 @@ namespace RR
         struct SummaryOutcome
         {
             int written = 0;
-            int skipped = 0;
+            int skipped = 0;   // groups with no readable runs
+            int partial = 0;   // not full runs with failed elemnts
             std::string csvText;
         };
 
@@ -209,15 +210,26 @@ namespace RR
                 it->entries.push_back(&run);
             }
 
-            // median of 3 floats
-            const auto median3 = [](float _a, float _b, float _c)
+            // median over however many runs a config managed
+            const auto medianOf = [](std::vector<float> _values)
             {
-                return std::max(std::min(_a, _b), std::min(std::max(_a, _b), _c));
+                std::ranges::sort(_values);
+                const sizeT n = _values.size();
+
+                if (n % 2)
+                {
+                    return _values[n / 2];
+                }
+
+                return 0.5f * (_values[n / 2 - 1] + _values[n / 2]);
             };
-            // spread out of 3 flaots
-            const auto spread3 = [](float _a, float _b, float _c)
+
+            // spread, 0 for single run
+            const auto spreadOf = [](const std::vector<float>& _values)
             {
-                return std::max({ _a, _b, _c }) - std::min({ _a, _b, _c });
+                const auto [min, max] =
+                    std::ranges::minmax_element(_values);
+                return *max - *min;
             };
 
             // prepare for file stream
@@ -225,57 +237,56 @@ namespace RR
 
             for (auto&[key, entries] : groups)
             {
-                if (entries.size() < 3)
-                {
-                    ++outcome.skipped;
-                    continue;
-                }
-
-                // latest 3 first
+                // latest first
                 std::ranges::sort(entries,
                     [](const SummaryInput* _a, const SummaryInput* _b)
                     {
                         return _a->orderKey > _b->orderKey;
                     });
 
-
-                BenchmarkRun runs[3];
-                bool parsed = true;
-
-                // parse last 3 runs
-                for (int i = 0; i < 3; ++i)
+                // collect up to the 3 latest parseable runs
+                std::vector<BenchmarkRun> runs;
+                for (const SummaryInput* entry : entries)
                 {
-                    runs[i] = ParseBenchmarkCsv(_loadText(entries[i]->orderKey));
+                    if (runs.size() == 3) break;
 
-                    if (runs[i].samples.empty())
+                    BenchmarkRun run = ParseBenchmarkCsv(_loadText(entry->orderKey));
+                    if (!run.samples.empty())
                     {
-                        parsed = false;
-                        break;
+                        runs.push_back(std::move(run));
                     }
                 }
 
-                // if fail
-                if (!parsed)
+                // nothing readable at all
+                if (runs.empty())
                 {
                     ++outcome.skipped;
                     continue;
                 }
 
-                // median and spread per float fiedl
-                const auto pair = [&](float _a, float _b, float _c)
+                if (runs.size() < 3) ++outcome.partial;
+
+                // median and spread column pair for one field
+                const auto pair = [&](auto _field)
                 {
-                    contents << "," << median3(_a, _b, _c) << "," << spread3(_a, _b, _c);
+                    std::vector<float> values;
+                    values.reserve(runs.size());
+
+                    for (const BenchmarkRun& run : runs)
+                    {
+                        values.push_back(_field(run));
+                    }
+                    contents << "," << medianOf(values) << "," << spreadOf(values);
                 };
 
-                // turn result to fps
-                const auto pairFps = [&](float _a, float _b, float _c)
+                // ms lows reported as fps, converted per run BEFORE aggregating
+                const auto pairFps = [&](auto _field)
                 {
-                    const auto fps = [](float _ms)
+                    pair([&](const BenchmarkRun& _run)
                     {
-                        return _ms > 0.0f ? 1000.0f / _ms : 0.0f;
-                    };
-
-                    pair(fps(_a), fps(_b), fps(_c));
+                        const float ms = _field(_run);
+                        return ms > 0.0f ? 1000.0f / ms : 0.0f;
+                    });
                 };
 
                 const RunInfo& info = runs[0].info;
@@ -283,24 +294,23 @@ namespace RR
                 contents << "\"" << info.name  << "\","  << info.renderDistance << ","
                                  << info.lod   << ","    << info.aggregation    << "," << info.greedy << ","
                                  << info.async << ","    << info.scheduling     << ","
-                                 << info.seed  << ",\""  << info.cpuName        << "\",\"" << info.gpuName << "\"";
+                                 << info.seed  << ",\""  << info.cpuName        << "\",\"" << info.gpuName << "\","
+                                 << runs.size();
 
                 // pair runs and stream back to contents
-                pair(runs[0].stats.avgFps,         runs[1].stats.avgFps,         runs[2].stats.avgFps);
-                pairFps(runs[0].stats.low10Pc,     runs[1].stats.low10Pc,        runs[2].stats.low10Pc);
-                pairFps(runs[0].stats.low5Pc,      runs[1].stats.low5Pc,         runs[2].stats.low5Pc);
-                pairFps(runs[0].stats.low1Pc,      runs[1].stats.low1Pc,         runs[2].stats.low1Pc);
-                pairFps(runs[0].stats.low01Pc,     runs[1].stats.low01Pc,        runs[2].stats.low01Pc);
-                pair(runs[0].stats.avgFrameTimeMs, runs[1].stats.avgFrameTimeMs, runs[2].stats.avgFrameTimeMs);
-                pair(runs[0].stats.maxFrameTimeMs, runs[1].stats.maxFrameTimeMs, runs[2].stats.maxFrameTimeMs);
-                pair(runs[0].stats.stdDeviationMs, runs[1].stats.stdDeviationMs, runs[2].stats.stdDeviationMs);
-                pair(static_cast<float>(runs[0].stats.stutterCount),
-                     static_cast<float>(runs[1].stats.stutterCount),
-                     static_cast<float>(runs[2].stats.stutterCount));
-                pair(runs[0].stats.avgCpuMs,       runs[1].stats.avgCpuMs,       runs[2].stats.avgCpuMs);
-                pair(runs[0].stats.avgGpuMs,       runs[1].stats.avgGpuMs,       runs[2].stats.avgGpuMs);
-                pair(runs[0].info.warmUpSeconds,   runs[1].info.warmUpSeconds,   runs[2].info.warmUpSeconds);
-                pair(runs[0].stats.coverageMin,    runs[1].stats.coverageMin,    runs[2].stats.coverageMin);
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.avgFps; });
+                pairFps([](const BenchmarkRun& _run) { return _run.stats.low10Pc; });
+                pairFps([](const BenchmarkRun& _run) { return _run.stats.low5Pc; });
+                pairFps([](const BenchmarkRun& _run) { return _run.stats.low1Pc; });
+                pairFps([](const BenchmarkRun& _run) { return _run.stats.low01Pc; });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.avgFrameTimeMs; });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.maxFrameTimeMs; });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.stdDeviationMs; });
+                pair   ([](const BenchmarkRun& _run) { return static_cast<float>(_run.stats.stutterCount); });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.avgCpuMs; });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.avgGpuMs; });
+                pair   ([](const BenchmarkRun& _run) { return _run.info.warmUpSeconds; });
+                pair   ([](const BenchmarkRun& _run) { return _run.stats.coverageMin; });
 
                 contents << "," << info.steadyDraws << "," << info.steadyTris << ","
                          << runs[0].stats.frameCount << "\n";
@@ -311,8 +321,8 @@ namespace RR
             if (outcome.written == 0) return outcome;
 
             outcome.csvText =
-                "# Artefact benchmark summary, MEDIAN of the 3 latest matching runs, sp = max-min spread, lows in fps\n"
-                "name,rd,lod,la,gm,mt,ab,seed,cpu,gpu,"
+                "# Artefact benchmark summary, MEDIAN of up to the 3 latest matching completed runs, sp = max-min spread, lows in fps, runs = sample count\n"
+                "name,rd,lod,la,gm,mt,ab,seed,cpu,gpu,runs,"
                 "avgFps,avgFps_sp,low10Fps,low10Fps_sp,low5Fps,low5Fps_sp,low1Fps,low1Fps_sp,low01Fps,low01Fps_sp,"
                 "avgMs,avgMs_sp,maxMs,maxMs_sp,stdMs,stdMs_sp,stutters,stutters_sp,"
                 "cpuMs,cpuMs_sp,gpuMs,gpuMs_sp,loadS,loadS_sp,covMin,covMin_sp,"

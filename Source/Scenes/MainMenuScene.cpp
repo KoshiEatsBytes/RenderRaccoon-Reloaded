@@ -2267,7 +2267,7 @@ void MainMenuScene::ExportSummary()
     if (outcome.written == 0)
     {
         m_summaryStatus = "Nothing to summarize.\n"
-                          "A summary needs the data from 3 runs of the deterministic benchmark!";
+                          "No completed benchmark runs were found.";
         return;
     }
 
@@ -2281,8 +2281,9 @@ void MainMenuScene::ExportSummary()
     }
 
     m_summaryStatus = "Wrote " + relPath + "\n" +
-                      std::to_string(outcome.written) + " runs summarized " +
-                      std::to_string(outcome.skipped) + " groups skipped (less than 3 match or are unreadable).";
+                      std::to_string(outcome.written) + " configs summarized (" +
+                      std::to_string(outcome.partial) + " from fewer than 3 runs), " +
+                      std::to_string(outcome.skipped) + " unreadable groups skipped.";
 }
 
 void MainMenuScene::LoadRunIntoSlot(CompareSlot& _slot, const RunEntry& _entry)
