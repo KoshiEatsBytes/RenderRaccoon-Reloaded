@@ -267,7 +267,20 @@ namespace DETERMINISTIC
         const auto& matrix = GetMatrix();
         for (std::size_t i = 0; i < matrix.size(); ++i)
         {
-            prose += "\n " + std::to_string(i + 1) + " - " + RowLabel(matrix[i]);
+            std::string prefix;
+            const int num = 1 + i;
+
+            //align ui wise
+            if (num < 10)
+            {
+                prefix = " " + std::to_string(num);
+            }
+            else
+            {
+                prefix = std::to_string(num);
+            }
+
+            prose += "\n " + prefix + " - " + RowLabel(matrix[i]);
         }
 
         cached = prose;
