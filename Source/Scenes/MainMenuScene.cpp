@@ -1476,6 +1476,13 @@ void MainMenuScene::DrawAnalyzerPanel()
         ImGui::PopStyleColor(3);
         ImGui::EndDisabled();
 
+        // right click delete button ask to delete all
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        {
+            ImGui::OpenPopup("##analyzeDeleteAllCtx");
+        }
+
         ImGui::PopFont();
 
         // Confirmation window
@@ -1509,6 +1516,60 @@ void MainMenuScene::DrawAnalyzerPanel()
                     // refresh list
                     m_runListDirty = true;
                 }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+
+            if (ImGui::Button("Cancel"))
+            {
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndPopup();
+        }
+
+        // delete all listed runs
+        bool requestDeleteAll = false;
+        if (ImGui::BeginPopup("##analyzeDeleteAllCtx"))
+        {
+            if (ImGui::MenuItem("DELETE ALL RUNS LISTED"))
+            {
+                requestDeleteAll = true;
+            }
+            ImGui::EndPopup();
+        }
+        if (requestDeleteAll)
+        {
+            ImGui::OpenPopup("Delete ALL runs?##analyzeDeleteAll");
+        }
+
+        // Confirmation window
+        if (ImGui::BeginPopupModal("Delete ALL runs?##analyzeDeleteAll", nullptr,
+                                   ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Permanently delete ALL %d runs listed in the window?\n"
+                        "Checkbox filters apply to deletion, cannot be undone\n",
+                        static_cast<int>(m_runFiles.size()));
+            ImGui::Separator();
+
+            if (ImGui::Button("Delete All"))
+            {
+                auto& fileSys = RR::Engine::GetInstance().GetFileSystem();
+
+                for (const RunEntry& entry : m_runFiles)
+                {
+                    fileSys.DeleteOutputFile(entry.relPath);
+                }
+
+                // Close all tabs
+                for (ResultTile& tile : m_openResults)
+                {
+                    tile.open = false;
+                }
+
+                m_selectedRunIndex = -1;
+                m_runListDirty     = true;
+
                 ImGui::CloseCurrentPopup();
             }
             ImGui::SameLine();
