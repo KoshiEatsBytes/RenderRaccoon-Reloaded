@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include <algorithm>
+#include <nlohmann/json.hpp>
 
 #include "VoxelScene.h"
 
@@ -100,6 +101,32 @@ bool VoxelScene::Init()
     // instantiate chunk manager with generator and mats
     m_chunkManager = std::make_unique<RR::ChunkManager>(
         generator, lodMesher, m_voxelBlocksMat, m_voxelVegMat);
+
+    // LOD rings configuration drawn from json
+    // base l0 and conseguent rings use multiplayer and base
+    {
+        const std::string ringText = RR::Engine::GetInstance().GetFileSystem()
+            .LoadAssetFileText("Config/LodRings.json");
+
+        if (!ringText.empty())
+        {
+            // if file empty fallback and dont die
+            try
+            {
+                const nlohmann::json ringJson = nlohmann::json::parse(ringText);
+                const int   ringBase = ringJson.value("baseRingRadius", 16);
+                const float growth   = ringJson.value("ringGrowth", 2.0f);
+
+                m_chunkManager->SetRingBase(ringBase);
+                m_chunkManager->SetRingGrowth(growth);
+                RR::Log("[CONFIG] LOD rings: base '", ringBase, "', growth '", growth, "'");
+            }
+            catch (const nlohmann::json::exception& error)
+            {
+                RR::Error("[CONFIG] LodRings.json parse failed '", error.what(), "' using defaults");
+            }
+        }
+    }
 
     // apply run info settings
     m_chunkManager->SetRenderDistance(m_runInfo.renderDistance);

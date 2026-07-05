@@ -1,0 +1,5 @@
+Roam freely with any technique combination, nothing is logged.
+
+F3 toggles the diagnostics, TAB opens the world-gen panel, you can tweak generation and regenerate in runtime.
+
+With every technique enabled the render distance unlocks up to 512 chunks, expect longer load times and weak hardware might fail. F8 in the menu toggles development mode: the render distance input becomes uncapped.

@@ -1,0 +1,20 @@
+{
+  "rows": [
+    { "lod": false, "la": false, "gm": false, "mt": false, "ab": false, "rd": 16,  "note": "baseline capability floor" },
+    { "lod": false, "la": false, "gm": false, "mt": true,  "ab": false, "rd": 16,  "note": "MT is baseline-independent" },
+    { "lod": false, "la": false, "gm": false, "mt": false, "ab": false, "rd": 32,  "note": "baseline degradation rung" },
+    { "lod": false, "la": false, "gm": false, "mt": true,  "ab": false, "rd": 32,  "note": "family B without family A" },
+    { "lod": false, "la": false, "gm": false, "mt": true,  "ab": true,  "rd": 32,  "note": "low-end mirror trio" },
+    { "lod": true,  "la": false, "gm": false, "mt": false, "ab": false, "rd": 64,  "note": "attribution control" },
+    { "lod": true,  "la": true,  "gm": false, "mt": false, "ab": false, "rd": 64,  "note": "aggregation pair" },
+    { "lod": true,  "la": false, "gm": true,  "mt": false, "ab": false, "rd": 64,  "note": "greedy pair, near field" },
+    { "lod": true,  "la": false, "gm": false, "mt": true,  "ab": false, "rd": 64,  "note": "threading pair" },
+    { "lod": true,  "la": true,  "gm": false, "mt": false, "ab": false, "rd": 256, "note": "sync ceiling" },
+    { "lod": true,  "la": true,  "gm": false, "mt": true,  "ab": false, "rd": 256, "note": "GM control at range" },
+    { "lod": true,  "la": true,  "gm": true,  "mt": true,  "ab": false, "rd": 256, "note": "GM pair / AB control" },
+    { "lod": true,  "la": true,  "gm": true,  "mt": true,  "ab": true,  "rd": 256, "note": "AB pair" },
+    { "lod": true,  "la": true,  "gm": false, "mt": true,  "ab": false, "rd": 384, "note": "GM control at max range" },
+    { "lod": true,  "la": true,  "gm": true,  "mt": true,  "ab": false, "rd": 384, "note": "AB control" },
+    { "lod": true,  "la": true,  "gm": true,  "mt": true,  "ab": true,  "rd": 384, "note": "cumulative headline" }
+  ]
+}

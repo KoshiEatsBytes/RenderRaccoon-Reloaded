@@ -708,10 +708,10 @@ void MainMenuScene::DrawMethodologyPanel()
                 {
                     using namespace DETERMINISTIC;
                     auto& eng = RR::Engine::GetInstance();
-                    RR::RunInfo info = GetRunPreset(SCENE::BASELINE);
+                    RR::RunInfo info = GetRunPreset(0);
 
                     // Reset sequence progress
-                    gCurrentSceneStep      = static_cast<uInt8>(SCENE::BASELINE);
+                    gCurrentSceneStep      = 0;
                     gDeterministicFailures = 0;
 
                     //Load preset, then load scene
@@ -805,64 +805,41 @@ void MainMenuScene::DrawDescription(float _height)
         switch (m_selectedBenchmark)
         {
             case 0:
-                context = "Runs the full deterministic sequence, same on every machine, with a fixed seed, "
-                          "scripted camera path, locked technique combinations from the baseline up to the "
-                          "full stack at Render Distance 384.\n\n"
-                          "On some weaker hardware some runs might fail to load or be aborted mid-run if "
-                          "a minimum Frame-Rate is not kept, nothing will be logged for that run.\n\n"
-                          "Each run fully loads the environment first, during this process no logging "
-                          "except load time will happen, and once the loading has completed the run "
-                          "will execute and log as expected.\n\n"
-                          "On a successfully finished run the result will be logged to disk under the 'Benchmarks' "
-                          "folder on the same location as the executable. \n\n"
-                          "The full sequence takes roughly 20-30 minutes on mid hardware, for cleaner data: plug in"
-                          "the charger, close background apps, and leave the machine alone until it finishes, make sure "
-                          "the machine doesn't go into sleep.\n\n"
-                          "LEGEND: "
-                          "\n  RD: Render Distance"
-                          "\n LOD: Level Of Detail"
-                          "\n  LA: LOD Aggregation"
-                          "\n  GM: Greedy Meshing"
-                          "\n  MT: Multi Threading"
-                          "\n  AB: Adaptive Budgeting"
-                          "\n\nSEQUENCE:"
-                          "\n  1 - RD16"
-                          "\n  2 - MT at RD16"
-                          "\n  3 - RD32"
-                          "\n  4 - MT at RD32"
-                          "\n  5 - MT + AB at RD 32"
-                          "\n  6 - LOD at RD64"
-                          "\n  7 - LOD + LA at RD64"
-                          "\n  8 - LOD + GM at RD64"
-                          "\n  9 - LOD + MT at RD64"
-                          "\n 10 - LOD + LA at RD256"
-                          "\n 11 - LOD + LA + MT at RD256"
-                          "\n 12 - LOD + LA + GM + MT at RD256"
-                          "\n 13 - LOD + LA + GM + MT + AB at RD256"
-                          "\n 14 - LOD + LA + MT at RD384"
-                          "\n 15 - LOD + LA + GM + MT at RD384"
-                          "\n 16 - LOD + LA + GM + MT + AB at RD384"
-                ;
+                // parse from config
+                context = DETERMINISTIC::GetDeterministicDescription();
                 break;
 
             case 1:
-                context = "Configure a single logged run: techniques, render distance, and "
-                          "biome scene.\n\n"
-                          "Custom runs use the same camera path and logging as the deterministic "
-                          "benchmark, so they can be analyzed and compared like any other run, but "
-                          "are specifically marked as non-deterministic.\n\n"
-                          "Useful for probing one specific pairing at range the deterministic benchmark "
-                          "does not include or to experiment.";
-                break;
+            {
+                static const std::string cached = CONFIG::LoadText(
+                    "Config/CustomDescription.txt",
+                    // fallback description if file missing
+                    "Configure a single logged run: techniques, render distance, and "
+                    "biome scene.\n\n"
+                    "Custom runs use the same camera path and logging as the deterministic "
+                    "benchmark, so they can be analyzed and compared like any other run, but "
+                    "are specifically marked as non-deterministic.\n\n"
+                    "Useful for probing one specific pairing at range the deterministic benchmark "
+                    "does not include or to experiment."
+                    );
+                context = cached;
+            }
+            break;
 
             case 2:
-                context = "Roam freely with any technique combination, nothing is logged.\n\n"
-                          "F3 toggles the diagnostics, TAB opens the world-gen panel, you can tweak "
-                          "generation an regenerate in runtime.\n\n"
-                          "With every technique enabled "
-                          "the render distance unlocks up to 512 chunks, expect longer load times and"
-                          "weak hardware might fail.";
-                break;
+            {
+                static const std::string cached = CONFIG::LoadText(
+                    "Config/FreeRoamDescription.txt",
+                    "Roam freely with any technique combination, nothing is logged.\n\n"
+                    "F3 toggles the diagnostics, TAB opens the world-gen panel, you can tweak "
+                    "generation and regenerate in runtime.\n\n"
+                    "With every technique enabled "
+                    "the render distance unlocks up to 512 chunks, expect longer load times and "
+                    "weak hardware might fail.");
+                // fallback description if file missing
+                context = cached;
+            }
+            break;
 
             default:
                 break;

@@ -385,7 +385,15 @@ namespace RR
 
     void ChunkManager::SetRingGrowth(float _growth)
     {
-        m_ringGrowth = _growth;
+        // cap growth to avoid missing rings
+        m_ringGrowth = std::max(_growth, 1.1f);
+        NormalizeRanges();
+        Clear();
+    }
+
+    void ChunkManager::SetRingBase(int _base)
+    {
+        m_ringBase = std::max(_base, 2);
         NormalizeRanges();
         Clear();
     }
@@ -425,13 +433,11 @@ namespace RR
             m_meshRadius = m_coreRadius + 1;
         }
 
-        // walk edges up to rd through RingEdge itself, normalized,
-        // so all rings are always 16 * coreRad
-        const RingParams edgeParams
-        {
-            m_coreRadius,
-            m_ringGrowth
-        };
+        // walk edges up to rd through RingEdge itself, normalized
+        RingParams edgeParams;
+        edgeParams.coreRadius = m_coreRadius;
+        edgeParams.ringGrowth = m_ringGrowth;
+        edgeParams.ringBase   = m_ringBase;
 
         int level = 1;
         while (RingEdge(level, edgeParams) < m_meshRadius && level < 8)
@@ -463,7 +469,8 @@ namespace RR
             m_maxLevel,
             m_aggregationEnabled ? m_nodingStart : m_maxLevel + 1, // off, disabled aggregation
             m_meshRadius,
-            m_lodHysteresis
+            m_lodHysteresis,
+            m_ringBase
         };
     }
 

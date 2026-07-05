@@ -1,0 +1,9 @@
+Runs the full deterministic sequence, same on every machine, with a fixed seed, scripted camera path, and locked technique combinations from the baseline up to the full stack.
+
+On some weaker hardware some runs might fail to load or be aborted mid-run if a minimum Frame-Rate is not kept, nothing will be logged for that run.
+
+Each run fully loads the environment first, during this process no logging except load time will happen, and once the loading has completed the run will execute and log as expected.
+
+On a successfully finished run the result will be logged to disk under the 'Benchmarks' folder on the same location as the executable.
+
+The full sequence takes roughly 20-30 minutes on mid hardware, for cleaner data: plug in the charger, close background apps, and leave the machine alone until it finishes, make sure the machine doesn't go into sleep.

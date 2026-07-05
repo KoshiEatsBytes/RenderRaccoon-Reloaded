@@ -226,7 +226,7 @@ void BenchmarkScene::OnGui()
     if (m_runInfo.deterministic)
     {
         centered("DETERMINISTIC " + std::to_string(DETERMINISTIC::gCurrentSceneStep + 1) +
-                 " / "            + std::to_string(static_cast<int>(DETERMINISTIC::kSceneCount)));
+                 " / "            + std::to_string(static_cast<int>(DETERMINISTIC::GetSceneCount())));
     }
     else
     {
@@ -336,10 +336,10 @@ void BenchmarkScene::OnPausePrimary()
     {
         using namespace DETERMINISTIC;
 
-        gCurrentSceneStep = static_cast<uInt8>(SCENE::BASELINE);
+        gCurrentSceneStep = 0;
         gDeterministicFailures = 0;
 
-        appMan.RequestSceneLoad<BenchmarkScene>(GetRunPreset(SCENE::BASELINE));
+        appMan.RequestSceneLoad<BenchmarkScene>(GetRunPreset(0));
         return;
     }
 
@@ -388,7 +388,7 @@ void BenchmarkScene::LoadNextScene()
     using namespace DETERMINISTIC;
 
     // Hit end of sequence, return to main menu
-    if (gCurrentSceneStep + 1 == kSceneCount)
+    if (gCurrentSceneStep + 1 == GetSceneCount())
     {
         const BENCH_SUCCESS outcome = (gDeterministicFailures == 0)
             ? BENCH_SUCCESS::DETERMINISTIC
@@ -400,7 +400,7 @@ void BenchmarkScene::LoadNextScene()
 
     // Load next scene in sequence
     gCurrentSceneStep++;
-    RR::RunInfo info = GetRunPreset(static_cast<SCENE>(gCurrentSceneStep));
+    RR::RunInfo info = GetRunPreset(gCurrentSceneStep);
     appMan.RequestSceneLoad<BenchmarkScene>(info);
 }
 

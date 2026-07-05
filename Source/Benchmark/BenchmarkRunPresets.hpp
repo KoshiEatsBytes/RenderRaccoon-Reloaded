@@ -1,5 +1,9 @@
 
 #pragma once
+#include <vector>
+#include <nlohmann/json.hpp>
+
+#include "Engine.h"
 #include "Benchmark/BenchmarkData.h"
 #include "Helpers/Printer.hpp"
 #include "WorldGen/Noise.hpp"
@@ -21,35 +25,29 @@ namespace NAMING
     }
 }
 
+namespace CONFIG
+{
+    // Load text from config folder
+    inline std::string LoadText(const std::string& _relPath, const char* _fallback)
+    {
+        std::string text = RR::Engine::GetInstance().GetFileSystem()
+            .LoadAssetFileText(_relPath);
+
+        if (text.empty())
+        {
+            RR::Warn("[CONFIG] '", _relPath, "' is missing! using compiled fallback");
+            text = _fallback;
+        }
+        return text;
+    }
+}
+
 namespace DETERMINISTIC
 {
     using uInt32 = std::uint32_t;
     using uInt8  = std::uint8_t;
 
     constexpr uInt32 kDeterministicSeed = 3053828723;
-
-    // Benchmark run matrix - 16 for now trying to test everything without overwhelming of runs
-    enum class SCENE : uInt8
-    {
-        BASELINE,
-        BASE_MT_16,
-        BASE_32,
-        BASE_MT_32,
-        BASE_MT_AB_32,
-        LOD_64,
-        LOD_LA_64,
-        LOD_GM_64,
-        LOD_MT_64,
-        LOD_LA_256,
-        LOD_LA_MT_256,
-        LOD_LA_GM_MT_256,
-        FULL_256,
-        LOD_LA_MT_384,
-        LOD_LA_GM_MT_384,
-        FULL_384,
-
-        COUNT
-    };
 
     // Matrix row, easier readable
     struct RowSpec
@@ -62,8 +60,8 @@ namespace DETERMINISTIC
         int  rd;
     };
 
-    // benchmark matrix, as the counter goes up next one is selected
-    constexpr RowSpec kMatrix[] = {
+    // benchmark matrix fallback, if the config file explodes and doesnt load
+    constexpr RowSpec kFallbackMatrix[] = {
         { false, false, false, false, false,  16 }, // BASELINE
         { false, false, false, true,  false,  16 }, // BASE MT 16
         { false, false, false, false, false,  32 }, // BASE 32
@@ -82,16 +80,87 @@ namespace DETERMINISTIC
         { true,  true,  true,  true,  true,  384 }, // ALL 384
     };
 
-    static_assert(std::size(kMatrix) == static_cast<std::size_t>(SCENE::COUNT),
-        "Benchmark matrix table out of sync with scene enum");
-
     //  Deterministic sequence
-    constexpr uInt8 kSceneCount            = static_cast<uInt8>(SCENE::COUNT);
-    inline    uInt8 gCurrentSceneStep      = static_cast<uInt8>(SCENE::BASELINE);
-    inline    uInt8 gDeterministicFailures = 0;
+    inline uInt8 gCurrentSceneStep      = 0;
+    inline uInt8 gDeterministicFailures = 0;
 
-    // Helper to return the deterministic scene per set for the requested scene
-    inline RR::RunInfo GetRunPreset(SCENE _scene)
+    // Benchmark run matrix, loaded from config json file
+    inline std::vector<RowSpec> gMatrix;
+    inline bool                 gMatrixLoaded = false;
+
+    inline const std::vector<RowSpec>& GetMatrix()
+    {
+        if (gMatrixLoaded) return gMatrix;
+        gMatrixLoaded = true;
+
+        const std::string text = RR::Engine::GetInstance().GetFileSystem()
+            .LoadAssetFileText("Config/DeterministicMatrix.json");
+
+        if (!text.empty())
+        {
+            // try parsing json, if fail use fallback defualt
+            try
+            {
+                const nlohmann::json json = nlohmann::json::parse(text);
+
+                for (const auto& entry : json.at("rows"))
+                {
+                    RowSpec row;
+                    row.lod = entry.value("lod", false);
+                    row.la  = entry.value("la",  false);
+                    row.gm  = entry.value("gm",  false);
+                    row.mt  = entry.value("mt",  false);
+                    row.ab  = entry.value("ab",  false);
+                    row.rd  = entry.value("rd",  16);
+
+                    // Dependencies, warn if invalid loaded
+                    if ((row.la || row.gm) && !row.lod)
+                    {
+                        RR::Error("[DETERMINISTIC BENCH CONFIG] row skipped! LA/GM require LOD");
+                        continue;
+                    }
+                    if (row.ab && !row.mt)
+                    {
+                        RR::Error("[DETERMINISTIC BENCH CONFIG] row skipped! AB requires MT");
+                        continue;
+                    }
+                    if (row.rd < 2)
+                    {
+                        RR::Error("[DETERMINISTIC BENCH CONFIG] row skipped! rd must be < 2");
+                        continue;
+                    }
+
+                    gMatrix.push_back(row);
+                }
+            }
+            catch (const nlohmann::json::exception& error)
+            {
+                RR::Error("[DETERMINISTIC BENCH CONFIG] Config parse failed '", error.what(), "' using fallback");
+                gMatrix.clear();
+            }
+        }
+
+        // Empty, corrupted or bigger than uInt8 max
+        if (gMatrix.empty() || gMatrix.size() > 255)
+        {
+            gMatrix.assign(std::begin(kFallbackMatrix), std::end(kFallbackMatrix));
+            RR::Warn("[DETERMINISTIC BENCH CONFIG] using compiled fallback bench settings (", gMatrix.size(), " rows)");
+        }
+        else
+        {
+            RR::Success("[DETERMINISTIC BENCH CONFIG] loaded ", gMatrix.size(), " rows from Config");
+        }
+
+        return gMatrix;
+    }
+
+    inline uInt8 GetSceneCount()
+    {
+        return static_cast<uInt8>(GetMatrix().size());
+    }
+
+    // Helper to return the deterministic scene pre set for the requested step
+    inline RR::RunInfo GetRunPreset(uInt8 _step)
     {
         RR::RunInfo runInfo;
 
@@ -100,7 +169,7 @@ namespace DETERMINISTIC
         runInfo.seed = kDeterministicSeed;
 
         // invalid run requested if somehow you mamaged??
-        if (_scene >= SCENE::COUNT)
+        if (_step >= GetSceneCount())
         {
             runInfo.deterministic = false;
             runInfo.name  = "INVALID SCENE REQUEST";
@@ -110,7 +179,7 @@ namespace DETERMINISTIC
         }
 
         // table tied
-        const RowSpec& runRow = kMatrix[static_cast<uInt8>(_scene)];
+        const RowSpec& runRow = GetMatrix()[_step];
         runInfo.lod            = runRow.lod;
         runInfo.aggregation    = runRow.la;
         runInfo.greedy         = runRow.gm;
@@ -136,6 +205,73 @@ namespace DETERMINISTIC
         runInfo.name  = name;
         runInfo.scene = scene;
         return runInfo;
+    }
+
+    // Per row label for deterministic bench description
+    inline std::string RowLabel(const RowSpec& _row)
+    {
+        std::string label;
+        if (_row.lod) label += "LOD";
+        if (_row.la)  label += label.empty() ? "LA" : " + LA";
+        if (_row.gm)  label += label.empty() ? "GM" : " + GM";
+        if (_row.mt)  label += label.empty() ? "MT" : " + MT";
+        if (_row.ab)  label += label.empty() ? "AB" : " + AB";
+
+        if (label.empty())
+        {
+            return "RD" + std::to_string(_row.rd);
+        }
+
+        return label + " at RD" + std::to_string(_row.rd);
+    }
+
+    // Menu description, load from .exe file
+    inline std::string GetDeterministicDescription()
+    {
+        static std::string cached;
+        if (!cached.empty()) return cached;
+
+        std::string prose = RR::Engine::GetInstance().GetFileSystem()
+            .LoadAssetFileText("Config/DeterministicDescription.txt");
+
+        // if nothing loads use fallback so its not empty
+        if (prose.empty())
+        {
+            RR::Warn("[DETERMINISTIC BENCH CONFIG] description file missing! Using compiled fallback");
+
+            prose = "Runs the full deterministic sequence, same on every machine, with a fixed seed, "
+                    "scripted camera path, and locked technique combinations from the baseline up to "
+                    "the full stack.\n\n"
+                    "On some weaker hardware some runs might fail to load or be aborted mid-run if "
+                    "a minimum Frame-Rate is not kept, nothing will be logged for that run.\n\n"
+                    "Each run fully loads the environment first, during this process no logging "
+                    "except load time will happen, and once the loading has completed the run "
+                    "will execute and log as expected.\n\n"
+                    "On a successfully finished run the result will be logged to disk under the "
+                    "'Benchmarks' folder on the same location as the executable.\n\n"
+                    "The full sequence takes roughly 20-30 minutes on mid hardware, for cleaner data: "
+                    "plug in the charger, close background apps, and leave the machine alone until it "
+                    "finishes, make sure the machine doesn't go into sleep.";
+        }
+
+        // make legend so user knows whats each
+        prose += "\n\nLEGEND: "
+                 "\n  RD: Render Distance"
+                 "\n LOD: Level Of Detail"
+                 "\n  LA: LOD Aggregation"
+                 "\n  GM: Greedy Meshing"
+                 "\n  MT: Multi Threading"
+                 "\n  AB: Adaptive Budgeting"
+                 "\n\nSEQUENCE:";
+
+        const auto& matrix = GetMatrix();
+        for (std::size_t i = 0; i < matrix.size(); ++i)
+        {
+            prose += "\n " + std::to_string(i + 1) + " - " + RowLabel(matrix[i]);
+        }
+
+        cached = prose;
+        return cached;
     }
 }
 

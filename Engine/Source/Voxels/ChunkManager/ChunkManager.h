@@ -106,6 +106,7 @@ namespace RR
         // Lod tuning
         void SetCoreRadius(int _radius);
         void SetRingGrowth(float _growth);
+        void SetRingBase(int _base);
         void SetMaxLevel(int _level);
 
         // Streaming queries
@@ -228,6 +229,7 @@ namespace RR
 
         // Lod ring shaping
         float m_ringGrowth    = 2.f;
+        int   m_ringBase      = kRingBaseRadius; // ring width anchor
         int   m_maxLevel      = 4;
         int   m_lodHysteresis = 2; // chunks of deadband around each ring
 
