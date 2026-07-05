@@ -17,7 +17,9 @@
 
 #ifdef _WIN32
     #define WIN32_LEAN_AND_MEAN
-    #define NOMINMAX
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
     #include <windows.h>
 #endif
 
@@ -84,7 +86,7 @@ namespace RR
     Engine::~Engine()
     {
         m_appManager.UnloadCurrentScene();
-        if (m_btScheduler) delete m_btScheduler;
+        //if (m_btScheduler) delete m_btScheduler;
     }
 
     /**
@@ -201,10 +203,10 @@ namespace RR
         glfwMakeContextCurrent(m_window);
 
         // Enable physics library multithreading
-        m_btScheduler = btCreateDefaultTaskScheduler();
+        m_btScheduler = btGetSequentialTaskScheduler();
         btSetTaskScheduler(m_btScheduler);
-        m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
-        Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
+        //m_btScheduler->setNumThreads(static_cast<int>(m_btScheduler->getNumThreads() * 0.5f));
+        //Log("[PHYSICS] Scheduler: ", m_btScheduler->getName(), " | threads: ", m_btScheduler->getNumThreads());
 
         // enable openGL experimental
         glewExperimental = GL_TRUE;

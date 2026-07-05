@@ -8,24 +8,6 @@ include(FetchContent)
 
 set(PROJECT_SOURCE_FILES
         Source/main.cpp
-        Source/Testing/Game.cpp
-        Source/Testing/Game.h
-        Source/Testing/TestObject.cpp
-        Source/Testing/TestObject.h
-        Source/Testing/Player.cpp
-        Source/Testing/Player.h
-        Source/Testing/TestSubSystem.cpp
-        Source/Testing/TestSubSystem.h
-        Source/Testing/Benchmark.cpp
-        Source/Testing/Benchmark.h
-        Source/Testing/MultiPitBenchmark.cpp
-        Source/Testing/MultiPitBenchmark.h
-        Source/Testing/AudioDemo.cpp
-        Source/Testing/AudioDemo.h
-        Source/Testing/DemoScene.cpp
-        Source/Testing/DemoScene.h
-        Source/Testing/Bullet.cpp
-        Source/Testing/Bullet.h
         Source/Components/FreeCameraComponent.cpp
         Source/Components/FreeCameraComponent.h
         Source/WorldGen/Noise.hpp
@@ -65,6 +47,34 @@ add_subdirectory(Engine)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         RenderRaccoonEngine
 )
+
+# Distribution, copies assets and needed folders
+set(DIST_DIR "${CMAKE_BINARY_DIR}/dist" CACHE PATH "Folder the builds moves packages into")
+
+add_custom_target(dist
+        COMMAND ${CMAKE_COMMAND} -E rm -rf "${DIST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${DIST_DIR}"
+        COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:${PROJECT_NAME}>" "${DIST_DIR}/"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/Assets" "${DIST_DIR}/Assets"
+        VERBATIM
+        COMMENT "Packing build to -> ${DIST_DIR}")
+
+# build the exe before packaging it
+add_dependencies(dist ${PROJECT_NAME})
+
+# non static profiles, drop needed dlls next to executable
+option(DIST_BUNDLE_DLLS "Copy mingw runtime dlls into the dist folder" OFF)
+if(DIST_BUNDLE_DLLS AND MINGW)
+    get_filename_component(MINGW_BIN "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    add_custom_command(TARGET dist POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy
+                "${MINGW_BIN}/libgcc_s_seh-1.dll"
+                "${MINGW_BIN}/libstdc++-6.dll"
+                "${MINGW_BIN}/libwinpthread-1.dll"
+                "${DIST_DIR}/"
+            VERBATIM
+            COMMENT "Bundling mingw runtime dlls")
+endif()
 
 # Install glslang via FetchContent
 set(GLSLANG_TESTS OFF CACHE BOOL "" FORCE)

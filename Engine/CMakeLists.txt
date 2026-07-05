@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.22.1)
 project(RenderRaccoonEngine)
 
-find_package(OpenMP REQUIRED)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
@@ -175,8 +173,7 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/ThirdParty/bullet3-3.25" "${CMAKE_
 
 # Enable Bullet's multithreaded solver/dispatcher
 foreach(BT_TARGET LinearMath BulletCollision BulletDynamics)
-    target_compile_definitions(${BT_TARGET} PUBLIC BT_THREADSAFE=1 BT_USE_OPENMP=1)
-    target_link_libraries(${BT_TARGET} PUBLIC OpenMP::OpenMP_CXX)
+    target_compile_definitions(${BT_TARGET} PUBLIC BT_THREADSAFE=1)
 endforeach()
 
 # Include mini-audio library

@@ -160,7 +160,7 @@ namespace BENCH
             return sample;
         }
 
-        // yaw to face travel direction 
+        // yaw to face travel direction
         static float FaceTravelYaw(const vec3& _from, const vec3& _to, float _fallback)
         {
             const vec3 distance = _to - _from;
