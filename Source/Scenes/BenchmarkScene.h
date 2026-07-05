@@ -33,9 +33,12 @@ private:
     RR::BenchmarkSubSystem* m_bench = nullptr;
     BENCH::CameraPath m_path;
 
-    // Load time out, and slow frame capout
+    // Limits for loading failsafe
+    // calculate average time remaining using loading progress
     static constexpr float kMaxWarmUpSeconds  = 300.0f;
     static constexpr float kStuckSeconds      = 30.0f;
+    static constexpr float kPaceGraceSeconds  = 30.0f;
+    static constexpr float kPaceSlack         = 1.25f;
     static constexpr float kAbortFrameSeconds = 0.25f;
     static constexpr int   kAbortSlowFrames   = 4;
     int m_slowFrames = 0;

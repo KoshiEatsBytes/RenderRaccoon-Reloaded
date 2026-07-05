@@ -71,16 +71,9 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
             m_warmUpTimerStarted = true;
         }
 
-        // load timeout - abort if loading takes too long
+        // time remaining metri
         const float warmElapsed = std::chrono::duration<float>(
             std::chrono::steady_clock::now() - m_warmUpStart).count();
-
-        if (warmElapsed > kMaxWarmUpSeconds)
-        {
-            RR::Warn("[BENCHMARK] Loading terrain exceeded timeout, this machine can't load this config, aborting");
-            AbortRun();
-            return;
-        }
 
         // stuck watchdog - abort if terrain stops generating
         const float coverage = m_chunkManager->GetCoverage();
@@ -95,6 +88,22 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
             RR::Warn("[BENCHMARK] Loading stalled — no streaming progress, aborting");
             AbortRun();
             return;
+        }
+
+        // Time remaining, if projected time consistently stays above budgets,
+        // abort run to avoid staying here the entire day
+        if (warmElapsed > kPaceGraceSeconds && coverage > 0.0f)
+        {
+            const float projected = warmElapsed / coverage;
+
+            if (projected > kMaxWarmUpSeconds * kPaceSlack)
+            {
+                RR::Warn("[BENCHMARK] Time remaining projected at '", static_cast<int>(projected),
+                         "s against a ", static_cast<int>(kMaxWarmUpSeconds),
+                         "s time limit, aborting early!");
+                AbortRun();
+                return;
+            }
         }
 
         // hold at spawn until generated
@@ -305,14 +314,38 @@ void BenchmarkScene::OnGui()
     // abort cooldown
     ImGui::Dummy(ImVec2(0.0f, baseFont * 0.75f));
 
-    float remaining = kMaxWarmUpSeconds;
+    float elapsed = 0.0f;
     if (m_warmUpTimerStarted)
     {
-        const float elapsed = std::chrono::duration<float>(
+        elapsed = std::chrono::duration<float>(
             std::chrono::steady_clock::now() - m_warmUpStart).count();
-        remaining = std::max(0.0f, kMaxWarmUpSeconds - elapsed);
     }
-    centered("Timeout in: " + std::to_string(static_cast<int>(remaining)) + "s");
+
+    // live time remainign from start, padding given as it can be unrealiatic for some seconds
+    // after starting
+    const float paceCoverage = m_chunkManager->GetCoverage();
+    if (elapsed > 1.0f && paceCoverage > 0.0f)
+    {
+        const float projected = elapsed / paceCoverage;
+        const int   remaining = static_cast<int>(std::max(0.0f, projected - elapsed));
+
+        if (projected > kMaxWarmUpSeconds * kPaceSlack)
+        {
+            // over time budget, warn!
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.55f, 0.35f, 1.0f));
+            centered("Estimated time remaining: " + std::to_string(remaining) +
+                     "s (!) Might abort!");
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            centered("Estimated time remaining: " + std::to_string(remaining) + "s");
+        }
+    }
+    else
+    {
+        centered("Estimated time remaining: calculating...");
+    }
 
     ImGui::PopStyleColor();
     ImGui::PopFont();
