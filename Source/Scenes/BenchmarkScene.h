@@ -35,10 +35,11 @@ private:
 
     // Limits for loading failsafe
     // calculate average time remaining using loading progress
-    static constexpr float kMaxWarmUpSeconds  = 300.0f;
+    // timeout and its slack are json knobs, defaults used if missing
+    float m_maxWarmUpSeconds = 300.0f;
+    float m_warmUpHeadroom   = 1.25f;
     static constexpr float kStuckSeconds      = 30.0f;
     static constexpr float kPaceGraceSeconds  = 30.0f;
-    static constexpr float kPaceSlack         = 1.25f;
     static constexpr float kAbortFrameSeconds = 0.25f;
     static constexpr int   kAbortSlowFrames   = 4;
     int m_slowFrames = 0;

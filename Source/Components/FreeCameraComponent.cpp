@@ -15,7 +15,7 @@ namespace RR
 
     void FreeCameraComponent::Init()
     {
-        SetFOV(75.f);
+        SetFOV(70.f);
         SetFarPlane(15000);
     }
 

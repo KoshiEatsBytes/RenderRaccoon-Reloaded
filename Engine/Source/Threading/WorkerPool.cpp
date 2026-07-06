@@ -181,12 +181,17 @@ namespace RR
 
     // Sizes queue based on pCore and eCore settings
     // avoid stalling the main consegution with too many per frame
-    unsigned WorkerPool::SuggestInFlightCap(float _perPWorker, float _perEWorker)
+    unsigned WorkerPool::SuggestInFlightCap(float _perPWorker, float _perEWorker,
+        int _coreHeadroom, int _lowEndCoreHeadroom)
     {
         // pWorker is P cores on intel cpu and normal cores on homogenous cpu
         // eWorker is E cores on intel, you might want less work these small bois
         const float perPWorker = std::max(_perPWorker, 0.5f);
         const float perEWorker = std::max(_perEWorker, 0.5f);
+
+        // cores kept free of queued work
+        const int coreHeadroom       = std::max(_coreHeadroom, 0);
+        const int lowEndCoreHeadroom = std::max(_lowEndCoreHeadroom, 0);
 
         const CpuTopology cpuTopol = QueryTopology();
 
@@ -207,7 +212,7 @@ namespace RR
             const int pCores = static_cast<int>(cpuTopol.pCores);
 
             // on hybrid cpus devided total workers per core type
-            const int pHeadroom = pCores > 4 ? 2 : 1;
+            const int pHeadroom = pCores > 4 ? coreHeadroom : lowEndCoreHeadroom;
             const int pWorkers  = static_cast<int>(static_cast<float>(pCores - pHeadroom) * perPWorker);
             const int eWorkers  = static_cast<int>(static_cast<float>(static_cast<int>(cpuTopol.eCores) - 1) * perEWorker);
 
@@ -218,7 +223,7 @@ namespace RR
             // if homogenous cpu, all cores same
             const int physical = static_cast<int>(cpuTopol.physical);
 
-            const int headroom = physical <= 4 ? 1 : 2;
+            const int headroom = physical <= 4 ? lowEndCoreHeadroom : coreHeadroom;
             cap = static_cast<int>(static_cast<float>(physical - headroom) * perPWorker);
         }
 

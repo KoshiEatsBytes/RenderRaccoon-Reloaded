@@ -361,10 +361,12 @@ namespace RR
             // queue size follow topology of cpu
             // P cores are allocated more task than E cores
             // if cpu homogenous use p core setting
-            m_inFlightCap = static_cast<int>(WorkerPool::SuggestInFlightCap(m_inFlightPerPWorker, m_inFlightPerEWorker));
+            m_inFlightCap = static_cast<int>(WorkerPool::SuggestInFlightCap(
+                m_inFlightPerPWorker, m_inFlightPerEWorker, m_coreHeadroom, m_lowEndCoreHeadroom));
 
             InfoLog("[MT POOL] in-flight cap: '", m_inFlightCap, "' (P x",
-                    m_inFlightPerPWorker, ", E x", m_inFlightPerEWorker, ")");
+                    m_inFlightPerPWorker, ", E x", m_inFlightPerEWorker,
+                    ", headroom ", m_coreHeadroom, "/", m_lowEndCoreHeadroom, " low end)");
         }
         else
         {
@@ -404,6 +406,13 @@ namespace RR
     {
         m_inFlightPerPWorker = std::clamp(_perPWorker, 0.5f, 16.0f);
         m_inFlightPerEWorker = std::clamp(_perEWorker, 0.5f, 16.0f);
+    }
+
+    // set before setting async on, cores spared frok workers
+    void ChunkManager::SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom)
+    {
+        m_coreHeadroom       = std::clamp(_coreHeadroom, 0, 16);
+        m_lowEndCoreHeadroom = std::clamp(_lowEndCoreHeadroom, 0, 16);
     }
 
     int ChunkManager::GetWorkerThreads() const

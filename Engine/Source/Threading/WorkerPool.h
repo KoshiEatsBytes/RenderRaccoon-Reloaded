@@ -43,7 +43,8 @@ namespace RR
 
         // returns suggested cap using json p and e core settings
         // defaults are a bit conservative but thats fine
-        static unsigned SuggestInFlightCap(float _perPWorker = 3.0f, float _perEWorker = 1.0f);
+        static unsigned SuggestInFlightCap(float _perPWorker = 3.0f, float _perEWorker = 1.0f,
+            int _coreHeadroom = 2, int _lowEndCoreHeadroom = 1);
 
         unsigned GetThreadCount() const;
 

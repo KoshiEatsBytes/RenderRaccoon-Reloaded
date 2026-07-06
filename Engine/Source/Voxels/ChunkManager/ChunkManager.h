@@ -104,6 +104,7 @@ namespace RR
         void SetAdaptiveBudgetingEnabled(bool _enabled);
         void SetWorkerThreadOverride(int _count); // 0 = auto (topology-based)
         void SetInFlightPerWorker(float _perPWorker, float _perEWorker);
+        void SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom);
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -249,11 +250,13 @@ namespace RR
 
         // async MT
         bool   m_asyncEnabled       = false;
-        int    m_workerOverride     = 0;  // 0 = auto
+        int    m_workerOverride     = 0;    // 0 = auto
         float  m_inFlightPerPWorker = 3.0f; // P core task amount
         float  m_inFlightPerEWorker = 1.0f; // E core task amount
-        int    m_inFlightCap        = 16; // jobs per pipeline, indicative, tweaked in func
-        uInt64 m_epoch              = 0;  // time stamp for workers
+        int    m_coreHeadroom       = 2;    // cores kept free
+        int    m_lowEndCoreHeadroom = 1;    // cores kept free, 4 core or less
+        int    m_inFlightCap        = 16;   // jobs per pipeline, indicative, tweaked in func
+        uInt64 m_epoch              = 0;    // time stamp for workers
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation

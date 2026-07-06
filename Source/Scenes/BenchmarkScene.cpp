@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <nlohmann/json.hpp>
 
 #include "BenchmarkScene.h"
 #include "MainMenuScene.h"
@@ -55,6 +56,27 @@ void BenchmarkScene::OnInit()
 
     m_path = BENCH::GetCameraPath(BENCH::CAMERA_PATH_ID::DETERMINISTIC);
     ApplyCameraSample(m_path.Sample(0.0f));
+
+    // warm up abort knobs from json
+    {
+        const std::string configText = RR::Engine::GetInstance().GetFileSystem()
+            .LoadAssetFileText("Config/VoxelConfig.json");
+
+        if (!configText.empty())
+        {
+            // try to see if file exist then parse
+            try
+            {
+                const nlohmann::json configJson = nlohmann::json::parse(configText);
+                m_maxWarmUpSeconds = configJson.value("warmUpTimeoutSeconds", 300.0f);
+                m_warmUpHeadroom   = configJson.value("warmUpTimeoutHeadroom", 1.25f);
+            }
+            catch (const nlohmann::json::exception&)
+            {
+                // parse failure already reported by voxel scene, keep defaults
+            }
+        }
+    }
 }
 
 void BenchmarkScene::OnUpdate(float _deltaTime)
@@ -96,10 +118,10 @@ void BenchmarkScene::OnUpdate(float _deltaTime)
         {
             const float projected = warmElapsed / coverage;
 
-            if (projected > kMaxWarmUpSeconds * kPaceSlack)
+            if (projected > m_maxWarmUpSeconds * m_warmUpHeadroom)
             {
                 RR::Warn("[BENCHMARK] Time remaining projected at '", static_cast<int>(projected),
-                         "s against a ", static_cast<int>(kMaxWarmUpSeconds),
+                         "s against a ", static_cast<int>(m_maxWarmUpSeconds),
                          "s time limit, aborting early!");
                 AbortRun();
                 return;
@@ -329,7 +351,7 @@ void BenchmarkScene::OnGui()
         const float projected = elapsed / paceCoverage;
         const int   remaining = static_cast<int>(std::max(0.0f, projected - elapsed));
 
-        if (projected > kMaxWarmUpSeconds * kPaceSlack)
+        if (projected > m_maxWarmUpSeconds * m_warmUpHeadroom)
         {
             // over time budget, warn!
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.55f, 0.35f, 1.0f));
