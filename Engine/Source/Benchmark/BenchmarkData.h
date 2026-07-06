@@ -49,9 +49,11 @@ namespace RR
         int   steadyTris     = 0;
 
         // Test platform
-        std::string  gpuName   = "unknown";
-        std::string  cpuName   = "unknown";
-        unsigned int coreCount = 0;
+        std::string  gpuName       = "unknown";
+        std::string  cpuName       = "unknown";
+        unsigned int coreCount     = 0; // logical threads
+        unsigned int physicalCores = 0;
+        int          workerThreads = 0; // poor size for run
     };
 
     // Data container for run data constructed from raw samples

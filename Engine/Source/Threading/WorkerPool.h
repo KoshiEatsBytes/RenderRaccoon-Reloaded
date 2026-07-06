@@ -24,6 +24,21 @@ namespace RR
 
         void Submit(Job _job);
 
+        // Physical CPU layout
+        // take in count homogenous and hybrid cpu layout
+        // thanks intel for making this horrendously complicated, much love
+        struct CpuTopology
+        {
+            unsigned logical  = 0; // threads count
+            unsigned physical = 0; // physical cpu core count
+            unsigned smtCores = 0; // physical cpu cores with HT
+            unsigned pCores   = 0; // P cores (intel) if same as physical homogeneous
+            unsigned eCores   = 0; // E cores (intel) if 0 homogeneous
+            bool     hybrid   = false;
+            bool     valid    = false;
+        };
+
+        static CpuTopology QueryTopology();
         static unsigned SuggestThreads();
         unsigned GetThreadCount() const;
 

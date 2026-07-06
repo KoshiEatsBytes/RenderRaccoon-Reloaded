@@ -347,7 +347,16 @@ namespace RR
 
         if (_enabled)
         {
-            m_pool = std::make_unique<WorkerPool>();
+            unsigned workers = WorkerPool::SuggestThreads();
+
+            // override auto worker pool if set
+            if (m_workerOverride > 0)
+            {
+                workers = static_cast<unsigned>(m_workerOverride);
+                InfoLog("[POOL] manual thread override: '", workers, "' workers");
+            }
+
+            m_pool = std::make_unique<WorkerPool>(workers);
         }
         else
         {
@@ -374,6 +383,17 @@ namespace RR
         m_adaptiveEnabled = _enabled;
         m_baseMsCost      = 0.0f;
         m_uploadBudgetMs  = 0.0f;
+    }
+
+    // overrides automatic thread count, do before setting async enabled
+    void ChunkManager::SetWorkerThreadOverride(int _count)
+    {
+        m_workerOverride = std::max(_count, 0);
+    }
+
+    int ChunkManager::GetWorkerThreads() const
+    {
+        return m_pool ? static_cast<int>(m_pool->GetThreadCount()) : 0;
     }
 
     void ChunkManager::SetCoreRadius(int _radius)

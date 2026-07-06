@@ -105,6 +105,17 @@ namespace RR
                         std::from_chars(val.data(), val.data() + val.size(), cores);
                         runData.info.coreCount = static_cast<unsigned int>(cores);
                     }
+                    else if (key == "physicalCores")
+                    {
+                        unsigned long physical = 0;
+                        std::from_chars(val.data(), val.data() + val.size(), physical);
+                        runData.info.physicalCores = static_cast<unsigned int>(physical);
+                    }
+                    else if (key == "workerThreads")
+                    {
+                        std::from_chars(val.data(), val.data() + val.size(),
+                            runData.info.workerThreads);
+                    }
                     else if (key == "seed")
                     {
                         std::from_chars(val.data(), val.data() + val.size(), runData.info.seed);

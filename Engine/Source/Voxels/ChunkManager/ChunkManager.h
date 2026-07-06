@@ -102,6 +102,7 @@ namespace RR
         void SetAggregationEnabled(bool _enabled);
         void SetAsyncEnabled(bool _enabled);
         void SetAdaptiveBudgetingEnabled(bool _enabled);
+        void SetWorkerThreadOverride(int _count); // 0 = auto (topology-based)
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -113,6 +114,7 @@ namespace RR
         bool  IsChunkMeshedAt(const vec3& _pos);
         bool  IsStreamingIdle() const;
         float GetCoverage() const;
+        int   GetWorkerThreads() const;
         const UpdateTimings& GetTimings() const;
 
         // Pure-voxel core radius, lod needs higher
@@ -245,8 +247,9 @@ namespace RR
         float m_uploadBudgetMs  = 0.0f;
 
         // async MT
-        bool   m_asyncEnabled  = false;
-        uInt64 m_epoch         = 0; // time stamp for workers
+        bool   m_asyncEnabled   = false;
+        int    m_workerOverride = 0; // 0 = auto
+        uInt64 m_epoch          = 0; // time stamp for workers
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation

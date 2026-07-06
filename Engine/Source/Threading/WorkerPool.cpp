@@ -1,5 +1,16 @@
 
 #include "WorkerPool.h"
+#include "Helpers/Printer.hpp"
+
+#include <algorithm>
+
+#ifdef _WIN32
+    #define WIN32_LEAN_AND_MEAN
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+    #include <windows.h>
+#endif
 
 namespace RR
 {
@@ -42,18 +53,149 @@ namespace RR
         m_signal.notify_one();
     }
 
-    // Active logical cores
-    unsigned WorkerPool::SuggestThreads()
+    // Physical core layout via the OS info
+    WorkerPool::CpuTopology WorkerPool::QueryTopology()
     {
-        const unsigned cores = std::thread::hardware_concurrency();
+        CpuTopology cpuTopol;
+        cpuTopol.logical = std::thread::hardware_concurrency();
 
-        if (cores > 3)
+#ifdef _WIN32
+        DWORD bytes = 0;
+        GetLogicalProcessorInformationEx(RelationProcessorCore, nullptr, &bytes);
+
+        // no info, return total logical threads
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER || bytes == 0)
         {
-            // headroom for main thread and GL driver
-            return cores - 2;
+            return cpuTopol;
         }
 
-        return 1;
+
+        std::vector<char> buffer(bytes);
+        auto* head = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(buffer.data());
+        // no avail info for logic cpu, return
+        if (!GetLogicalProcessorInformationEx(RelationProcessorCore, head, &bytes))
+        {
+            return cpuTopol;
+        }
+
+        // ONE entry per each physical core, look if its a P or E core, and if it has HT/SMT
+        BYTE maxClass = 0;
+        std::vector<BYTE> coreClasses;
+
+        // interate over each core
+        for (DWORD offset = 0; offset < bytes;)
+        {
+            auto* info = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(
+                buffer.data() + offset);
+
+            if (info->Relationship == RelationProcessorCore)
+            {
+                ++cpuTopol.physical;
+
+                // if has HT/SMT, add to count
+                if (info->Processor.Flags & LTP_PC_SMT)
+                {
+                    ++cpuTopol.smtCores;
+                }
+
+                // first byte of core info is CORE TYPE (intel e or p cores)
+                // classified in classes, save them, sort later
+                const BYTE coreClass = reinterpret_cast<const BYTE*>(&info->Processor)[1];
+
+                coreClasses.push_back(coreClass);
+                maxClass = std::max(maxClass, coreClass);
+            }
+            offset += info->Size;
+        }
+
+        // no cores?
+        if (cpuTopol.physical == 0) return cpuTopol;
+
+        // Hybrid cpu, use previously computed core class and sort cores in P cores and E cores
+        // Higher class means P core, lower E core
+        for (const BYTE coreClass : coreClasses)
+        {
+            if (coreClass == maxClass)
+                ++cpuTopol.pCores;
+            else
+                ++cpuTopol.eCores;
+        }
+
+        // set hybrid if e cores more than 1
+        cpuTopol.hybrid = cpuTopol.eCores > 0;
+        cpuTopol.valid  = true;
+
+#endif
+        return cpuTopol;
+    }
+
+    // cpu type aware working count
+    unsigned WorkerPool::SuggestThreads()
+    {
+        const CpuTopology cpuTopol = QueryTopology();
+
+        // no topology, hard fall back
+        if (!cpuTopol.valid)
+        {
+            // if thread count 4 or more, remove 2
+            if (cpuTopol.logical > 3)
+            {
+                return cpuTopol.logical - 2;
+            }
+
+            return 1;
+        }
+
+        int workers = 0;
+
+        if (cpuTopol.hybrid)
+        {
+            // always include all E cores into total count
+            workers = static_cast<int>(cpuTopol.eCores);
+
+            // P core contribution with headroom for main thread and gl
+            const int pCores = static_cast<int>(cpuTopol.pCores);
+
+            // if more than 4 pcores, leave 2 empty
+            if (pCores > 4)
+            {
+                workers += pCores - 2;
+            }
+            else
+            {
+                // if less than 4 or 4 pcroes, 1 empty
+                workers += std::max(pCores - 1, 0);
+            }
+        }
+        else if (cpuTopol.physical <= 4)
+        {
+
+            const int physical = static_cast<int>(cpuTopol.physical);
+
+            // if quad core or less, check if has smt, if so worker logic thread - 2
+            // otherwise logic threads - 1
+            if (cpuTopol.smtCores > 0)
+            {
+                workers = physical - 1;
+            }
+            else
+            {
+                workers = physical - 2;
+            }
+        }
+        else
+        {
+            // if more than 4 cores always physical - 2
+            workers = static_cast<int>(cpuTopol.physical) - 2;
+        }
+
+        const unsigned suggested = static_cast<unsigned>(std::max(workers, 1));
+
+        InfoLog("[MT POOL] CPU topology: ", cpuTopol.physical, " physical (", cpuTopol.pCores, "P/",
+                cpuTopol.eCores, "E, ", cpuTopol.smtCores, " SMT) / ", cpuTopol.logical,
+                " logical. Suggested worker count is: '", suggested,"'");
+
+        return suggested;
     }
 
     unsigned WorkerPool::GetThreadCount() const

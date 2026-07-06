@@ -120,6 +120,16 @@ bool VoxelScene::Init()
                 m_chunkManager->SetRingBase(ringBase);
                 m_chunkManager->SetRingGrowth(growth);
                 RR::Log("[CONFIG] LOD rings: base '", ringBase, "', growth '", growth, "'");
+
+                // manual thread count override from JSON
+                const bool manualCores = ringJson.value("manualCoreConfig", false);
+                const int  workerCount = ringJson.value("workerThreads", 0);
+
+                if (manualCores && workerCount > 0)
+                {
+                    m_chunkManager->SetWorkerThreadOverride(workerCount);
+                    RR::Log("[CONFIG] manual worker count: '", workerCount, "'");
+                }
             }
             catch (const nlohmann::json::exception& error)
             {
@@ -134,6 +144,10 @@ bool VoxelScene::Init()
     m_chunkManager->SetAggregationEnabled(m_runInfo.aggregation);
     m_chunkManager->SetAsyncEnabled(m_runInfo.async);
     m_chunkManager->SetAdaptiveBudgetingEnabled(m_runInfo.scheduling);
+
+    // Save machine data regarding MT to csv
+    m_runInfo.physicalCores = RR::WorkerPool::QueryTopology().physical;
+    m_runInfo.workerThreads = m_chunkManager->GetWorkerThreads();
 
     // Set sky box color
     constexpr vec3 skyBoxColor(0.58f, 0.73f, 0.93f);

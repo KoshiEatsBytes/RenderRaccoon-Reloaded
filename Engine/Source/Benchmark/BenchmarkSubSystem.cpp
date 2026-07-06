@@ -342,7 +342,9 @@ namespace RR
             << "# deterministic="  << m_runInfo.deterministic  << "\n"
             << "# gpu="            << m_runInfo.gpuName        << "\n"
             << "# cpu="            << m_runInfo.cpuName        << "\n"
-            << "# cores="          << m_runInfo.coreCount      << "\n";
+            << "# cores="          << m_runInfo.coreCount      << "\n"
+            << "# physicalCores="  << m_runInfo.physicalCores  << "\n"
+            << "# workerThreads="  << m_runInfo.workerThreads  << "\n";
 
         // Saves the raw frame data
         out << "frameIdx,frameTimeMs,cpuMs,gpuMs,simTime,posX,posY,posZ,coverage\n";
