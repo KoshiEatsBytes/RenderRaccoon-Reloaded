@@ -40,6 +40,10 @@ namespace RR
 
         static CpuTopology QueryTopology();
         static unsigned SuggestThreads();
+
+        // returns suggested cap using json p and e core settings
+        static unsigned SuggestInFlightCap(int _perPWorker = 4, int _perEWorker = 2);
+
         unsigned GetThreadCount() const;
 
     private:

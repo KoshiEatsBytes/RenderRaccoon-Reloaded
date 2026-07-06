@@ -23,8 +23,7 @@ namespace RR
         if (m_asyncEnabled)
         {
             // fill pool to outstanding gap
-            budget = static_cast<int>(m_pool->GetThreadCount()) * kInFlightWorkerMultiplier -
-                     static_cast<int>(m_tileInFlight.size());
+            budget = m_inFlightCap - static_cast<int>(m_tileInFlight.size());
         }
 
         int built = 0;

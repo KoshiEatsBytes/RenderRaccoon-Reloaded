@@ -2,5 +2,7 @@
   "baseRingRadius": 16,
   "ringGrowth": 2.0,
   "manualCoreConfig": false,
-  "workerThreads": 0
+  "workerThreads": 0,
+  "inFlightPerPWorker": 4,
+  "inFlightPerEWorker": 2
 }

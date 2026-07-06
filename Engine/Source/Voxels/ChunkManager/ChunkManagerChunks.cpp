@@ -30,7 +30,7 @@ namespace RR
 
         if (m_asyncEnabled)
         {
-            const int cap = static_cast<int>(m_pool->GetThreadCount() * kInFlightWorkerMultiplier);
+            const int cap = m_inFlightCap;
 
             for (const CHUNK::Coord offset : m_genOffsets)
             {
@@ -95,7 +95,7 @@ namespace RR
 
         if (m_asyncEnabled)
         {
-            const int cap = static_cast<int>(m_pool->GetThreadCount() * kInFlightWorkerMultiplier);
+            const int cap = m_inFlightCap;
 
             for (const CHUNK::Coord offset : m_genOffsets)
             {

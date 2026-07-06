@@ -103,6 +103,7 @@ namespace RR
         void SetAsyncEnabled(bool _enabled);
         void SetAdaptiveBudgetingEnabled(bool _enabled);
         void SetWorkerThreadOverride(int _count); // 0 = auto (topology-based)
+        void SetInFlightPerWorker(int _perPWorker, int _perEWorker);
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -247,9 +248,12 @@ namespace RR
         float m_uploadBudgetMs  = 0.0f;
 
         // async MT
-        bool   m_asyncEnabled   = false;
-        int    m_workerOverride = 0; // 0 = auto
-        uInt64 m_epoch          = 0; // time stamp for workers
+        bool   m_asyncEnabled       = false;
+        int    m_workerOverride     = 0;  // 0 = auto
+        int    m_inFlightPerPWorker = 4;  // P core task amount
+        int    m_inFlightPerEWorker = 2;  // E core task amount
+        int    m_inFlightCap        = 16; // jobs per pipeline, indicative, tweaked in func
+        uInt64 m_epoch              = 0;  // time stamp for workers
 
         std::mutex                                         m_resultMutex;
         // Chunk off thread generation
@@ -277,8 +281,6 @@ namespace RR
         // strided walk froim fog
         static constexpr int kCoverageStride = 10;
 
-        // Per frame thread budgets
-        static constexpr int kInFlightWorkerMultiplier = 2;
         // GL uploads per frame
         static constexpr int kUploadBudget = 4;
         // distance of chunks on priority

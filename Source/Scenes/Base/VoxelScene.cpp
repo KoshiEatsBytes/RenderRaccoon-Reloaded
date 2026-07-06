@@ -106,7 +106,7 @@ bool VoxelScene::Init()
     // base l0 and conseguent rings use multiplayer and base
     {
         const std::string ringText = RR::Engine::GetInstance().GetFileSystem()
-            .LoadAssetFileText("Config/LodRings.json");
+            .LoadAssetFileText("Config/VoxelConfig.json");
 
         if (!ringText.empty())
         {
@@ -130,10 +130,15 @@ bool VoxelScene::Init()
                     m_chunkManager->SetWorkerThreadOverride(workerCount);
                     RR::Log("[CONFIG] manual worker count: '", workerCount, "'");
                 }
+
+                // MT configuration for CPU core efficiency class
+                const int perPWorker = ringJson.value("inFlightPerPWorker", 4);
+                const int perEWorker = ringJson.value("inFlightPerEWorker", 2);
+                m_chunkManager->SetInFlightPerWorker(perPWorker, perEWorker);
             }
             catch (const nlohmann::json::exception& error)
             {
-                RR::Error("[CONFIG] LodRings.json parse failed '", error.what(), "' using defaults");
+                RR::Error("[CONFIG] VoxelConfig.json parse failed '", error.what(), "' using defaults");
             }
         }
     }

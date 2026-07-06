@@ -357,6 +357,14 @@ namespace RR
             }
 
             m_pool = std::make_unique<WorkerPool>(workers);
+
+            // queue size follow topology of cpu
+            // P cores are allocated more task than E cores
+            // if cpu homogenous use p core setting
+            m_inFlightCap = static_cast<int>(WorkerPool::SuggestInFlightCap(m_inFlightPerPWorker, m_inFlightPerEWorker));
+
+            InfoLog("[MT POOL] in-flight cap: '", m_inFlightCap, "' (P x",
+                    m_inFlightPerPWorker, ", E x", m_inFlightPerEWorker, ")");
         }
         else
         {
@@ -389,6 +397,13 @@ namespace RR
     void ChunkManager::SetWorkerThreadOverride(int _count)
     {
         m_workerOverride = std::max(_count, 0);
+    }
+
+    // ser before setting async on
+    void ChunkManager::SetInFlightPerWorker(int _perPWorker, int _perEWorker)
+    {
+        m_inFlightPerPWorker = std::clamp(_perPWorker, 1, 16);
+        m_inFlightPerEWorker = std::clamp(_perEWorker, 1, 16);
     }
 
     int ChunkManager::GetWorkerThreads() const

@@ -146,56 +146,82 @@ namespace RR
             return 1;
         }
 
-        int workers = 0;
+        // P cores (and non classified efficency cores) share Pcore value for amnount of workers
+        const int pCores  = static_cast<int>(cpuTopol.pCores);
 
-        if (cpuTopol.hybrid)
+        int workers;
+
+        // physical not threads
+        // set base workers, if less than 5 cores only scale off 1
+        if (pCores <= 4 )
         {
-            // always include all E cores into total count
-            workers = static_cast<int>(cpuTopol.eCores);
-
-            // P core contribution with headroom for main thread and gl
-            const int pCores = static_cast<int>(cpuTopol.pCores);
-
-            // if more than 4 pcores, leave 2 empty
-            if (pCores > 4)
-            {
-                workers += pCores - 2;
-            }
-            else
-            {
-                // if less than 4 or 4 pcroes, 1 empty
-                workers += std::max(pCores - 1, 0);
-            }
-        }
-        else if (cpuTopol.physical <= 4)
-        {
-
-            const int physical = static_cast<int>(cpuTopol.physical);
-
-            // if quad core or less, check if has smt, if so worker logic thread - 2
-            // otherwise logic threads - 1
-            if (cpuTopol.smtCores > 0)
-            {
-                workers = physical - 1;
-            }
-            else
-            {
-                workers = physical - 2;
-            }
+            workers = pCores - 1;
         }
         else
         {
-            // if more than 4 cores always physical - 2
-            workers = static_cast<int>(cpuTopol.physical) - 2;
+            // 4 or more, scale off 2 from total
+            workers = pCores - 2;
+        }
+
+        if (cpuTopol.hybrid)
+        {
+            // all E cores join, minus one kept free for OS background services
+            workers += static_cast<int>(cpuTopol.eCores) - 1;
         }
 
         const unsigned suggested = static_cast<unsigned>(std::max(workers, 1));
 
+        // log configuration
         InfoLog("[MT POOL] CPU topology: ", cpuTopol.physical, " physical (", cpuTopol.pCores, "P/",
                 cpuTopol.eCores, "E, ", cpuTopol.smtCores, " SMT) / ", cpuTopol.logical,
                 " logical. Suggested worker count is: '", suggested,"'");
 
         return suggested;
+    }
+
+    // Sizes queue based on pCore and eCore settings
+    // avoid stalling the main consegution with too many per frame
+    unsigned WorkerPool::SuggestInFlightCap(int _perPWorker, int _perEWorker)
+    {
+        // pWorker is P cores on intel cpu and normal cores on homogenous cpu
+        // eWorker is E cores on intel, you might want less work these small bois
+        const int perPWorker = std::max(_perPWorker, 1);
+        const int perEWorker = std::max(_perEWorker, 1);
+
+        const CpuTopology cpuTopol = QueryTopology();
+
+        // No topology got, fallback to legacy logical cores - 2
+        // this should not happen, if it does you might want to set specific values
+        if (!cpuTopol.valid)
+        {
+            Warn("[MT POOL] Cpu topology failed to get, you might wanna set worker count manually!");
+            const int fallback = static_cast<int>(cpuTopol.logical / 2u) * perPWorker;
+            return static_cast<unsigned>(std::max(fallback, 8));
+        }
+
+        int cap = 0;
+
+        if (cpuTopol.hybrid)
+        {
+            const int pCores = static_cast<int>(cpuTopol.pCores);
+
+            // on hybrid cpus devided total workers per core type
+            const unsigned pHeadroom = pCores > 4 ? 2 : 1;
+            const unsigned pWorkers = (pCores - pHeadroom) * perPWorker;
+            const unsigned eWorkers = (static_cast<int>(cpuTopol.eCores) - 1) * perEWorker;
+
+            cap = pWorkers + eWorkers;
+        }
+        else
+        {
+            // if homogenous cpu, all cores same
+            const int physical = static_cast<int>(cpuTopol.physical);
+
+            const int headroom = physical <= 4 ? 1 : 2;
+            cap = (physical - headroom) * perPWorker;
+        }
+
+        return static_cast<unsigned>(std::max(cap, 4));
     }
 
     unsigned WorkerPool::GetThreadCount() const
