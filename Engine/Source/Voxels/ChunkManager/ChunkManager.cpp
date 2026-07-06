@@ -91,7 +91,8 @@ namespace RR
                 budget = std::min(kUploadFraction * m_baseMsCost, kFloorMs - m_baseMsCost);
             }
 
-            m_uploadBudgetMs = std::clamp(budget, 0.0f, kMaxUploadMs);
+            // min clamp coz a fast machine may never get to upload with a frametime so narrow
+            m_uploadBudgetMs = std::clamp(budget, kMinBudgetMs, kMaxUploadMs);
         }
 
         // Reset this frame timings
