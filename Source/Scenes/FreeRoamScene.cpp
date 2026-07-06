@@ -145,6 +145,8 @@ void FreeRoamScene::OnGui()
             ImGui::Text("Noding %.2f", timings.nodesMs);
             ImGui::Text("Fillping %.2f", timings.flipsMs);
             ImGui::Text("Coverage %.2f", timings.coverageMs);
+            ImGui::Separator();
+            ImGui::Text("Submit Draws %.2f", timings.submitMs);
         }
     }
     ImGui::End();

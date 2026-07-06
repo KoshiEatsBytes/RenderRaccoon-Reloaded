@@ -3,12 +3,13 @@
 #include <array>
 #include <memory>
 #include <functional>
+#include <cstdint>
 
 #include "ChunkData.h"
 
 namespace RR
 {
-    class Mesh;
+    class PooledMesh;
     struct Chunk
     {
         explicit Chunk(CHUNK::Coord _coord);
@@ -31,8 +32,11 @@ namespace RR
 
         // Chunk contents and meshes
         std::array<CHUNK::BlockId, CHUNK::kVoxelsPerChunk> voxels {};
-        std::unique_ptr<Mesh> mesh;
-        std::unique_ptr<Mesh> vegMesh;
+        std::unique_ptr<PooledMesh> mesh;
+        std::unique_ptr<PooledMesh> vegMesh;
+
+        // index for frustum call checks
+        std::uint64_t lastVisit = 0;
     };
 
     using ChunkGenerator = std::function<void(Chunk&)>;

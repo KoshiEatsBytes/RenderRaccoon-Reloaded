@@ -42,10 +42,28 @@ namespace RR
         : m_generator(std::move(_generator)), m_lodMesher(std::move(_mesher)),
           m_blockMat(std::move(_blockMat)), m_vegMat(std::move(_vegMat))
     {
+        // shared arena (pool) for every voxel mesh (block chunks etc)
+        // also house LOD tiles
+        // Make sure all use same vertex layout
+        m_arena = std::make_unique<MeshArena>(VoxelVertexLayout(),
+            kArenaInitVertices, kArenaInitIndices);
     }
 
     ChunkManager::~ChunkManager()
     = default;
+
+    // Fold mesh world translation into its vertex positions before upload
+    void ChunkManager::BakeWorldOffset(std::vector<float>& _vertices, float _originX, float _originZ)
+    {
+        // vertex stride is 9 floats (4*9 bytes) RESPECT OR EXPLODE
+        constexpr sizeT kFloatsPerVertex = 9;
+
+        for (sizeT i = 0; i + 2 < _vertices.size(); i += kFloatsPerVertex)
+        {
+            _vertices[i]     += _originX;
+            _vertices[i + 2] += _originZ;
+        }
+    }
 
     void ChunkManager::Update(float _deltaTime, const vec3& _cameraPos)
     {
@@ -159,126 +177,263 @@ namespace RR
         }
     }
 
-    void ChunkManager::SubmitDraws(const Frustum& _frustum)
+    CHUNK::Coord ChunkManager::CellOf(CHUNK::Coord _coord)
     {
-        auto& queue = Engine::GetInstance().GetRenderQueue();
+        // right shift floor so it lands in the correct cell
+        return {
+            _coord.x >> kCellShift,
+            _coord.z >> kCellShift
+        };
+    }
 
-        for (auto& [coord, chunk] : m_chunks)
+    void ChunkManager::AddChunkToGrid(CHUNK::Coord _coord)
+    {
+        m_grid[CellOf(_coord)].chunks.push_back(_coord);
+    }
+
+    void ChunkManager::AddTileToGrid(const LodNodeKey& _key)
+    {
+        const CHUNK::Coord cellMin = CellOf(_key.origin);
+        const CHUNK::Coord cellMax = CellOf(
+            {
+                _key.origin.x + _key.footprint - 1,
+                _key.origin.z + _key.footprint - 1
+            });
+
+        // if a tile footprint is several cells big, register it in each cell
+        // so it survives if any of those cells are frustum culled
+        for (int cx = cellMin.x; cx <= cellMax.x; ++cx)
         {
-            if (!chunk->mesh) continue;
+            for (int cz = cellMin.z; cz <= cellMax.z; ++cz)
+            {
+                m_grid[{cx, cz}].tiles.push_back(_key);
+            }
+        }
+    }
 
-            const vec3 min (coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ);
-            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
-
-            // if chunk aabbs outside frustum discard render
-            if (!_frustum.IntersectsAABB(min, max)) continue;
-
-            auto chunkMatrix = glm::translate(mat4(1.0f),
-                vec3(coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ));
-
-            // Create and submit render command for that chunk
-            RenderCommand command;
-            command.material    = m_blockMat.get();
-            command.mesh        = chunk->mesh.get();
-            command.modelMatrix = chunkMatrix;
-            command.color       = vec3(1.0f);
-
-            queue.Submit(command);
+    void ChunkManager::CleanGridCell(GridCell& _cell)
+    {
+        // drop chunks which have unloaded
+        for (sizeT i = 0; i < _cell.chunks.size(); )
+        {
+            if (!m_chunks.contains(_cell.chunks[i]))
+            {
+                _cell.chunks[i] = _cell.chunks.back();
+                _cell.chunks.pop_back();
+            }
+            else
+            {
+                ++i;
+            }
         }
 
-        // Distant LOD surface tiles
-        for (auto& [key, tile] : m_lodTiles)
+        // drop tiles which have unloaded
+        for (sizeT i = 0; i < _cell.tiles.size(); )
         {
-            if (!tile.mesh) continue;
-
-            int nearest = NearestDist(m_lastCoords, key.origin, key.footprint);
-
-            // chunk wins dedup
-            if (key.footprint == 1)
+            if (!m_lodTiles.contains(_cell.tiles[i]))
             {
-                const auto cit = m_chunks.find(key.origin);
-                if (cit != m_chunks.end() && cit->second->mesh) continue;
+                _cell.tiles[i] = _cell.tiles.back();
+                _cell.tiles.pop_back();
             }
-            // all or nothing for lod nodes
-            else if (nearest <= m_coreRadius + 1)
+            else ++i;
+        }
+    }
+
+    void ChunkManager::SubmitDraws(const Frustum& _frustum)
+    {
+        // While frame submit cost timer
+        ScopedMs tSubmit(m_timings.submitMs);
+
+        auto& renderQueue = Engine::GetInstance().GetRenderQueue();
+
+        // only whats visible
+        m_visBlock.clear();
+        m_visVeg.clear();
+        ++m_submitFrame;
+
+        // Broad phase frustum cull grid cells, then cull specific chunks in those cells if visible
+        // off screen swept away incrementally so it doesnt stutter
+        const uInt64 sweepPhase = m_submitFrame % static_cast<uInt64>(kGridSweepStride);
+
+        for (auto it = m_grid.begin(); it != m_grid.end(); )
+        {
+            const CHUNK::Coord cellCoord = it->first;
+            GridCell& cell = it->second;
+
+            const vec3 cellMin (cellCoord.x * kCellSize * CHUNK::kSizeX, 0.0f,
+                                cellCoord.z * kCellSize * CHUNK::kSizeZ);
+
+            const vec3 cellMax (cellMin.x + kCellSize * CHUNK::kSizeX, CHUNK::kSizeY,
+                                cellMin.z + kCellSize * CHUNK::kSizeZ);
+
+            // off screen
+            if (!_frustum.IntersectsAABB(cellMin, cellMax))
             {
-                // only l1 ajacent nodes can overlap real chunks
-                bool fullyMeshed = true;
-                for (int dz = 0; dz < key.footprint && fullyMeshed; ++dz)
+                // assign cleanup to a specific pass (use hashing)
+                const uInt64 cleanupPass =
+                    (static_cast<uInt64>(static_cast<uInt32>(cellCoord.x)) * 2654435761ull +
+                     static_cast<uInt64>(static_cast<uInt32>(cellCoord.z)) * 40503ull)
+                    % static_cast<uInt64>(kGridSweepStride);
+
+                // once its that pass, remove cell
+                if (cleanupPass == sweepPhase)
                 {
-                    for (int dx = 0; dx < key.footprint && fullyMeshed; ++dx)
-                    {
-                        fullyMeshed = ChunkReadyAt({key.origin.x + dx, key.origin.z + dz});
-                    }
+                    CleanGridCell(cell);
                 }
-                if (fullyMeshed) continue;
-            }
 
-            // calc frustum boundaries
-            const vec3 min (key.origin.x * CHUNK::kSizeX, 0.0f,
-                            key.origin.z * CHUNK::kSizeZ);
+                if (cell.chunks.empty() && cell.tiles.empty())
+                    it = m_grid.erase(it);
+                else
+                    ++it;
 
-            const vec3 max (min.x + key.footprint * CHUNK::kSizeX, CHUNK::kSizeY,
-                            min.z + key.footprint * CHUNK::kSizeZ);
-
-            // lifecycle backstop, when l1+ chunks are present at core
-            if (!m_streamingIdle && HasLiveAncestor(key))
-            {
-                if (key.footprint > 1)
-                {
-                    Warn("[ChunkManager] dedup backstop: node under node at ",
-                         key.origin.x, ",", key.origin.z, " L", key.level);
-                }
                 continue;
             }
 
-
-            if (!_frustum.IntersectsAABB(min, max)) continue;
-
-            auto model = glm::translate(mat4(1.0f), vec3(min.x, 0.0f, min.z));
-
-            RenderCommand command;
-            command.material    = m_blockMat.get();
-            command.mesh        = tile.mesh.get();
-            command.modelMatrix = model;
-            command.color       = vec3(1.0f);
-            queue.Submit(command);
-
-            // if mesh renders, render poxies too
-            if (tile.proxyMesh)
+            // Chunks
+            for (sizeT i = 0; i < cell.chunks.size(); )
             {
-                RenderCommand proxyCmd;
-                proxyCmd.material    = m_blockMat.get();
-                proxyCmd.mesh        = tile.proxyMesh.get();
-                proxyCmd.modelMatrix = model;
-                proxyCmd.color       = vec3(1.0f);
-                queue.Submit(proxyCmd);
+                const CHUNK::Coord coord = cell.chunks[i];
+                const auto chunkIt = m_chunks.find(coord);
+
+                if (chunkIt == m_chunks.end())
+                {
+                    // unload stale
+                    cell.chunks[i] = cell.chunks.back();
+                    cell.chunks.pop_back();
+
+                    continue;
+                }
+
+                Chunk* chunk = chunkIt->second.get();
+                ++i;
+
+                // duplicate entry in same frame, drop
+                if (chunk->lastVisit == m_submitFrame) continue;
+                chunk->lastVisit = m_submitFrame;
+
+                const vec3 min (coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ);
+                const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
+
+                // outside view, discard
+                if (!_frustum.IntersectsAABB(min, max)) continue;
+
+                if (chunk->mesh)
+                {
+                    m_visBlock.push_back(&chunk->mesh->GetHandle());
+                }
+
+                if (chunk->vegMesh)
+                {
+                    m_visVeg.push_back(&chunk->vegMesh->GetHandle());
+                }
             }
+
+            // Render of distand LOD tiles
+            for (sizeT i = 0; i < cell.tiles.size(); )
+            {
+                const LodNodeKey key = cell.tiles[i];
+                const auto tileIt = m_lodTiles.find(key);
+
+                if (tileIt == m_lodTiles.end())
+                {
+                    // unload stale
+                    cell.tiles[i] = cell.tiles.back();
+                    cell.tiles.pop_back();
+
+                    continue;
+                }
+                LodTile& tile = tileIt->second;
+                ++i;
+
+                // seen from another cell, dont render
+                if (tile.lastVisit == m_submitFrame) continue;
+
+                tile.lastVisit = m_submitFrame;
+
+                // no mesh, no render
+                if (!tile.mesh) continue;
+
+                const int nearest = NearestDist(m_lastCoords, key.origin, key.footprint);
+
+                // chunk wins duplication
+                if (key.footprint == 1)
+                {
+                    const auto ChunkItDup = m_chunks.find(key.origin);
+
+                    if (ChunkItDup != m_chunks.end() && ChunkItDup->second->mesh)
+                        continue;
+                }
+
+                // all or nothing for lod nodes
+                else if (nearest <= m_coreRadius + 1)
+                {
+                    // only l1 ajacent nodes can overlap real chunks
+                    bool fullyMeshed = true;
+
+                    for (int dz = 0; dz < key.footprint && fullyMeshed; ++dz)
+                    {
+                        for (int dx = 0; dx < key.footprint && fullyMeshed; ++dx)
+                        {
+                            fullyMeshed = ChunkReadyAt({key.origin.x + dx, key.origin.z + dz});
+                        }
+                    }
+
+                    // already drawing
+                    if (fullyMeshed) continue;
+                }
+
+                const vec3 min (key.origin.x * CHUNK::kSizeX, 0.0f,
+                                key.origin.z * CHUNK::kSizeZ);
+
+                const vec3 max (min.x + key.footprint * CHUNK::kSizeX, CHUNK::kSizeY,
+                                min.z + key.footprint * CHUNK::kSizeZ);
+
+                // lifecycle backstop, when l1+ chunks are present at core
+                if (!m_streamingIdle && HasLiveAncestor(key))
+                {
+                    if (key.footprint > 1)
+                    {
+                        // Warn("[ChunkManager] dedup backstop: node under node at ",
+                        //      key.origin.x, ",", key.origin.z, " L", key.level);
+                    }
+                    continue;
+                }
+
+                if (!_frustum.IntersectsAABB(min, max)) continue;
+
+                m_visBlock.push_back(&tile.mesh->GetHandle());
+
+                if (tile.proxyMesh)
+                {
+                    m_visBlock.push_back(&tile.proxyMesh->GetHandle());
+                }
+            }
+
+            // survivor processed, drop cells if everything else (in that cell) has PERISHED
+            if (cell.chunks.empty() && cell.tiles.empty())
+                it = m_grid.erase(it);
+            else
+                ++it;
         }
 
-        // Render vegetation AFTER opaque blocks
-        for (auto& [coord, chunk] : m_chunks)
+        // block batch draw
+        if (!m_visBlock.empty())
         {
-            if (!chunk->vegMesh) continue;
+            RenderCommand blockBatch;
+            blockBatch.material = m_blockMat.get();
+            blockBatch.arena    = m_arena.get();
+            blockBatch.slices   = &m_visBlock;
+            renderQueue.Submit(blockBatch);
+        }
 
-            // if chunk aabbs outside frustum discard render
-            const vec3 min (coord.x * CHUNK::kSizeX, 0.0f, coord.z * CHUNK::kSizeZ);
-            const vec3 max (min.x + CHUNK::kSizeX, CHUNK::kSizeY, min.z + CHUNK::kSizeZ);
-
-            // if chunk aabbs outside frustum discard render
-            if (!_frustum.IntersectsAABB(min, max)) continue;
-
-            auto model = glm::translate(mat4(1.0f),
-                vec3(coord.x*CHUNK::kSizeX, 0.0f, coord.z*CHUNK::kSizeZ));
-
-            // Create and submit render command for vegetation on this chunk
-            RenderCommand command;
-            command.material    = m_vegMat.get();
-            command.mesh        = chunk->vegMesh.get();
-            command.modelMatrix = model;
-            command.color       = vec3(1.0f);
-
-            queue.Submit(command);
+        // veg bactch draw
+        if (!m_visVeg.empty())
+        {
+            RenderCommand vegBatch;
+            vegBatch.material = m_vegMat.get();
+            vegBatch.arena    = m_arena.get();
+            vegBatch.slices   = &m_visVeg;
+            renderQueue.Submit(vegBatch);
         }
     }
 
@@ -288,6 +443,7 @@ namespace RR
         m_chunks.clear();
         m_lodTiles.clear();
         m_pendingTiles.clear();
+        m_grid.clear();
         m_liveKeys.clear();
         m_desiredKeys.clear();
         m_desiredSet.clear();
@@ -509,6 +665,35 @@ namespace RR
         }
 
         m_maxLevel = std::max(level, 1);
+
+        // presize arena if anything changes, avoid SPIKOS ^^^^
+        ReserveArena();
+    }
+
+    // Reserve arena (floor area) for this run
+    void ChunkManager::ReserveArena()
+    {
+        if (!m_arena) return;
+
+        // base sizing on RD
+        const uInt64 renderDist = static_cast<uInt64>(std::max(0, m_meshRadius));
+
+        // calculate vertices using RD + preset
+        uInt64 vertices;
+        if (m_lodEnabled)
+        {
+            vertices = kArenaCoreFloorVerts + kArenaVertsPerRd * renderDist;
+        }
+        else
+        {
+            const uInt64 side = 2 * renderDist + 1;
+            vertices = side * side * kArenaVertsPerFullChunk;
+        }
+
+        vertices = std::min(vertices, kArenaMaxReserveVerts);
+        const uInt64 idx = std::min(vertices * 3, kArenaMaxReserveIdx);
+
+        m_arena->Reserve(vertices, idx);
     }
 
     RingParams ChunkManager::BuildRingParams() const
@@ -687,7 +872,7 @@ namespace RR
             LodTile tile;
             {
                 ScopedMs tTile(m_timings.uploadMs);
-                tile = UploadTile(result.coreMask, std::move(result.data));
+                tile = UploadTile(result.key, result.coreMask, std::move(result.data));
             }
             ++m_timings.uploads;
 

@@ -37,6 +37,7 @@ namespace RR
         const std::vector<LightData>& _lights)
     {
         sizeT indexCount = 0;
+        sizeT drawCount  = 0;
 
         // comparison tool for material, dont bind same material twice
         Material* lastMaterial = nullptr;
@@ -70,6 +71,22 @@ namespace RR
 
                 lastMaterial = command.material;
             }
+
+            // mutlidraw batch
+            if (command.arena && command.slices)
+            {
+                command.arena->Draw(*command.slices);
+
+                for (const MeshArena::ArenaHandler* slice : *command.slices)
+                {
+                    if (!slice || !slice->valid) continue;
+
+                    indexCount += slice->indexCount;
+                    ++drawCount;
+                }
+                continue;
+            }
+
             // Per call sets
             shaderProgram->SetUniform("uModel", command.modelMatrix);
             shaderProgram->SetUniform("uColor", command.color);
@@ -80,6 +97,7 @@ namespace RR
 
             // Get this count
             indexCount += command.mesh->GetIndexCount();
+            ++drawCount;
         }
 
         // Unbinds last mesh
@@ -90,7 +108,7 @@ namespace RR
         _graphicsAPI.SetDepthWrite(true);
 
 
-        m_lastFrameDraws = m_commands.size();
+        m_lastFrameDraws = drawCount;
         m_lastFrameTris  = indexCount / 3;
         m_commands.clear();
     }

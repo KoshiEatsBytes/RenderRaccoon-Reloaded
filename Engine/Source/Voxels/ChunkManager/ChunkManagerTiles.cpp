@@ -366,20 +366,31 @@ namespace RR
 
     LodTile ChunkManager::MakeTile(const LodNodeKey& _key, int _coreMask)
     {
-        return UploadTile(_coreMask, m_lodMesher(_key, _coreMask));
+        return UploadTile(_key, _coreMask, m_lodMesher(_key, _coreMask));
     }
 
-    LodTile ChunkManager::UploadTile(int _coreMask, LodMeshResult&& _data)
+    LodTile ChunkManager::UploadTile(const LodNodeKey& _key, int _coreMask, LodMeshResult&& _data)
     {
-        // Mesh tile
+        // bake tile origin into arena so it draws correctly on batch
+        const auto originX = static_cast<float>(_key.origin.x * CHUNK::kSizeX);
+        const auto originZ = static_cast<float>(_key.origin.z * CHUNK::kSizeZ);
+
         LodTile tile;
         tile.coreEdges = _coreMask;
-        tile.mesh = std::make_unique<Mesh>(_data.surface.layout, _data.surface.vertices, _data.surface.indices);
+
+        BakeWorldOffset(_data.surface.vertices, originX, originZ);
+
+        // bake tile into arena mesh
+        tile.mesh = std::make_unique<PooledMesh>(m_arena.get(),
+            m_arena->Upload(_data.surface.vertices, _data.surface.indices));
 
         // if present, mesh proxies
         if (!_data.proxies.indices.empty())
         {
-            tile.proxyMesh = std::make_unique<Mesh>(_data.proxies.layout, _data.proxies.vertices, _data.proxies.indices);
+            BakeWorldOffset(_data.proxies.vertices, originX, originZ);
+
+            tile.proxyMesh = std::make_unique<PooledMesh>(m_arena.get(),
+                m_arena->Upload(_data.proxies.vertices, _data.proxies.indices));
         }
 
         return tile;
@@ -453,10 +464,21 @@ namespace RR
 
     void ChunkManager::StoreTile(const LodNodeKey& _key, LodTile&& _tile)
     {
+        const bool isNew = !m_lodTiles.contains(_key);
+
+        // inject
         m_lodTiles[_key] = std::move(_tile);
         m_liveKeys.insert(_key);
+
+        // trigger refresh
         m_desiredFresh   = true;
         m_lifecycleDirty = true;
+
+        // Register only on first store
+        if (isNew)
+        {
+            AddTileToGrid(_key);
+        }
     }
 
     void ChunkManager::StorePending(const LodNodeKey &_key, LodTile &&_tile)
@@ -486,9 +508,17 @@ namespace RR
 
         if (it == m_pendingTiles.end()) return;
 
-        // live unchanghed
+        const bool isNew = !m_lodTiles.contains(_key);
+
+        // move from pending to active
         m_lodTiles[_key] = std::move(it->second);
         m_pendingTiles.erase(it);
+
+        // only add if new
+        if (isNew)
+        {
+            AddTileToGrid(_key);
+        }
     }
 
     void ChunkManager::SubmitTileJob(const LodNodeKey &_key, int _coreMask, bool _coreFill)

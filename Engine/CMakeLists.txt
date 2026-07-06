@@ -42,6 +42,11 @@ set(PROJECT_SOURCE_FILES
         Source/Render/Material.h
         Source/Render/Mesh.cpp
         Source/Render/Mesh.h
+        Source/Render/GPUBufferAllocator.cpp
+        Source/Render/GPUBufferAllocator.h
+        Source/Render/MeshArena.cpp
+        Source/Render/MeshArena.h
+        Source/Render/PooledMesh.hpp
         Source/Graphics/VertexLayout.h
         Source/Render/RenderQueue.cpp
         Source/Render/RenderQueue.h

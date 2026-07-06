@@ -15,6 +15,7 @@
 #include "Render/Voxels/SurfaceMesher.h"
 #include "Threading/WorkerPool.h"
 #include "Voxels/LodNodeSelect.hpp"
+#include "Render/PooledMesh.hpp"
 
 namespace RR
 {
@@ -30,6 +31,13 @@ namespace RR
         LodNodeKey key;
         int  coreMask;
         bool covered;
+    };
+
+    // frustum check grid cell
+    struct GridCell
+    {
+        std::vector<CHUNK::Coord> chunks;
+        std::vector<LodNodeKey>   tiles;
     };
 
     // generation result for workers
@@ -69,6 +77,7 @@ namespace RR
         float nodesMs    = 0.f;
         float flipsMs    = 0.f;
         float coverageMs = 0.f;
+        float submitMs   = 0.f;
         float budgetMs   = 0.f;
         int   uploads    = 0;
     };
@@ -128,6 +137,14 @@ namespace RR
         RingParams BuildRingParams() const;
         void  RebuildRingOffset();
         void  NormalizeRanges();
+        void  ReserveArena();
+
+        // frustum checks via quadtree
+        static CHUNK::Coord CellOf(CHUNK::Coord _coord);
+        void  AddChunkToGrid(CHUNK::Coord _coord);
+        void  AddTileToGrid(const LodNodeKey& _key);
+        void  CleanGridCell(GridCell& _cell);
+
         void  UnloadFar(CHUNK::Coord _centre);
         float ComputeCoverage(CHUNK::Coord _centre) const;
 
@@ -148,6 +165,8 @@ namespace RR
         void BuildChunkMesh(Chunk& _chunk);
         void UploadChunkMesh(Chunk& _chunk, ChunkMeshes&& _meshes);
 
+        static void BakeWorldOffset(std::vector<float>& _vertices, float _originX, float _originZ);
+
         bool ChunkReadyAt(CHUNK::Coord _coord) const;
         bool NeighboursGenerated(CHUNK::Coord _coord);
         Chunk* GetChunk(CHUNK::Coord _coord);
@@ -158,7 +177,7 @@ namespace RR
         int     EnsureNodes(CHUNK::Coord _centre);
         LodTile MakeTile(const LodNodeKey& _key, int _coreMask);
         void    BuildTile(const LodNodeKey& _key, int _coreMask);
-        LodTile UploadTile(int _coreMask, LodMeshResult&& _data);
+        LodTile UploadTile(const LodNodeKey& _key, int _coreMask, LodMeshResult&& _data);
 
         sizeT RebuildTileQueue(CHUNK::Coord _centre);
         int   ComputeCoreMask(const LodNodeKey& _key, CHUNK::Coord _centre) const;
@@ -194,6 +213,17 @@ namespace RR
         // mats
         std::shared_ptr<Material> m_blockMat;
         std::shared_ptr<Material> m_vegMat;
+
+        // shared GPU arena for all voxel geometry
+        std::unique_ptr<MeshArena> m_arena;
+
+        // Fustum visible to camera
+        std::vector<const MeshArena::ArenaHandler*> m_visBlock;
+        std::vector<const MeshArena::ArenaHandler*> m_visVeg;
+
+        // Spatial grid for culling
+        std::unordered_map<CHUNK::Coord, GridCell, CHUNK::CoordHash> m_grid;
+        uInt64 m_submitFrame = 0;
 
         // chunk streaming state
         ChunkMap m_chunks;
@@ -291,5 +321,22 @@ namespace RR
         static constexpr int kCoveredPenalty = 0;
         // soreted head per rebuild
         static constexpr sizeT kQueueWindow = 128;
+
+        // Initial MeshArena capacity, defaults
+        // actual size calculated with RD
+        static constexpr uInt64 kArenaInitVertices = 2ull * 1024 * 1024;
+        static constexpr uInt64 kArenaInitIndices  = 3ull * 1024 * 1024;
+
+        // Set pre reservations for arena
+        static constexpr uInt64 kArenaCoreFloorVerts    = 6ull  * 1024 * 1024;
+        static constexpr uInt64 kArenaVertsPerRd        = 10000;
+        static constexpr uInt64 kArenaVertsPerFullChunk = 5000;
+        static constexpr uInt64 kArenaMaxReserveVerts   = 20ull * 1024 * 1024;
+        static constexpr uInt64 kArenaMaxReserveIdx     = 60ull * 1024 * 1024;
+
+        // broad phase cell (16x16 chunks)
+        static constexpr int kCellShift       = 4;
+        static constexpr int kCellSize        = 1 << kCellShift;
+        static constexpr int kGridSweepStride = 30;
     };
 }

@@ -171,19 +171,31 @@ namespace RR
 
     void ChunkManager::UploadChunkMesh(Chunk& _chunk, ChunkMeshes&& _meshes)
     {
-        // Make chunk mesh
-        auto& chunkMesh = _meshes.opaque;
-        _chunk.mesh = std::make_unique<Mesh>(chunkMesh.layout, chunkMesh.vertices, chunkMesh.indices);
+        const auto originX = static_cast<float>(_chunk.coord.x * CHUNK::kSizeX);
+        const auto originZ = static_cast<float>(_chunk.coord.z * CHUNK::kSizeZ);
 
-        // Make Veg mesh
+        // opaque mesh is always created
+        auto& chunkMesh = _meshes.opaque;
+        BakeWorldOffset(chunkMesh.vertices, originX, originZ);
+
+        _chunk.mesh = std::make_unique<PooledMesh>(m_arena.get(),
+            m_arena->Upload(chunkMesh.vertices, chunkMesh.indices));
+
+        // Vegetation
         auto& meshVeg = _meshes.veg;
         if (!meshVeg.Empty())
         {
-            _chunk.vegMesh = std::make_unique<Mesh>(meshVeg.layout, meshVeg.vertices, meshVeg.indices);
+            BakeWorldOffset(meshVeg.vertices, originX, originZ);
+
+            _chunk.vegMesh = std::make_unique<PooledMesh>(m_arena.get(),
+                m_arena->Upload(meshVeg.vertices, meshVeg.indices));
         }
 
         _chunk.state = CHUNK::STATE::MESHED;
         m_lifecycleDirty = true;
+
+        // register meshed chunk in in the grid then flag for refresh
+        AddChunkToGrid(_chunk.coord);
     }
 
     // Check neighboring chunks, if all generated return true

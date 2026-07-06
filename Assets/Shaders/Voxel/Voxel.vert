@@ -12,7 +12,7 @@ out float vViewDist;
 flat out float vLayer; // flat stops interpolation
 flat out float vShade;
 
-uniform mat4 uModel;
+// chunk/tile world translation is baked at pos upload
 uniform mat4 uView;
 uniform mat4 uProj;
 uniform vec3 uCameraPos;
@@ -35,8 +35,8 @@ void main()
     vLayer = aLayer;
     vShade = faceShade(aNormal);
 
-    vec4 worldPos = uModel * vec4(aPos, 1.0);
-    vViewDist = length(worldPos.xz - uCameraPos.xz);
+    // aPos is already in world space
+    vViewDist = length(aPos.xz - uCameraPos.xz);
 
-    gl_Position = uProj * uView * worldPos;
+    gl_Position = uProj * uView * vec4(aPos, 1.0);
 }

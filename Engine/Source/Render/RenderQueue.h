@@ -4,6 +4,7 @@
 
 #include "Helpers/Types.h"
 #include "Helpers/Common.h"
+#include "MeshArena.h"
 
 namespace RR
 {
@@ -20,6 +21,11 @@ namespace RR
         Material* material = nullptr;
         mat4 modelMatrix;
         vec3 color = vec3(1.0f);   // tint multiplied into the shader's uColor (white = none)
+
+        // when not nullptr draw voxel area
+        // ptr points at CM owned buffer that is valid for frame
+        const MeshArena* arena = nullptr;
+        const std::vector<const MeshArena::ArenaHandler*>* slices = nullptr;
     };
 
     class RenderQueue
