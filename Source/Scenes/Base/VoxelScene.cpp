@@ -132,7 +132,8 @@ bool VoxelScene::Init()
                 }
 
                 // MT configuration for CPU core efficiency class
-                const float perPWorker = ringJson.value("inFlightPerPWorker", 4.0f);
+                // fallbacks low-ish coz you might not want to overload e cores
+                const float perPWorker = ringJson.value("inFlightPerPWorker", 3.0f);
                 const float perEWorker = ringJson.value("inFlightPerEWorker", 1.0f);
                 m_chunkManager->SetInFlightPerWorker(perPWorker, perEWorker);
             }

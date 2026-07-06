@@ -250,8 +250,8 @@ namespace RR
         // async MT
         bool   m_asyncEnabled       = false;
         int    m_workerOverride     = 0;  // 0 = auto
-        float  m_inFlightPerPWorker = 4.0f; // P core task amount
-        float  m_inFlightPerEWorker = 2.0f; // E core task amount
+        float  m_inFlightPerPWorker = 3.0f; // P core task amount
+        float  m_inFlightPerEWorker = 1.0f; // E core task amount
         int    m_inFlightCap        = 16; // jobs per pipeline, indicative, tweaked in func
         uInt64 m_epoch              = 0;  // time stamp for workers
 

@@ -3,6 +3,6 @@
   "ringGrowth": 2.0,
   "manualCoreConfig": false,
   "workerThreads": 0,
-  "inFlightPerPWorker": 4.0,
-  "inFlightPerEWorker": 2.0
+  "inFlightPerPWorker": 3.0,
+  "inFlightPerEWorker": 1.5
 }
