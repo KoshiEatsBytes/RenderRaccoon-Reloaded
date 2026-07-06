@@ -15,15 +15,6 @@ namespace RR
     public:
         using Job = std::function<void()>;
 
-        explicit WorkerPool(unsigned _threadCount = SuggestThreads());
-        ~WorkerPool();
-
-        // Prevent copying
-        WorkerPool(const WorkerPool&) = delete;
-        WorkerPool& operator=(const WorkerPool&) = delete;
-
-        void Submit(Job _job);
-
         // Physical CPU layout
         // take in count homogenous and hybrid cpu layout
         // thanks intel for making this horrendously complicated, much love
@@ -49,6 +40,16 @@ namespace RR
         // defaults are a bit conservative but thats fine
         static unsigned SuggestInFlightCap(float _perPWorker = 3.0f, float _perEWorker = 1.0f,
             int _coreHeadroom = 2, int _lowEndCoreHeadroom = 1, int _eCoreHeadroom = 1);
+
+        // CLASS DEF
+        explicit WorkerPool(unsigned _threadCount = SuggestThreads());
+        ~WorkerPool();
+
+        // Prevent copying
+        WorkerPool(const WorkerPool&) = delete;
+        WorkerPool& operator=(const WorkerPool&) = delete;
+
+        void Submit(Job _job);
 
         unsigned GetThreadCount() const;
 
