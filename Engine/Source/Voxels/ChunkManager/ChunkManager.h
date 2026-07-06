@@ -103,7 +103,7 @@ namespace RR
         void SetAsyncEnabled(bool _enabled);
         void SetAdaptiveBudgetingEnabled(bool _enabled);
         void SetWorkerThreadOverride(int _count); // 0 = auto (topology-based)
-        void SetInFlightPerWorker(int _perPWorker, int _perEWorker);
+        void SetInFlightPerWorker(float _perPWorker, float _perEWorker);
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -250,8 +250,8 @@ namespace RR
         // async MT
         bool   m_asyncEnabled       = false;
         int    m_workerOverride     = 0;  // 0 = auto
-        int    m_inFlightPerPWorker = 4;  // P core task amount
-        int    m_inFlightPerEWorker = 2;  // E core task amount
+        float  m_inFlightPerPWorker = 4.0f; // P core task amount
+        float  m_inFlightPerEWorker = 2.0f; // E core task amount
         int    m_inFlightCap        = 16; // jobs per pipeline, indicative, tweaked in func
         uInt64 m_epoch              = 0;  // time stamp for workers
 

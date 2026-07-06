@@ -181,12 +181,12 @@ namespace RR
 
     // Sizes queue based on pCore and eCore settings
     // avoid stalling the main consegution with too many per frame
-    unsigned WorkerPool::SuggestInFlightCap(int _perPWorker, int _perEWorker)
+    unsigned WorkerPool::SuggestInFlightCap(float _perPWorker, float _perEWorker)
     {
         // pWorker is P cores on intel cpu and normal cores on homogenous cpu
         // eWorker is E cores on intel, you might want less work these small bois
-        const int perPWorker = std::max(_perPWorker, 1);
-        const int perEWorker = std::max(_perEWorker, 1);
+        const float perPWorker = std::max(_perPWorker, 0.5f);
+        const float perEWorker = std::max(_perEWorker, 0.5f);
 
         const CpuTopology cpuTopol = QueryTopology();
 
@@ -195,7 +195,8 @@ namespace RR
         if (!cpuTopol.valid)
         {
             Warn("[MT POOL] Cpu topology failed to get, you might wanna set worker count manually!");
-            const int fallback = static_cast<int>(cpuTopol.logical / 2u) * perPWorker;
+
+            const int fallback = static_cast<int>(static_cast<float>(cpuTopol.logical / 2u) * perPWorker);
             return static_cast<unsigned>(std::max(fallback, 8));
         }
 
@@ -206,9 +207,9 @@ namespace RR
             const int pCores = static_cast<int>(cpuTopol.pCores);
 
             // on hybrid cpus devided total workers per core type
-            const unsigned pHeadroom = pCores > 4 ? 2 : 1;
-            const unsigned pWorkers = (pCores - pHeadroom) * perPWorker;
-            const unsigned eWorkers = (static_cast<int>(cpuTopol.eCores) - 1) * perEWorker;
+            const int pHeadroom = pCores > 4 ? 2 : 1;
+            const int pWorkers  = static_cast<int>(static_cast<float>(pCores - pHeadroom) * perPWorker);
+            const int eWorkers  = static_cast<int>(static_cast<float>(static_cast<int>(cpuTopol.eCores) - 1) * perEWorker);
 
             cap = pWorkers + eWorkers;
         }
@@ -218,7 +219,7 @@ namespace RR
             const int physical = static_cast<int>(cpuTopol.physical);
 
             const int headroom = physical <= 4 ? 1 : 2;
-            cap = (physical - headroom) * perPWorker;
+            cap = static_cast<int>(static_cast<float>(physical - headroom) * perPWorker);
         }
 
         return static_cast<unsigned>(std::max(cap, 4));

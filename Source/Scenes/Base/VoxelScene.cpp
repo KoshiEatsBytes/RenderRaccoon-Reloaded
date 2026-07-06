@@ -132,8 +132,8 @@ bool VoxelScene::Init()
                 }
 
                 // MT configuration for CPU core efficiency class
-                const int perPWorker = ringJson.value("inFlightPerPWorker", 4);
-                const int perEWorker = ringJson.value("inFlightPerEWorker", 2);
+                const float perPWorker = ringJson.value("inFlightPerPWorker", 4.0f);
+                const float perEWorker = ringJson.value("inFlightPerEWorker", 1.0f);
                 m_chunkManager->SetInFlightPerWorker(perPWorker, perEWorker);
             }
             catch (const nlohmann::json::exception& error)

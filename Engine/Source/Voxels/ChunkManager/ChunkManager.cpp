@@ -400,10 +400,10 @@ namespace RR
     }
 
     // ser before setting async on
-    void ChunkManager::SetInFlightPerWorker(int _perPWorker, int _perEWorker)
+    void ChunkManager::SetInFlightPerWorker(float _perPWorker, float _perEWorker)
     {
-        m_inFlightPerPWorker = std::clamp(_perPWorker, 1, 16);
-        m_inFlightPerEWorker = std::clamp(_perEWorker, 1, 16);
+        m_inFlightPerPWorker = std::clamp(_perPWorker, 0.5f, 16.0f);
+        m_inFlightPerEWorker = std::clamp(_perEWorker, 0.5f, 16.0f);
     }
 
     int ChunkManager::GetWorkerThreads() const
