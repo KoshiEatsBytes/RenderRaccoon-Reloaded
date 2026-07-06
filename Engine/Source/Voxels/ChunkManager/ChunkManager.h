@@ -104,7 +104,7 @@ namespace RR
         void SetAdaptiveBudgetingEnabled(bool _enabled);
         void SetWorkerThreadOverride(int _count); // 0 = auto (topology-based)
         void SetInFlightPerWorker(float _perPWorker, float _perEWorker);
-        void SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom);
+        void SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom, int _eCoreHeadroom);
 
         // Lod tuning
         void SetCoreRadius(int _radius);
@@ -255,6 +255,7 @@ namespace RR
         float  m_inFlightPerEWorker = 1.0f; // E core task amount
         int    m_coreHeadroom       = 2;    // cores kept free
         int    m_lowEndCoreHeadroom = 1;    // cores kept free, 4 core or less
+        int    m_eCoreHeadroom      = 1;    // e cores kept free, hybrid only (INTEL)
         int    m_inFlightCap        = 16;   // jobs per pipeline, indicative, tweaked in func
         uInt64 m_epoch              = 0;    // time stamp for workers
 

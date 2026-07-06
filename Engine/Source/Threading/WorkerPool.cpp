@@ -130,8 +130,13 @@ namespace RR
     }
 
     // cpu type aware working count
-    unsigned WorkerPool::SuggestThreads()
+    unsigned WorkerPool::SuggestThreads(int _coreHeadroom, int _lowEndCoreHeadroom, int _eCoreHeadroom)
     {
+        // cores kept free of world gen work
+        const int coreHeadroom       = std::max(_coreHeadroom, 0);
+        const int lowEndCoreHeadroom = std::max(_lowEndCoreHeadroom, 0);
+        const int eCoreHeadroom      = std::max(_eCoreHeadroom, 0);
+
         const CpuTopology cpuTopol = QueryTopology();
 
         // no topology, hard fall back
@@ -152,21 +157,21 @@ namespace RR
         int workers;
 
         // physical not threads
-        // set base workers, if less than 5 cores only scale off 1
+        // set base workers, if less than 5 cores only scale off the low end headroom
         if (pCores <= 4 )
         {
-            workers = pCores - 1;
+            workers = pCores - lowEndCoreHeadroom;
         }
         else
         {
-            // 4 or more, scale off 2 from total
-            workers = pCores - 2;
+            // 5 or more, scale off the full headroom
+            workers = pCores - coreHeadroom;
         }
 
         if (cpuTopol.hybrid)
         {
-            // all E cores join, minus one kept free for OS background services
-            workers += static_cast<int>(cpuTopol.eCores) - 1;
+            // all E cores join, minus headroom kept free for OS background services
+            workers += static_cast<int>(cpuTopol.eCores) - eCoreHeadroom;
         }
 
         const unsigned suggested = static_cast<unsigned>(std::max(workers, 1));
@@ -182,7 +187,7 @@ namespace RR
     // Sizes queue based on pCore and eCore settings
     // avoid stalling the main consegution with too many per frame
     unsigned WorkerPool::SuggestInFlightCap(float _perPWorker, float _perEWorker,
-        int _coreHeadroom, int _lowEndCoreHeadroom)
+        int _coreHeadroom, int _lowEndCoreHeadroom, int _eCoreHeadroom)
     {
         // pWorker is P cores on intel cpu and normal cores on homogenous cpu
         // eWorker is E cores on intel, you might want less work these small bois
@@ -192,6 +197,7 @@ namespace RR
         // cores kept free of queued work
         const int coreHeadroom       = std::max(_coreHeadroom, 0);
         const int lowEndCoreHeadroom = std::max(_lowEndCoreHeadroom, 0);
+        const int eCoreHeadroom      = std::max(_eCoreHeadroom, 0);
 
         const CpuTopology cpuTopol = QueryTopology();
 
@@ -214,7 +220,7 @@ namespace RR
             // on hybrid cpus devided total workers per core type
             const int pHeadroom = pCores > 4 ? coreHeadroom : lowEndCoreHeadroom;
             const int pWorkers  = static_cast<int>(static_cast<float>(pCores - pHeadroom) * perPWorker);
-            const int eWorkers  = static_cast<int>(static_cast<float>(static_cast<int>(cpuTopol.eCores) - 1) * perEWorker);
+            const int eWorkers  = static_cast<int>(static_cast<float>(static_cast<int>(cpuTopol.eCores) - eCoreHeadroom) * perEWorker);
 
             cap = pWorkers + eWorkers;
         }

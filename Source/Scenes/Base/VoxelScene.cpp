@@ -137,11 +137,12 @@ bool VoxelScene::Init()
                 const float perEWorker = ringJson.value("inFlightPerEWorker", 1.0f);
                 m_chunkManager->SetInFlightPerWorker(perPWorker, perEWorker);
 
-                // MT config for queue headroom
+                // MT config for core headroom, shapes both worker count and queue size
                 // aka how many cores are we sparing from world gen
                 const int coreHeadroom       = ringJson.value("coreHeadroom", 2);
                 const int lowEndCoreHeadroom = ringJson.value("lowEndCoreHeadroom", 1);
-                m_chunkManager->SetCoreHeadroom(coreHeadroom, lowEndCoreHeadroom);
+                const int eCoreHeadroom      = ringJson.value("eCoreHeadroom", 1);
+                m_chunkManager->SetCoreHeadroom(coreHeadroom, lowEndCoreHeadroom, eCoreHeadroom);
             }
             catch (const nlohmann::json::exception& error)
             {

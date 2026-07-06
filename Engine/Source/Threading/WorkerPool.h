@@ -39,12 +39,16 @@ namespace RR
         };
 
         static CpuTopology QueryTopology();
-        static unsigned SuggestThreads();
+
+        // headrooms are cores kept free of world gen work, low end cpus spare less
+        // e core headroom only applies on hybrid cpus (INTEL)
+        static unsigned SuggestThreads(int _coreHeadroom = 2, int _lowEndCoreHeadroom = 1,
+            int _eCoreHeadroom = 1);
 
         // returns suggested cap using json p and e core settings
         // defaults are a bit conservative but thats fine
         static unsigned SuggestInFlightCap(float _perPWorker = 3.0f, float _perEWorker = 1.0f,
-            int _coreHeadroom = 2, int _lowEndCoreHeadroom = 1);
+            int _coreHeadroom = 2, int _lowEndCoreHeadroom = 1, int _eCoreHeadroom = 1);
 
         unsigned GetThreadCount() const;
 

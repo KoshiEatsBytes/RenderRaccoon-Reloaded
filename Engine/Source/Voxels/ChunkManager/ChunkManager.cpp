@@ -347,7 +347,8 @@ namespace RR
 
         if (_enabled)
         {
-            unsigned workers = WorkerPool::SuggestThreads();
+            unsigned workers = WorkerPool::SuggestThreads(
+                m_coreHeadroom, m_lowEndCoreHeadroom, m_eCoreHeadroom);
 
             // override auto worker pool if set
             if (m_workerOverride > 0)
@@ -362,11 +363,13 @@ namespace RR
             // P cores are allocated more task than E cores
             // if cpu homogenous use p core setting
             m_inFlightCap = static_cast<int>(WorkerPool::SuggestInFlightCap(
-                m_inFlightPerPWorker, m_inFlightPerEWorker, m_coreHeadroom, m_lowEndCoreHeadroom));
+                m_inFlightPerPWorker, m_inFlightPerEWorker,
+                m_coreHeadroom, m_lowEndCoreHeadroom, m_eCoreHeadroom));
 
             InfoLog("[MT POOL] in-flight cap: '", m_inFlightCap, "' (P x",
                     m_inFlightPerPWorker, ", E x", m_inFlightPerEWorker,
-                    ", headroom ", m_coreHeadroom, "/", m_lowEndCoreHeadroom, " low end)");
+                    ", headroom ", m_coreHeadroom, "/", m_lowEndCoreHeadroom,
+                    " low end, E ", m_eCoreHeadroom, ")");
         }
         else
         {
@@ -409,10 +412,11 @@ namespace RR
     }
 
     // set before setting async on, cores spared frok workers
-    void ChunkManager::SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom)
+    void ChunkManager::SetCoreHeadroom(int _coreHeadroom, int _lowEndCoreHeadroom, int _eCoreHeadroom)
     {
         m_coreHeadroom       = std::clamp(_coreHeadroom, 0, 16);
         m_lowEndCoreHeadroom = std::clamp(_lowEndCoreHeadroom, 0, 16);
+        m_eCoreHeadroom      = std::clamp(_eCoreHeadroom, 0, 16);
     }
 
     int ChunkManager::GetWorkerThreads() const
