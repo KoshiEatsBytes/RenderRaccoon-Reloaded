@@ -277,7 +277,7 @@ namespace RR
         static constexpr int kTileBudget = 4;
         // adaptive budget constants
         static constexpr float kUploadFraction   = 0.15f; // limit base overlay
-        static constexpr float kFloorMs          = 16.6f; // 60 guarded
+        static constexpr float kFloorMs          = 33.3f; // 30 guarded
         static constexpr float kMaxUploadMs      = 4.0f;  // ceiling ms
         static constexpr float kBaseCostAlpha    = 0.05f;
         static constexpr float kLifecycleFloorMs = 0.25f;

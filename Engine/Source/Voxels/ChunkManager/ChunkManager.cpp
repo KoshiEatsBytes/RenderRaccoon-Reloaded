@@ -65,10 +65,15 @@ namespace RR
             }
 
             // calculate budgets
-            // upload only gets up to 15% of a frame
-            // if takes longer than that, reduce dubget to keep 60fps
-            m_uploadBudgetMs = std::clamp(std::min(kUploadFraction * m_baseMsCost,
-                kFloorMs - m_baseMsCost), 0.0f, kMaxUploadMs);
+            // upload only gets 15% of a frame
+            // if longer than that, and below ms floor, go back to standard budgets
+            float budget = kUploadFraction * m_baseMsCost;
+            if (m_baseMsCost < kFloorMs)
+            {
+                budget = std::min(kUploadFraction * m_baseMsCost, kFloorMs - m_baseMsCost);
+            }
+
+            m_uploadBudgetMs = std::clamp(budget, 0.0f, kMaxUploadMs);
         }
 
         // Reset this frame timings
