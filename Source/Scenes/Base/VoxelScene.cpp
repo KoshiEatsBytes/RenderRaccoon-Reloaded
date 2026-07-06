@@ -114,7 +114,7 @@ bool VoxelScene::Init()
             try
             {
                 const nlohmann::json ringJson = nlohmann::json::parse(ringText);
-                const int   ringBase = ringJson.value("baseRingRadius", 16);
+                const int   ringBase = ringJson.value("baseRingRadius", 24);
                 const float growth   = ringJson.value("ringGrowth", 2.0f);
 
                 m_chunkManager->SetRingBase(ringBase);

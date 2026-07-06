@@ -43,7 +43,7 @@ namespace RR
         int   nodingStart = 2;   // first aggregated level
         int   meshRadius  = 16;  // RD
         int   hysteresis  = 2;
-        int   ringBase    = 16;  // ring width anchor
+        int   ringBase    = 24;  // ring width anchor
     };
 
     using NodeSet = std::unordered_set<LodNodeKey, LodNodeKeyHash>;
@@ -71,8 +71,8 @@ namespace RR
         return _c & ~(_sizePow2 - 1);
     }
 
-    // Default anchor, regardless of core radius
-    inline constexpr int kRingBaseRadius = 16;
+    // Default anchor, regardless of core radius 
+    inline constexpr int kRingBaseRadius = 24;
 
     // edge ring calculated with ring growth
     inline int RingEdge(int _level, const RingParams& _params)

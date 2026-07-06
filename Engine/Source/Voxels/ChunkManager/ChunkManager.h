@@ -129,7 +129,7 @@ namespace RR
         const UpdateTimings& GetTimings() const;
 
         // Pure-voxel core radius, lod needs higher
-        static constexpr int kDefaultCoreRadius = 16;
+        static constexpr int kDefaultCoreRadius = 24;
 
     private:
         // ChunkManager.cpp --------------------------------------------------------------------------------------------

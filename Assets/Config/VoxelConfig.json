@@ -1,5 +1,5 @@
 {
-  "baseRingRadius": 16,
+  "baseRingRadius": 24,
   "ringGrowth": 2.0,
   "manualCoreConfig": false,
   "workerThreads": 0,
