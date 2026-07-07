@@ -186,11 +186,11 @@ bool VoxelScene::Init()
 
     // clouds
     m_skybox->SetCloudSeed(m_genConfig.seed);
-    m_skybox->SetCloudHeight(230);
+    m_skybox->SetCloudHeight(330);
     m_skybox->SetCloudFade(0.85f, 0.4f);
     m_skybox->SetCloudColor(vec3(1.0f));
     m_skybox->SetWind(vec2(1.0f, 0.35f), 2.0f);
-    m_skybox->SetCloudsEnabled(false);
+    //m_skybox->SetCloudsEnabled(false);
 
     OnInit();
 
