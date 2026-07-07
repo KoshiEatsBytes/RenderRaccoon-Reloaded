@@ -4,10 +4,10 @@
   "manualCoreConfig": false,
   "workerThreads": 0,
   "inFlightPerPWorker": 3.0,
-  "inFlightPerEWorker": 1.5,
+  "inFlightPerEWorker": 1.0,
   "coreHeadroom": 2,
   "lowEndCoreHeadroom": 1,
-  "eCoreHeadroom": 1,
+  "eCoreHeadroom": 2,
   "warmUpTimeoutSeconds": 300.0,
   "warmUpTimeoutHeadroom": 1.25
 }
