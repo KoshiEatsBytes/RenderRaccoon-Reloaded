@@ -86,6 +86,13 @@ namespace RR
 
         // Stutter
         unsigned int stutterCount = 0;
+
+        // Literature-anchored metrics
+        unsigned int gapCount       = 0;
+        unsigned int gapCountRel    = 0;
+        float        gapMsPerSecond = 0.0f;
+        float        floor95Fps     = 0.0f;
+        float        medianFps      = 0.0f;
     };
 
     struct BenchmarkRun
@@ -98,6 +105,8 @@ namespace RR
     FrameStats ComputeStats(const std::vector<FrameSample>& _samples);
     // Klein et al. 2023: 4–12 ms variation is perceptible
     constexpr float kStutterDeltaMs = 6.0f;
+    // Xu & Claypool 2024: a frame longer than 2x the 60 Hz frame time (33.3 ms) is a "gap"
+    constexpr float kGapMs = 33.3f;
 }
 
 

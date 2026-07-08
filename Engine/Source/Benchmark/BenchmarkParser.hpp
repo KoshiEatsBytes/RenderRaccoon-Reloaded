@@ -324,7 +324,16 @@ namespace RR
                 pair   ([](const BenchmarkRun& _run) { return _run.stats.coverageMin; });
 
                 contents << "," << info.steadyDraws << "," << info.steadyTris << ","
-                         << runs[0].stats.frameCount << "\n";
+                         << runs[0].stats.frameCount;
+
+                // literature metrics, had to append last so the previous data stays put
+                pair([](const BenchmarkRun& _run) { return static_cast<float>(_run.stats.gapCount); });
+                pair([](const BenchmarkRun& _run) { return _run.stats.gapMsPerSecond; });
+                pair([](const BenchmarkRun& _run) { return _run.stats.floor95Fps; });
+                pair([](const BenchmarkRun& _run) { return _run.stats.medianFps; });
+                pair([](const BenchmarkRun& _run) { return static_cast<float>(_run.stats.gapCountRel); });
+
+                contents << "\n";
 
                 ++outcome.written;
             }
@@ -333,11 +342,13 @@ namespace RR
 
             outcome.csvText =
                 "# Artefact benchmark summary, MEDIAN of up to the 3 latest matching completed runs, sp = max-min spread, lows in fps, runs = sample count\n"
+                "# gaps = frames > 33.3ms (Xu & Claypool 2024), gapMsPerS = interrupt magnitude, floor95 = strict 95% floor (Liu et al. 2023), gapsRel = frames > 2x run median\n"
                 "name,rd,lod,la,gm,mt,ab,seed,cpu,gpu,runs,"
                 "avgFps,avgFps_sp,low10Fps,low10Fps_sp,low5Fps,low5Fps_sp,low1Fps,low1Fps_sp,low01Fps,low01Fps_sp,"
                 "avgMs,avgMs_sp,maxMs,maxMs_sp,stdMs,stdMs_sp,stutters,stutters_sp,"
                 "cpuMs,cpuMs_sp,gpuMs,gpuMs_sp,loadS,loadS_sp,covMin,covMin_sp,"
-                "steadyDraws,steadyTris,frames\n"
+                "steadyDraws,steadyTris,frames,"
+                "gaps,gaps_sp,gapMsPerS,gapMsPerS_sp,floor95Fps,floor95Fps_sp,medianFps,medianFps_sp,gapsRel,gapsRel_sp\n"
                 + contents.str();
 
             return outcome;

@@ -1152,6 +1152,11 @@ namespace AT
         ImGui::PopFont();
         ImGui::Separator();
 
+        auto Gap = [&] {
+            ImGui::TableNextColumn();
+            ImGui::Dummy(ImVec2(metricGapSize, 0.0f));
+        };
+
         ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * statsFontSize);
         if (ImGui::BeginTable("##stats", 25, ImGuiTableFlags_SizingFixedFit))
         {
@@ -1163,38 +1168,66 @@ namespace AT
                 MetricField(_l, _v);
             };
 
-            auto Gap = [&] {
-                ImGui::TableNextColumn(); ImGui::Dummy(ImVec2(metricGapSize, 0.0f));
-            };
-
             // Frame rate and coverage
             ImGui::TableNextRow();
-            Label("FRAMERATE (fps)");
+            Label("FRAMERATE: (fps)");
             Metric("Avg",  FormatFloat("%.0f", stats.avgFps));
             Metric("10%",  FormatFloat("%.0f", lowFps(stats.low10Pc)));
             Metric("5%",   FormatFloat("%.0f", lowFps(stats.low5Pc)));
             Metric("1%",   FormatFloat("%.0f", lowFps(stats.low1Pc)));
             Metric("0.1%", FormatFloat("%.0f", lowFps(stats.low01Pc)));
-            Gap(); Label("COVERAGE (%)");
+            Gap(); Label("COVERAGE: (%)");
             Metric("Avg", FormatFloat("%.0f", stats.coverageAvg    * 100.0f));
             Metric("1%",  FormatFloat("%.0f", stats.coverageLow1Pc * 100.0f));
             Metric("Min", FormatFloat("%.0f", stats.coverageMin    * 100.0f));
-            Gap(); Label("STUTTER");
-            Metric("Spikes", FormatFloat("%.0f", static_cast<float>(stats.stutterCount)));
+            Gap(); Label("STUTTER:");
+            Metric("Delta", FormatFloat("%.0f", static_cast<float>(stats.stutterCount)));
+            Metric("Gaps",  FormatFloat("%.0f", static_cast<float>(stats.gapCount)));
 
             // Frame time, latency and stutter
             ImGui::TableNextRow();
-            Label("FRAMETIME (ms)");
+            Label("FRAMETIME: (ms)");
             Metric("Avg", FormatFloat("%.2f", stats.avgFrameTimeMs));
             Metric("Min", FormatFloat("%.2f", stats.minFrameTimeMs));
             Metric("Max", FormatFloat("%.2f", stats.maxFrameTimeMs));
             Metric("Std", FormatFloat("%.2f", stats.stdDeviationMs));
-            Gap(); Gap(); Gap();  Label("LATENCY (ms)");
+            Gap(); Gap(); Gap();  Label("LATENCY: (ms)");
             Metric("CPU", FormatFloat("%.2f", stats.avgCpuMs));
             Metric("GPU", FormatFloat("%.2f", stats.avgGpuMs));
-            Gap(); Gap(); Gap();
-            Metric("DRAWS", info.steadyDraws > 0 ? std::to_string(info.steadyDraws) : "-");
+            Gap(); Gap(); Gap(); Label("DRAW:");
+            Metric("CALLS", info.steadyDraws > 0 ? std::to_string(info.steadyDraws) : "-");
             Metric("TRIS",  info.steadyTris  > 0 ? SHARED::shortNum(info.steadyTris) : "-");
+
+            ImGui::EndTable();
+        }
+
+        ImGui::Separator();
+
+        // Xu & Claypool 2024 metrics formulas
+        const float qoeStd = std::clamp(-0.056f * stats.stdDeviationMs + 4.6f, 1.0f, 5.0f);
+        const float qoeIm  = std::clamp(-0.004f * stats.gapMsPerSecond + 4.0f, 1.0f, 5.0f);
+
+        if (ImGui::BeginTable("##qoeStats", 21, ImGuiTableFlags_SizingFixedFit))
+        {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::TextColored(SHARED::kLabelColor, "QoE METRICS:");
+            Gap();
+            MetricField("Interrupt Magnitude",      FormatFloat("%.1f", stats.gapMsPerSecond));
+            Gap();
+            MetricField("95% Floor", FormatFloat("%.0f", stats.floor95Fps));
+            Gap();
+            MetricField("Median FPS",  FormatFloat("%.0f", stats.medianFps));
+            Gap();
+            MetricField("Relative Gaps", FormatFloat("%.0f", static_cast<float>(stats.gapCountRel)));
+            Gap();
+            ImGui::TableNextColumn();
+            ImGui::Dummy(ImVec2(metricGapSize, 0.0f));
+            ImGui::TableNextColumn();
+            ImGui::TextColored(SHARED::kLabelColor, "SCORE: (1-5)");
+            MetricField("Std", FormatFloat("%.2f", qoeStd));
+            Gap();
+            MetricField("IM",  FormatFloat("%.2f", qoeIm));
 
             ImGui::EndTable();
         }
@@ -1696,6 +1729,8 @@ namespace CT
         COL_FT_MAX,
         COL_FT_STD,
         COL_STUT,
+        COL_GAPS,
+        COL_IM,
         COL_COV
     };
 
@@ -1717,6 +1752,8 @@ namespace CT
             case COL_FT_MAX: return _st.maxFrameTimeMs;
             case COL_FT_STD: return _st.stdDeviationMs;
             case COL_STUT:   return static_cast<float>(_st.stutterCount);
+            case COL_GAPS:   return static_cast<float>(_st.gapCount);
+            case COL_IM:     return _st.gapMsPerSecond;
             case COL_COV:    return _st.coverageAvg;
             default:         return 0.0f;
         }
@@ -1913,7 +1950,7 @@ void MainMenuScene::DrawComparePanel()
 
     int removeIdx = -1;
     ImGui::PushFont(ImGui::GetFont(), SHARED::GetBaseFontSize() * m_compareTableFontSize);
-    if (ImGui::BeginTable("##compare_tbl", 22, tFlags))
+    if (ImGui::BeginTable("##compare_tbl", 24, tFlags))
     {
         // narrow cols non resizable
         const float controlWidth = ImGui::GetFrameHeight() + m_tableControlWidth;
@@ -1931,13 +1968,15 @@ void MainMenuScene::DrawComparePanel()
         ImGui::TableSetupColumn("Max",  0, 1.0f, CT::COL_FT_MAX);
         ImGui::TableSetupColumn("Std",  0, 1.0f, CT::COL_FT_STD);
         ImGui::TableSetupColumn("Stut", 0, 1.0f, CT::COL_STUT);
+        ImGui::TableSetupColumn("Gaps", 0, 1.0f, CT::COL_GAPS);
+        ImGui::TableSetupColumn("IM",   0, 1.0f, CT::COL_IM);
         ImGui::TableSetupColumn("Cov",  0, 1.0f, CT::COL_COV);
         ImGui::TableSetupColumn("LOD", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("LA",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("GM",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("MT",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("SS",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
-        ImGui::TableSetupColumn("RD",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
+        ImGui::TableSetupColumn("RD  ",  ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("Load", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed);
         ImGui::TableSetupColumn("##rm", ImGuiTableColumnFlags_NoSort | ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, controlWidth);
         ImGui::TableHeadersRow();
@@ -2086,6 +2125,8 @@ void MainMenuScene::DrawComparePanel()
                 CT::CompareCell(st.maxFrameTimeMs,  base ? base->maxFrameTimeMs  : 0.0f, false, isBase, showDelta, "%.2f");
                 CT::CompareCell(st.stdDeviationMs,  base ? base->stdDeviationMs  : 0.0f, false, isBase, showDelta, "%.2f");
                 CT::CompareCell(static_cast<float>(st.stutterCount), base ? static_cast<float>(base->stutterCount) : 0.0f,    false, isBase, showDelta, "%.0f");
+                CT::CompareCell(static_cast<float>(st.gapCount),     base ? static_cast<float>(base->gapCount)     : 0.0f,    false, isBase, showDelta, "%.0f");
+                CT::CompareCell(st.gapMsPerSecond,  base ? base->gapMsPerSecond  : 0.0f, false, isBase, showDelta, "%.1f");
 
                 CT::CompareCell(st.coverageAvg * 100.0f, base ? base->coverageAvg * 100.0f : 0.0f, true, isBase, showDelta, "%.0f");
 

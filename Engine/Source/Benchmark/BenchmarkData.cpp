@@ -99,6 +99,50 @@ namespace RR
         stats.low1Pc  = MeanOfWorst(descending, 1.0f);
         stats.low01Pc = MeanOfWorst(descending, 0.1f);
 
+        // Median and 95% frame floor
+        const float medianMs = descending[descending.size() / 2];
+        stats.medianFps = 0.0f;
+        if (medianMs > 0.0f)
+        {
+            stats.medianFps = 1000.0f / medianMs;
+        }
+
+        sizeT count95 = static_cast<sizeT>(std::ceil(descending.size() * 0.05f));
+        count95 = std::clamp<sizeT>(count95, 1, descending.size());
+
+        const float floorMs = descending[count95 - 1];
+        stats.floor95Fps = 0.0f;
+         if (floorMs > 0.0f)
+         {
+             stats.floor95Fps = 1000.0f / floorMs;
+         }
+
+        // Gaps + interrupt magnitude
+        unsigned int gaps = 0;
+        unsigned int gapsRel = 0;
+        double gapMs = 0.0;
+        const float relThresholdMs = 2.0f * medianMs;
+
+        for (float ms : frameTimes)
+        {
+            if (ms > kGapMs)
+            {
+                gaps++;
+                gapMs += ms;
+            }
+
+            if (ms > relThresholdMs)
+            {
+                gapsRel++;
+            }
+        }
+
+        stats.gapCount    = gaps;
+        stats.gapCountRel = gapsRel;
+
+        const double roundSeconds = summ / 1000.0;
+        stats.gapMsPerSecond = roundSeconds > 0.0 ? static_cast<float>(gapMs / roundSeconds) : 0.0f;
+
         // Stutter
         // if the different between two frames is higher than the stutter delta, log
         unsigned int stutters = 0;
