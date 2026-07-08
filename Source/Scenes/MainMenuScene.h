@@ -106,10 +106,10 @@ private:
     };
 
     TopView m_view = TopView::NONE;
-    float  m_uiScalePending  = 1.5f;
+    float  m_uiScalePending  = 1.3f;
     float  m_uiMinScale      = 0.5f;
     float  m_uiMaxScale      = 4.0f;
-    float  m_uiScale         = 1.5f;
+    float  m_uiScale         = 1.3f;
     bool   m_useLog10        = false;
     bool   m_graphByPathTime = true;
 

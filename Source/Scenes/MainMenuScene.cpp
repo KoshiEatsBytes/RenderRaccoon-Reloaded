@@ -1203,31 +1203,40 @@ namespace AT
 
         ImGui::Separator();
 
-        // Xu & Claypool 2024 metrics formulas
+        // Xu & Claypool 2024 metrics formulas + Liu et al. 2023 floor model
+        // normalized aganist a 60 fps target
         const float qoeStd = std::clamp(-0.056f * stats.stdDeviationMs + 4.6f, 1.0f, 5.0f);
         const float qoeIm  = std::clamp(-0.004f * stats.gapMsPerSecond + 4.0f, 1.0f, 5.0f);
 
-        if (ImGui::BeginTable("##qoeStats", 21, ImGuiTableFlags_SizingFixedFit))
+        const float qoeFloor = std::clamp(0.025f * (stats.floor95Fps / 60.0f) * 100.0f + 1.95f, 1.0f, 5.0f);
+        const float relGapMs = stats.medianFps > 0.0f ? 2000.0f / stats.medianFps : 0.0f;
+
+        if (ImGui::BeginTable("##qoeStats", 24, ImGuiTableFlags_SizingFixedFit))
         {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::TextColored(SHARED::kLabelColor, "QoE METRICS:");
             Gap();
-            MetricField("Interrupt Magnitude",      FormatFloat("%.1f", stats.gapMsPerSecond));
+            MetricField("Interrupt Magnitude",FormatFloat("%.1f", stats.gapMsPerSecond));
             Gap();
             MetricField("95% Floor", FormatFloat("%.0f", stats.floor95Fps));
             Gap();
-            MetricField("Median FPS",  FormatFloat("%.0f", stats.medianFps));
+            MetricField("Median FPS", FormatFloat("%.0f", stats.medianFps));
             Gap();
-            MetricField("Relative Gaps", FormatFloat("%.0f", static_cast<float>(stats.gapCountRel)));
+            MetricField("Relative Gaps", FormatFloat("%.0f", static_cast<float>(stats.gapCountRel))
+                + " (>" + FormatFloat("%.1f", relGapMs) + "ms)");
             Gap();
+            
             ImGui::TableNextColumn();
             ImGui::Dummy(ImVec2(metricGapSize, 0.0f));
             ImGui::TableNextColumn();
             ImGui::TextColored(SHARED::kLabelColor, "SCORE: (1-5)");
+
             MetricField("Std", FormatFloat("%.2f", qoeStd));
             Gap();
-            MetricField("IM",  FormatFloat("%.2f", qoeIm));
+            MetricField("IM",  stats.gapCount > 0 ? FormatFloat("%.2f", qoeIm) : std::string("-"));
+            Gap();
+            MetricField("Floor", FormatFloat("%.2f", qoeFloor));
 
             ImGui::EndTable();
         }
