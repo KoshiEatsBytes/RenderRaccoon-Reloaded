@@ -16,7 +16,7 @@ The instrument is a purpose-built C++20 / OpenGL 3.3 voxel engine with a procedu
 
 - Voxel Engine
   
-    - Procedurally generated worlds from a single seed — biomes, rivers with karst tunnels, terraced mesas
+    - Procedurally generated worlds from a seed: biomes, rivers with karst tunnels, terraced mesas
     - Chunk streaming with a shared geometry arena and batched draw submission
     - Deterministic, thread-safe world generation (bit-identical across machines)
 
@@ -32,7 +32,7 @@ The instrument is a purpose-built C++20 / OpenGL 3.3 voxel engine with a procedu
   
     - Deterministic 17-configuration ladder over a fixed seed and scripted camera path
     - Self-describing per-frame CSV logging, warm-up watchdogs, abort-writes-nothing semantics
-    - Median-of-three summary export with QoE-oriented metrics (percentile lows, 95% floor, gaps, interrupt magnitude, world coverage)
+    - Median-of-three summary export with QoE-oriented metrics
 
 - Analysis Interface
   
@@ -41,27 +41,29 @@ The instrument is a purpose-built C++20 / OpenGL 3.3 voxel engine with a procedu
 
 ## Video
 
-[](https://youtu.be/QSWlw0ZV4aQ?si=918eewJ9k0S7npy9)
+[![ShowCaseVideo](https://img.youtube.com/vi/QSWlw0ZV4aQ/0.jpg)](https://www.youtube.com/watch?v=QSWlw0ZV4aQ)
 
-## Screenshots
+## Screenshot
 
+<img width="1912" height="1074" alt="Screenshot 2026-07-17 173148" src="https://github.com/user-attachments/assets/65747829-6b5c-4596-b1eb-73576fd60839" />
 
+## Poster
 
-
+<img width="1752" height="2483" alt="21022074-Poster-Compressed" src="https://github.com/user-attachments/assets/916a690a-fa69-4773-ac51-de836d7bbe85" />
 
 ## Scenes
 
 ### Main Menu
 
-Launches benchmark runs and hosts the analysis interface — completed runs can be inspected and compared without leaving the engine.
+Launches benchmark runs and hosts the analysis interface.
 
 ### Benchmark
 
-Executes the deterministic ladder: fixed seed, scripted flight, automatic run advancement. Each run writes a self-describing CSV beside the executable; the summary export aggregates three passes per configuration by median.
+Executes the deterministic ladder: fixed seed, scripted flight, automatic run advancement. Each run writes a self-describing CSV beside the executable in the Output folder, the summary export aggregates three passes per configuration by median.
 
 ### Free Roam
 
-Fly the world freely. TAB opens the rendering panel — wireframe view, the LOD showcase ladder, a live greedy-meshing toggle, and streaming lock for inspecting coarse LOD tiles up close.
+Fly Around Freely. TAB opens the rendering panel to tweak world generation on the fly
 
 ## Credits
 
